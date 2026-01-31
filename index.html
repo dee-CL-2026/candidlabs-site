@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Candidlabs - Internal Business Platform for Candid Mixers. Streamlining production, sales, and financial operations.">
+  <title>Candidlabs - Internal Business Platform</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Preconnect to Google Fonts for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-container">
+      <a href="index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
+
+      <ul class="nav-menu" role="menubar">
+        <li role="none"><a href="index.html" class="nav-link active" role="menuitem">Home</a></li>
+        <li role="none"><a href="tools.html" class="nav-link" role="menuitem">Tools</a></li>
+        <li role="none"><a href="reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none"><a href="about.html" class="nav-link" role="menuitem">About</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button
+          id="theme-toggle"
+          class="theme-toggle"
+          type="button"
+          aria-label="Switch to dark mode"
+        >
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+
+        <a href="#" class="btn btn-primary btn-login" aria-label="Login (coming soon)">Login</a>
+
+        <button
+          id="mobile-menu-toggle"
+          class="mobile-menu-toggle"
+          type="button"
+          aria-label="Toggle navigation menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu" role="menu" aria-label="Mobile navigation">
+      <ul>
+        <li><a href="index.html" role="menuitem">Home</a></li>
+        <li><a href="tools.html" role="menuitem">Tools</a></li>
+        <li><a href="reports.html" role="menuitem">Reports</a></li>
+        <li><a href="about.html" role="menuitem">About</a></li>
+        <li><a href="#" role="menuitem">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="container">
+        <div class="hero-content">
+          <h1 id="hero-title" class="hero-title">Candidlabs</h1>
+          <p class="hero-subtitle">Internal Business Platform for Candid Mixers</p>
+          <p class="hero-tagline">Streamlining production, sales, and financial operations</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Stats Section -->
+    <section class="section" aria-labelledby="stats-title">
+      <div class="container">
+        <h2 id="stats-title" class="sr-only">Platform Statistics</h2>
+        <div class="stats-grid">
+          <article class="card stat-card">
+            <div class="stat-number mono">8</div>
+            <div class="stat-label">Active Modules</div>
+          </article>
+          <article class="card stat-card">
+            <div class="stat-number mono">12</div>
+            <div class="stat-label">Data Sources</div>
+          </article>
+          <article class="card stat-card">
+            <div class="stat-number mono">150+</div>
+            <div class="stat-label">Reports Generated</div>
+          </article>
+          <article class="card stat-card">
+            <div class="stat-number placeholder-text">TO BE CONFIGURED</div>
+            <div class="stat-label">Team Members</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured Tools Section -->
+    <section class="section" aria-labelledby="featured-tools-title">
+      <div class="container">
+        <h2 id="featured-tools-title" class="text-center mb-4">Featured Tools</h2>
+        <div class="tools-grid">
+          <article class="card tool-card">
+            <div class="card-icon" aria-hidden="true">⚙️</div>
+            <h3 class="card-title">CoreOS Hub</h3>
+            <p class="card-description">Central management system for all platform modules and configurations.</p>
+            <a href="tools.html" class="card-link">Learn More</a>
+          </article>
+          <article class="card tool-card">
+            <div class="card-icon" aria-hidden="true">🏭</div>
+            <h3 class="card-title">Production Master</h3>
+            <p class="card-description">Manufacturing tracking and SKU management for production operations.</p>
+            <a href="tools.html" class="card-link">Learn More</a>
+          </article>
+          <article class="card tool-card">
+            <div class="card-icon" aria-hidden="true">📊</div>
+            <h3 class="card-title">Sales Analytics</h3>
+            <p class="card-description">Channel performance tracking and sales trend analysis.</p>
+            <a href="tools.html" class="card-link">Learn More</a>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-content">&copy; 2026 Candidlabs - Internal Use Only</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

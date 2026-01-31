@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="About Candidlabs - The internal business platform for Candid Mixers beverage company operations.">
+  <title>About - Candidlabs</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-container">
+      <a href="index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
+
+      <ul class="nav-menu" role="menubar">
+        <li role="none"><a href="index.html" class="nav-link" role="menuitem">Home</a></li>
+        <li role="none"><a href="tools.html" class="nav-link" role="menuitem">Tools</a></li>
+        <li role="none"><a href="reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none"><a href="about.html" class="nav-link active" role="menuitem">About</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button
+          id="theme-toggle"
+          class="theme-toggle"
+          type="button"
+          aria-label="Switch to dark mode"
+        >
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+
+        <a href="#" class="btn btn-primary btn-login" aria-label="Login (coming soon)">Login</a>
+
+        <button
+          id="mobile-menu-toggle"
+          class="mobile-menu-toggle"
+          type="button"
+          aria-label="Toggle navigation menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu" role="menu" aria-label="Mobile navigation">
+      <ul>
+        <li><a href="index.html" role="menuitem">Home</a></li>
+        <li><a href="tools.html" role="menuitem">Tools</a></li>
+        <li><a href="reports.html" role="menuitem">Reports</a></li>
+        <li><a href="about.html" role="menuitem">About</a></li>
+        <li><a href="#" role="menuitem">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="container">
+        <h1 class="page-title">About Candidlabs</h1>
+        <p class="page-description">The operational backbone for Candid Mixers</p>
+      </div>
+    </header>
+
+    <!-- About Content Section -->
+    <section class="section" aria-labelledby="about-content-title">
+      <div class="container">
+        <h2 id="about-content-title" class="sr-only">About Candidlabs</h2>
+
+        <!-- What is Candidlabs -->
+        <div class="about-section">
+          <h2>What is Candidlabs?</h2>
+          <p>Candidlabs is the internal business platform for Candid Mixers, providing integrated tools for production management, sales tracking, and financial analysis. Built with Google Apps Script and modern web technologies, it serves as the operational backbone for our beverage manufacturing business.</p>
+        </div>
+
+        <!-- Core Capabilities -->
+        <div class="about-section">
+          <h2>Core Capabilities</h2>
+          <ul class="capabilities-list">
+            <li>Automated data pipelines for real-time data synchronization</li>
+            <li>Real-time operational dashboards for instant visibility</li>
+            <li>Financial analytics and reporting for informed decisions</li>
+            <li>Production tracking and SKU management for manufacturing control</li>
+            <li>Integration with Xero accounting for seamless financial workflows</li>
+          </ul>
+        </div>
+
+        <!-- Getting Started -->
+        <div class="about-section">
+          <h2>Getting Started</h2>
+          <p><span class="placeholder-text">TO BE CONFIGURED</span> - Contact your system administrator for access credentials and training materials.</p>
+        </div>
+
+        <!-- Support -->
+        <div class="about-section">
+          <h2>Support</h2>
+          <p>For technical support or feature requests, contact: <span class="placeholder-text">TO BE CONFIGURED</span></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-content">&copy; 2026 Candidlabs - Internal Use Only</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
