@@ -46,13 +46,16 @@
     }
 
     .sidebar-label {
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: 0.8rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: var(--color-text-secondary);
-      margin-bottom: 8px;
-      padding-left: 8px;
+      color: var(--color-text-primary);
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: rgba(59, 130, 246, 0.08);
+      border-radius: 6px;
+      border-left: 3px solid var(--color-primary);
     }
 
     .tool-btn {
@@ -1119,15 +1122,15 @@
           <aside class="tool-sidebar">
             <div class="sidebar-section">
               <div class="sidebar-label">Quick Tools</div>
-              <button class="tool-btn active" data-tool="scenarios" onclick="switchTool('scenarios')">Scenarios</button>
-              <button class="tool-btn" data-tool="volume" onclick="switchTool('volume')">Volume × Price</button>
-              <button class="tool-btn" data-tool="growth" onclick="switchTool('growth')">Growth %</button>
-              <button class="tool-btn" data-tool="reverse" onclick="switchTool('reverse')">Target EBITDA</button>
+              <button class="tool-btn active" data-tool="scenarios" type="button">Scenarios</button>
+              <button class="tool-btn" data-tool="volume" type="button">Volume × Price</button>
+              <button class="tool-btn" data-tool="growth" type="button">Growth %</button>
+              <button class="tool-btn" data-tool="reverse" type="button">Target EBITDA</button>
             </div>
             <div class="sidebar-section">
               <div class="sidebar-label">Detailed</div>
-              <button class="tool-btn" data-tool="detailed" onclick="switchTool('detailed')">Budget Planner</button>
-              <button class="tool-btn disabled" data-tool="monthly">Monthly Planner <span class="coming-soon">(Coming Soon)</span></button>
+              <button class="tool-btn" data-tool="detailed" type="button">Budget Planner</button>
+              <button class="tool-btn disabled" data-tool="monthly" type="button">Monthly Planner <span class="coming-soon">(Coming Soon)</span></button>
             </div>
           </aside>
 
