@@ -222,6 +222,220 @@
       height: 8px;
       background: var(--color-surface-elevated, #f8fafc);
     }
+
+    /* Detailed Planner Styles */
+    .detailed-divider {
+      border: none;
+      border-top: 2px dashed var(--color-border);
+      margin: 48px 0;
+    }
+
+    .detailed-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .detailed-header h2 {
+      color: var(--color-text-primary);
+      font-size: 1.5rem;
+    }
+
+    .export-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .export-btn {
+      padding: 10px 20px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .export-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .detailed-table-container {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+
+    .detailed-table {
+      width: 100%;
+      min-width: 900px;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .detailed-table th,
+    .detailed-table td {
+      padding: 12px 16px;
+      text-align: right;
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+
+    .detailed-table th:first-child,
+    .detailed-table td:first-child {
+      text-align: left;
+      position: sticky;
+      left: 0;
+      background: var(--color-surface);
+      z-index: 1;
+    }
+
+    .detailed-table thead th {
+      background: var(--color-surface-elevated, #f8fafc);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .detailed-table thead th:first-child {
+      z-index: 3;
+    }
+
+    .detailed-table .header-row {
+      background: var(--color-surface-elevated, #f8fafc);
+    }
+
+    .detailed-table .header-row td {
+      font-weight: 600;
+      color: var(--color-text-primary);
+      padding-top: 20px;
+    }
+
+    .detailed-table .subtotal-row {
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.05), transparent);
+      font-weight: 600;
+    }
+
+    .detailed-table .total-row {
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), transparent);
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .detailed-table .total-row td {
+      border-top: 2px solid var(--color-border);
+    }
+
+    .detailed-table .indent {
+      padding-left: 32px;
+    }
+
+    .detailed-table .value {
+      font-family: 'Monaco', 'Consolas', monospace;
+    }
+
+    .detailed-table .yoy-change {
+      font-size: 0.8rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .detailed-table .yoy-positive {
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .detailed-table .yoy-negative {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .detailed-table input[type="number"] {
+      width: 120px;
+      padding: 8px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 0.85rem;
+      text-align: right;
+    }
+
+    .detailed-table input[type="number"]:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .detailed-table input[type="number"]::-webkit-inner-spin-button {
+      opacity: 0.5;
+    }
+
+    .pct-of-rev {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+    }
+
+    .suggested-value {
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+    }
+
+    .custom-col {
+      background: rgba(59, 130, 246, 0.03);
+    }
+
+    .totals-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+      padding: 20px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+    }
+
+    .total-card {
+      text-align: center;
+      padding: 16px;
+    }
+
+    .total-card .label {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .total-card .amount {
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-family: 'Monaco', 'Consolas', monospace;
+      color: var(--color-text-primary);
+    }
+
+    .total-card .amount.positive {
+      color: #10b981;
+    }
+
+    .total-card .amount.negative {
+      color: #ef4444;
+    }
   </style>
 </head>
 <body>
@@ -413,6 +627,73 @@
           </div>
 
         </div>
+      </div>
+    </section>
+
+    <!-- Detailed Budget Planner -->
+    <section class="section">
+      <div class="container">
+        <hr class="detailed-divider">
+
+        <div class="detailed-header">
+          <div>
+            <h2>Detailed Budget Planner</h2>
+            <p style="color: var(--color-text-secondary); margin-top: 4px;">Line-by-line budget with custom inputs</p>
+          </div>
+          <div class="export-buttons">
+            <button class="export-btn" onclick="exportToCSV()">
+              <span>📊</span> Export CSV
+            </button>
+            <button class="export-btn" onclick="copyToClipboard()">
+              <span>📋</span> Copy Table
+            </button>
+          </div>
+        </div>
+
+        <div class="detailed-table-container">
+          <table class="detailed-table" id="detailed-budget-table">
+            <thead>
+              <tr>
+                <th style="min-width: 200px;">Line Item</th>
+                <th>FY2024 Actual</th>
+                <th>% of Rev</th>
+                <th>FY2025 YTD</th>
+                <th>YoY Trend</th>
+                <th>FY2026 Suggested</th>
+                <th class="custom-col">FY2026 Custom</th>
+                <th class="custom-col">Custom %</th>
+              </tr>
+            </thead>
+            <tbody id="detailed-body">
+              <!-- Populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Totals Summary Cards -->
+        <div class="totals-summary">
+          <div class="total-card">
+            <div class="label">FY2026 Revenue</div>
+            <div class="amount" id="summary-revenue">--</div>
+          </div>
+          <div class="total-card">
+            <div class="label">FY2026 COGS</div>
+            <div class="amount" id="summary-cogs">--</div>
+          </div>
+          <div class="total-card">
+            <div class="label">FY2026 Gross Profit</div>
+            <div class="amount" id="summary-gross">--</div>
+          </div>
+          <div class="total-card">
+            <div class="label">FY2026 Total OpEx</div>
+            <div class="amount" id="summary-opex">--</div>
+          </div>
+          <div class="total-card">
+            <div class="label">FY2026 Net Profit</div>
+            <div class="amount" id="summary-net">--</div>
+          </div>
+        </div>
+
       </div>
     </section>
   </main>

@@ -178,6 +178,199 @@ function loadScenario(scenario) {
   updateBudgetDisplay();
 }
 
+// ===============================
+// DETAILED BUDGET PLANNER
+// ===============================
+
+// Store custom values
+const customBudget = {};
+
+// Calculate suggested FY2026 value based on historical trend
+function calculateSuggested(item) {
+  const fy24 = item.fy2024;
+
+  // If it's a header or zero, return 0
+  if (item.isHeader || fy24 === 0) return 0;
+
+  // Annualize FY2025 YTD (Q1 = 3 months)
+  const fy25Annualized = item.fy2025_ytd * 4;
+
+  // Calculate growth rate
+  let growthRate = 0;
+  if (fy24 > 0 && fy25Annualized > 0) {
+    growthRate = (fy25Annualized - fy24) / fy24;
+  }
+
+  // For revenue, use the scenario assumption
+  if (item.category === 'revenue' && item.name === 'Sales') {
+    return Math.round(fy24 * (1 + currentAssumptions.revenueGrowthPct / 100));
+  }
+
+  // For COGS, use the COGS ratio assumption
+  if (item.category === 'cogs' && item.name === 'Cost of Goods Sold') {
+    const suggestedRevenue = historicalData.fy2024.revenue * (1 + currentAssumptions.revenueGrowthPct / 100);
+    return Math.round(suggestedRevenue * (currentAssumptions.cogsRatioPct / 100));
+  }
+
+  // For expenses, apply a reasonable growth (cap at 50% growth, min -20%)
+  const cappedGrowth = Math.max(-0.2, Math.min(0.5, growthRate));
+
+  // Default: grow by 5-10% or follow capped trend
+  const defaultGrowth = item.category === 'expense' ? 0.05 : cappedGrowth;
+  const effectiveGrowth = fy25Annualized > 0 ? cappedGrowth : defaultGrowth;
+
+  return Math.round(fy24 * (1 + effectiveGrowth));
+}
+
+// Calculate % of revenue
+function calcPctOfRevenue(amount, revenue) {
+  if (!revenue || revenue === 0) return 0;
+  return (amount / revenue) * 100;
+}
+
+// Populate detailed budget table
+function populateDetailedTable() {
+  const tbody = document.getElementById('detailed-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+  const revenue2024 = historicalData.fy2024.revenue;
+  const suggestedRevenue = calculateSuggested(detailedLineItems.find(i => i.name === 'Sales'));
+
+  detailedLineItems.forEach((item, index) => {
+    const tr = document.createElement('tr');
+
+    // Add row classes
+    if (item.isHeader) tr.classList.add('header-row');
+    if (item.category === 'subtotal') tr.classList.add('subtotal-row');
+    if (item.category === 'total') tr.classList.add('total-row');
+
+    const suggested = calculateSuggested(item);
+    const customValue = customBudget[item.name] !== undefined ? customBudget[item.name] : suggested;
+
+    // YoY calculation (FY25 annualized vs FY24)
+    const fy25Ann = item.fy2025_ytd * 4;
+    let yoyChange = 0;
+    let yoyDisplay = '-';
+    if (item.fy2024 > 0 && fy25Ann > 0) {
+      yoyChange = ((fy25Ann - item.fy2024) / item.fy2024) * 100;
+      const sign = yoyChange >= 0 ? '+' : '';
+      yoyDisplay = `${sign}${yoyChange.toFixed(0)}%`;
+    }
+
+    // % of revenue
+    const pctOfRev2024 = calcPctOfRevenue(item.fy2024, revenue2024);
+    const pctOfRevCustom = calcPctOfRevenue(customValue, suggestedRevenue);
+
+    tr.innerHTML = `
+      <td class="${item.isHeader ? '' : 'indent'}">${item.name}</td>
+      <td class="value">${item.isHeader ? '' : formatIDR(item.fy2024)}</td>
+      <td class="pct-of-rev">${item.isHeader || item.category === 'revenue' ? '' : formatPct(pctOfRev2024)}</td>
+      <td class="value">${item.isHeader ? '' : formatIDR(item.fy2025_ytd)}</td>
+      <td>${item.isHeader ? '' : `<span class="yoy-change ${yoyChange >= 0 ? 'yoy-positive' : 'yoy-negative'}">${yoyDisplay}</span>`}</td>
+      <td class="value suggested-value">${item.isHeader ? '' : formatIDR(suggested)}</td>
+      <td class="custom-col">
+        ${item.editable ? `<input type="number" id="custom-${index}" value="${Math.round(customValue)}" onchange="updateCustomValue('${item.name}', this.value)">` :
+          (item.isHeader ? '' : `<span class="value">${formatIDR(customValue)}</span>`)}
+      </td>
+      <td class="custom-col pct-of-rev">${item.isHeader || item.category === 'revenue' ? '' : formatPct(pctOfRevCustom)}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  updateDetailedTotals();
+}
+
+// Update custom value
+function updateCustomValue(name, value) {
+  customBudget[name] = parseFloat(value) || 0;
+  updateDetailedTotals();
+}
+
+// Calculate and update totals
+function updateDetailedTotals() {
+  // Get custom or suggested values
+  const getValue = (name) => {
+    const item = detailedLineItems.find(i => i.name === name);
+    if (!item) return 0;
+    return customBudget[name] !== undefined ? customBudget[name] : calculateSuggested(item);
+  };
+
+  // Revenue
+  const revenue = getValue('Sales');
+
+  // COGS
+  const cogs = getValue('Cost of Goods Sold');
+
+  // Gross Profit
+  const grossProfit = revenue - cogs;
+
+  // Sum all expenses
+  let totalOpex = 0;
+  detailedLineItems.forEach(item => {
+    if (item.category === 'expense' && item.editable) {
+      totalOpex += customBudget[item.name] !== undefined ? customBudget[item.name] : calculateSuggested(item);
+    }
+  });
+
+  // Other income
+  const otherIncome = getValue('Interest Income');
+
+  // Net profit
+  const netProfit = grossProfit - totalOpex + otherIncome;
+
+  // Update summary cards
+  document.getElementById('summary-revenue').textContent = formatIDR(revenue);
+  document.getElementById('summary-cogs').textContent = formatIDR(cogs);
+  document.getElementById('summary-gross').textContent = formatIDR(grossProfit);
+  document.getElementById('summary-opex').textContent = formatIDR(totalOpex);
+
+  const netEl = document.getElementById('summary-net');
+  netEl.textContent = formatIDR(netProfit);
+  netEl.className = 'amount ' + (netProfit >= 0 ? 'positive' : 'negative');
+}
+
+// Export to CSV
+function exportToCSV() {
+  const suggestedRevenue = calculateSuggested(detailedLineItems.find(i => i.name === 'Sales'));
+
+  let csv = 'Line Item,FY2024 Actual,% of Rev,FY2025 YTD,FY2026 Budget,Budget % of Rev\n';
+
+  detailedLineItems.forEach(item => {
+    if (item.isHeader) {
+      csv += `\n${item.name},,,,\n`;
+    } else {
+      const customValue = customBudget[item.name] !== undefined ? customBudget[item.name] : calculateSuggested(item);
+      const pct2024 = calcPctOfRevenue(item.fy2024, historicalData.fy2024.revenue);
+      const pctBudget = calcPctOfRevenue(customValue, suggestedRevenue);
+
+      csv += `${item.name},${item.fy2024},${pct2024.toFixed(1)}%,${item.fy2025_ytd},${Math.round(customValue)},${pctBudget.toFixed(1)}%\n`;
+    }
+  });
+
+  // Download
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Candid_Budget_FY2026.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Copy table to clipboard
+function copyToClipboard() {
+  const table = document.getElementById('detailed-budget-table');
+  const range = document.createRange();
+  range.selectNode(table);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+  document.execCommand('copy');
+  window.getSelection().removeAllRanges();
+  alert('Table copied to clipboard! Paste into Excel or Google Sheets.');
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
   // Populate FY24 actuals
@@ -192,4 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initSliders();
   updateBudgetDisplay();
+
+  // Initialize detailed planner
+  populateDetailedTable();
 });
