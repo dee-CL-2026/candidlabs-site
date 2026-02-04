@@ -32,6 +32,11 @@
 - [ ] Scorecards - decide on appropriate metrics to display
 - [ ] Configurable Quick Access for logged-in users
 
+## Phase 6: Tools Page Overhaul
+- [ ] Review and reorganize tools - separate team-level vs system/admin tools
+- [ ] Define which tools are visible to all staff vs admin only
+- [ ] Update tools page layout and navigation
+
 ---
 
 *Last updated: 2026-02-04*
