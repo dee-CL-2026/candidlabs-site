@@ -143,7 +143,7 @@
     }
 
     .budget-table thead th {
-      background: var(--color-surface-elevated, #f8fafc);
+      background: transparent;
       font-weight: 600;
       color: var(--color-text-secondary);
       font-size: 0.85rem;
@@ -152,7 +152,7 @@
     }
 
     .budget-table tbody tr:hover {
-      background: var(--color-surface-elevated, #f8fafc);
+      background: rgba(255, 255, 255, 0.03);
     }
 
     .budget-table .row-label {
@@ -168,7 +168,7 @@
 
     .budget-table .row-total {
       font-weight: 600;
-      background: var(--color-surface-elevated, #f8fafc);
+      background: transparent;
     }
 
     .budget-table .row-total td {
@@ -219,8 +219,8 @@
     }
 
     .section-divider {
-      height: 8px;
-      background: var(--color-surface-elevated, #f8fafc);
+      height: 1px;
+      background: var(--color-border);
     }
 
     /* Detailed Planner Styles */
@@ -300,7 +300,7 @@
     }
 
     .detailed-table thead th {
-      background: var(--color-surface-elevated, #f8fafc);
+      background: var(--color-surface);
       font-weight: 600;
       color: var(--color-text-secondary);
       font-size: 0.8rem;
@@ -309,6 +309,7 @@
       position: sticky;
       top: 0;
       z-index: 2;
+      border-bottom: 2px solid var(--color-border);
     }
 
     .detailed-table thead th:first-child {
@@ -316,13 +317,14 @@
     }
 
     .detailed-table .header-row {
-      background: var(--color-surface-elevated, #f8fafc);
+      background: transparent;
     }
 
     .detailed-table .header-row td {
       font-weight: 600;
-      color: var(--color-text-primary);
+      color: var(--color-primary);
       padding-top: 20px;
+      border-top: 1px solid var(--color-border);
     }
 
     .detailed-table .subtotal-row {
@@ -519,10 +521,11 @@
     }
 
     .sku-table thead th {
-      background: var(--color-surface-elevated, #f8fafc);
+      background: transparent;
       font-weight: 600;
       font-size: 0.85rem;
       color: var(--color-text-secondary);
+      border-bottom: 2px solid var(--color-border);
     }
 
     .sku-table input[type="number"] {
@@ -537,7 +540,7 @@
     }
 
     .sku-table .total-row {
-      background: var(--color-surface-elevated, #f8fafc);
+      background: transparent;
       font-weight: 600;
     }
 
@@ -637,7 +640,8 @@
     }
 
     .result-card {
-      background: var(--color-surface-elevated, #f8fafc);
+      background: rgba(59, 130, 246, 0.05);
+      border: 1px solid var(--color-border);
       border-radius: 12px;
       padding: 24px;
       text-align: center;
