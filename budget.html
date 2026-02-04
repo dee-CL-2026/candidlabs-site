@@ -9,34 +9,119 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <style>
-    .budget-layout {
+    /* Main Tool Layout - Sidebar + Content */
+    .tool-layout {
       display: grid;
-      grid-template-columns: 320px 1fr;
+      grid-template-columns: 220px 1fr;
       gap: 24px;
       max-width: 1400px;
       margin: 0 auto;
     }
 
     @media (max-width: 900px) {
-      .budget-layout {
+      .tool-layout {
         grid-template-columns: 1fr;
+      }
+      .tool-sidebar {
+        position: static !important;
       }
     }
 
-    .assumptions-panel {
+    .tool-sidebar {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: 12px;
-      padding: 24px;
+      padding: 16px;
       height: fit-content;
       position: sticky;
       top: 100px;
     }
 
-    .assumptions-panel h3 {
+    .sidebar-section {
       margin-bottom: 20px;
+    }
+
+    .sidebar-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .sidebar-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--color-text-secondary);
+      margin-bottom: 8px;
+      padding-left: 8px;
+    }
+
+    .tool-btn {
+      display: block;
+      width: 100%;
+      padding: 12px 14px;
+      margin-bottom: 6px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tool-btn:hover {
+      background: rgba(59, 130, 246, 0.05);
       color: var(--color-text-primary);
-      font-size: 1.1rem;
+    }
+
+    .tool-btn.active {
+      background: var(--color-primary);
+      color: white;
+      border-color: var(--color-primary);
+    }
+
+    .tool-btn.disabled {
+      color: var(--color-text-muted);
+      cursor: default;
+    }
+
+    .tool-btn.disabled:hover {
+      background: transparent;
+      color: var(--color-text-muted);
+    }
+
+    .tool-btn .coming-soon {
+      font-size: 0.7rem;
+      opacity: 0.7;
+    }
+
+    .tool-content {
+      min-height: 500px;
+    }
+
+    .tool-panel {
+      display: none;
+    }
+
+    .tool-panel.active {
+      display: block;
+    }
+
+    .tool-panel-header {
+      margin-bottom: 20px;
+    }
+
+    .tool-panel-header h2 {
+      color: var(--color-text-primary);
+      font-size: 1.4rem;
+      margin-bottom: 4px;
+    }
+
+    .tool-panel-header p {
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
     }
 
     .assumption-group {
@@ -1025,385 +1110,363 @@
       </div>
     </header>
 
-    <!-- Budget Content -->
+    <!-- Budget Content - Sidebar Layout -->
     <section class="section">
       <div class="container">
+        <div class="tool-layout">
 
-        <!-- Scenario Comparison Table -->
-        <div class="budget-table-container" style="margin-bottom: 24px;">
-          <table class="budget-table scenario-table">
-            <thead>
-              <tr>
-                <th>P&L Line Item</th>
-                <th>FY2024</th>
-                <th>FY2025</th>
-                <th class="scenario-col conservative">Conservative</th>
-                <th class="scenario-col base">Base</th>
-                <th class="scenario-col stretch">Stretch</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="highlight-row">
-                <td class="row-label">Revenue</td>
-                <td class="value" id="fy24-revenue">--</td>
-                <td class="value" id="fy25-revenue">--</td>
-                <td class="value scenario-col conservative" id="cons-revenue">--</td>
-                <td class="value scenario-col base" id="base-revenue">--</td>
-                <td class="value scenario-col stretch" id="str-revenue">--</td>
-              </tr>
-              <tr>
-                <td class="row-label">Cost of Goods Sold</td>
-                <td class="value" id="fy24-cogs">--</td>
-                <td class="value" id="fy25-cogs">--</td>
-                <td class="value scenario-col conservative" id="cons-cogs">--</td>
-                <td class="value scenario-col base" id="base-cogs">--</td>
-                <td class="value scenario-col stretch" id="str-cogs">--</td>
-              </tr>
-              <tr class="row-total">
-                <td class="row-label">Gross Profit</td>
-                <td class="value" id="fy24-gross">--</td>
-                <td class="value" id="fy25-gross">--</td>
-                <td class="value scenario-col conservative" id="cons-gross">--</td>
-                <td class="value scenario-col base" id="base-gross">--</td>
-                <td class="value scenario-col stretch" id="str-gross">--</td>
-              </tr>
-              <tr class="section-divider"><td colspan="6"></td></tr>
-              <tr>
-                <td class="row-label">Operating Expenses</td>
-                <td class="value" id="fy24-opex">--</td>
-                <td class="value" id="fy25-opex">--</td>
-                <td class="value scenario-col conservative" id="cons-opex">--</td>
-                <td class="value scenario-col base" id="base-opex">--</td>
-                <td class="value scenario-col stretch" id="str-opex">--</td>
-              </tr>
-              <tr class="section-divider"><td colspan="6"></td></tr>
-              <tr class="row-total highlight-row">
-                <td class="row-label">Net Profit</td>
-                <td class="value" id="fy24-ebitda">--</td>
-                <td class="value" id="fy25-ebitda">--</td>
-                <td class="value scenario-col conservative" id="cons-net">--</td>
-                <td class="value scenario-col base" id="base-net">--</td>
-                <td class="value scenario-col stretch" id="str-net">--</td>
-              </tr>
-              <tr>
-                <td class="row-label" style="font-size: 0.85rem; color: var(--color-text-secondary);">Net Margin %</td>
-                <td class="pct" id="fy24-margin">--</td>
-                <td class="pct" id="fy25-margin">--</td>
-                <td class="pct scenario-col conservative" id="cons-margin">--</td>
-                <td class="pct scenario-col base" id="base-margin">--</td>
-                <td class="pct scenario-col stretch" id="str-margin">--</td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="data-source">
-            Source: PKF Indonesia / Xero P&L Reports | Full Year Actuals
-          </div>
-        </div>
-
-        <!-- Scenario Assumptions Editor -->
-        <div class="assumptions-editor">
-          <h3 style="margin-bottom: 16px; color: var(--color-text-primary);">Customize Scenario Assumptions</h3>
-          <p style="color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 20px;">Define what Conservative, Base, and Stretch mean for your business. Changes update the table above in real-time.</p>
-
-          <div class="assumptions-grid">
-            <div class="assumption-header"></div>
-            <div class="assumption-header conservative">Conservative</div>
-            <div class="assumption-header base">Base</div>
-            <div class="assumption-header stretch">Stretch</div>
-
-            <div class="assumption-row-label">Revenue Growth %</div>
-            <input type="number" id="cons-growth-input" class="scenario-input conservative" value="10" onchange="updateAllScenarios()">
-            <input type="number" id="base-growth-input" class="scenario-input base" value="20" onchange="updateAllScenarios()">
-            <input type="number" id="str-growth-input" class="scenario-input stretch" value="50" onchange="updateAllScenarios()">
-
-            <div class="assumption-row-label">COGS % of Revenue</div>
-            <input type="number" id="cons-cogs-input" class="scenario-input conservative" value="50" onchange="updateAllScenarios()">
-            <input type="number" id="base-cogs-input" class="scenario-input base" value="48" onchange="updateAllScenarios()">
-            <input type="number" id="str-cogs-input" class="scenario-input stretch" value="45" onchange="updateAllScenarios()">
-
-            <div class="assumption-row-label">OpEx Growth %</div>
-            <input type="number" id="cons-opex-input" class="scenario-input conservative" value="5" onchange="updateAllScenarios()">
-            <input type="number" id="base-opex-input" class="scenario-input base" value="10" onchange="updateAllScenarios()">
-            <input type="number" id="str-opex-input" class="scenario-input stretch" value="15" onchange="updateAllScenarios()">
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- Detailed Budget Planner -->
-    <section class="section">
-      <div class="container">
-        <hr class="detailed-divider">
-
-        <div class="detailed-header">
-          <div>
-            <h2>Detailed Budget Planner</h2>
-            <p style="color: var(--color-text-secondary); margin-top: 4px;">Line-by-line budget with custom inputs</p>
-          </div>
-          <div class="export-buttons">
-            <button class="export-btn" onclick="exportToCSV()">
-              <span>📊</span> Export CSV
-            </button>
-            <button class="export-btn" onclick="copyToClipboard()">
-              <span>📋</span> Copy Table
-            </button>
-          </div>
-        </div>
-
-        <div class="detailed-table-container">
-          <table class="detailed-table" id="detailed-budget-table">
-            <thead>
-              <tr>
-                <th style="min-width: 200px;">Line Item</th>
-                <th>FY2024 Actual</th>
-                <th>% of Rev</th>
-                <th>FY2025 Actual</th>
-                <th>YoY Trend</th>
-                <th>FY2026 Suggested</th>
-                <th class="custom-col">FY2026 Custom</th>
-                <th class="custom-col">Custom %</th>
-              </tr>
-            </thead>
-            <tbody id="detailed-body">
-              <!-- Populated by JavaScript -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Totals Summary Cards -->
-        <div class="totals-summary">
-          <div class="total-card">
-            <div class="label">FY2026 Revenue</div>
-            <div class="amount" id="summary-revenue">--</div>
-          </div>
-          <div class="total-card">
-            <div class="label">FY2026 COGS</div>
-            <div class="amount" id="summary-cogs">--</div>
-          </div>
-          <div class="total-card">
-            <div class="label">FY2026 Gross Profit</div>
-            <div class="amount" id="summary-gross">--</div>
-          </div>
-          <div class="total-card">
-            <div class="label">FY2026 Total OpEx</div>
-            <div class="amount" id="summary-opex">--</div>
-          </div>
-          <div class="total-card">
-            <div class="label">FY2026 Net Profit</div>
-            <div class="amount" id="summary-net">--</div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- Revenue Builder Section -->
-    <section class="section">
-      <div class="container">
-        <hr class="detailed-divider">
-
-        <div class="detailed-header">
-          <div>
-            <h2>Revenue Builder</h2>
-            <p style="color: var(--color-text-secondary); margin-top: 4px;">Build targets from volumes, growth, or work backwards from EBITDA</p>
-          </div>
-        </div>
-
-        <!-- Mode Selector -->
-        <div class="mode-selector">
-          <button class="mode-btn active" data-mode="volume" onclick="setBuilderMode('volume')">
-            <span>📦</span> Volume × Price
-          </button>
-          <button class="mode-btn" data-mode="growth" onclick="setBuilderMode('growth')">
-            <span>📈</span> Growth %
-          </button>
-          <button class="mode-btn" data-mode="reverse" onclick="setBuilderMode('reverse')">
-            <span>🎯</span> Target EBITDA
-          </button>
-        </div>
-
-        <!-- Mode 1: Volume × Price Builder -->
-        <div id="volume-mode" class="builder-mode active">
-          <div class="builder-panel">
-            <h3>SKU Volume Projections</h3>
-            <p class="panel-description">Enter projected volumes per SKU for FY2026. Prices are editable.</p>
-
-            <div class="price-toggle">
-              <span class="toggle-label">Show prices per:</span>
-              <button class="toggle-btn active" data-unit="can" onclick="setPriceUnit('can')">Can</button>
-              <button class="toggle-btn" data-unit="case" onclick="setPriceUnit('case')">Case (24)</button>
+          <!-- Tool Sidebar -->
+          <aside class="tool-sidebar">
+            <div class="sidebar-section">
+              <div class="sidebar-label">Quick Tools</div>
+              <button class="tool-btn active" data-tool="scenarios" onclick="switchTool('scenarios')">Scenarios</button>
+              <button class="tool-btn" data-tool="volume" onclick="switchTool('volume')">Volume × Price</button>
+              <button class="tool-btn" data-tool="growth" onclick="switchTool('growth')">Growth %</button>
+              <button class="tool-btn" data-tool="reverse" onclick="switchTool('reverse')">Target EBITDA</button>
             </div>
-
-            <table class="sku-table">
-              <thead>
-                <tr>
-                  <th>SKU</th>
-                  <th id="price-header">Price/Can (IDR)</th>
-                  <th id="volume-header">FY2026 Cases</th>
-                  <th>FY2026 Revenue</th>
-                </tr>
-              </thead>
-              <tbody id="sku-table-body">
-                <!-- Populated by JS -->
-              </tbody>
-              <tfoot>
-                <tr class="total-row">
-                  <td colspan="2"><strong>Total Revenue</strong></td>
-                  <td id="total-cases">0</td>
-                  <td id="total-sku-revenue">IDR 0</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-
-        <!-- Mode 2: Growth % Builder -->
-        <div id="growth-mode" class="builder-mode">
-          <div class="growth-layout">
-            <!-- Inputs Table -->
-            <div class="builder-panel">
-              <h3>Growth-Based Projections</h3>
-              <p class="panel-description">Apply growth rates to FY2025 actuals</p>
-
-              <table class="growth-table">
-                <thead>
-                  <tr>
-                    <th>Metric</th>
-                    <th>FY2025</th>
-                    <th>Change</th>
-                    <th>FY2026</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Revenue</td>
-                    <td class="value">5.52B</td>
-                    <td><input type="number" id="growth-revenue-pct" value="15" onchange="calculateGrowthTargets()"><span class="input-suffix">%</span></td>
-                    <td class="value result" id="growth-revenue-target">--</td>
-                  </tr>
-                  <tr>
-                    <td>COGS</td>
-                    <td class="value">45.2%</td>
-                    <td><input type="number" id="growth-cogs-pct" value="45" onchange="calculateGrowthTargets()"><span class="input-suffix">%</span></td>
-                    <td class="value result" id="growth-cogs-target">--</td>
-                  </tr>
-                  <tr>
-                    <td>Gross Profit</td>
-                    <td class="value">3.02B</td>
-                    <td class="computed" id="growth-gross-change">--</td>
-                    <td class="value result" id="growth-gross-target">--</td>
-                  </tr>
-                  <tr>
-                    <td>OpEx</td>
-                    <td class="value">2.53B</td>
-                    <td><input type="number" id="growth-opex-pct" value="10" onchange="calculateGrowthTargets()"><span class="input-suffix">%</span></td>
-                    <td class="value result" id="growth-opex-target">--</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="sidebar-section">
+              <div class="sidebar-label">Detailed</div>
+              <button class="tool-btn" data-tool="detailed" onclick="switchTool('detailed')">Budget Planner</button>
+              <button class="tool-btn disabled" data-tool="monthly">Monthly Planner <span class="coming-soon">(Coming Soon)</span></button>
             </div>
+          </aside>
 
-            <!-- Results Panel -->
-            <div class="growth-results">
-              <div class="result-card-full">
-                <div class="result-main">
-                  <div class="result-label">FY2026 Net Profit</div>
-                  <div class="result-value" id="growth-net-profit">--</div>
+          <!-- Tool Content Area -->
+          <div class="tool-content">
+
+            <!-- Tool 1: Scenarios -->
+            <div id="tool-scenarios" class="tool-panel active">
+              <div class="tool-panel-header">
+                <h2>Scenario Comparison</h2>
+                <p>Compare Conservative, Base, and Stretch projections</p>
+              </div>
+
+              <div class="budget-table-container" style="margin-bottom: 24px;">
+                <table class="budget-table scenario-table">
+                  <thead>
+                    <tr>
+                      <th>P&L Line Item</th>
+                      <th>FY2024</th>
+                      <th>FY2025</th>
+                      <th class="scenario-col conservative">Conservative</th>
+                      <th class="scenario-col base">Base</th>
+                      <th class="scenario-col stretch">Stretch</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="highlight-row">
+                      <td class="row-label">Revenue</td>
+                      <td class="value" id="fy24-revenue">--</td>
+                      <td class="value" id="fy25-revenue">--</td>
+                      <td class="value scenario-col conservative" id="cons-revenue">--</td>
+                      <td class="value scenario-col base" id="base-revenue">--</td>
+                      <td class="value scenario-col stretch" id="str-revenue">--</td>
+                    </tr>
+                    <tr>
+                      <td class="row-label">Cost of Goods Sold</td>
+                      <td class="value" id="fy24-cogs">--</td>
+                      <td class="value" id="fy25-cogs">--</td>
+                      <td class="value scenario-col conservative" id="cons-cogs">--</td>
+                      <td class="value scenario-col base" id="base-cogs">--</td>
+                      <td class="value scenario-col stretch" id="str-cogs">--</td>
+                    </tr>
+                    <tr class="row-total">
+                      <td class="row-label">Gross Profit</td>
+                      <td class="value" id="fy24-gross">--</td>
+                      <td class="value" id="fy25-gross">--</td>
+                      <td class="value scenario-col conservative" id="cons-gross">--</td>
+                      <td class="value scenario-col base" id="base-gross">--</td>
+                      <td class="value scenario-col stretch" id="str-gross">--</td>
+                    </tr>
+                    <tr class="section-divider"><td colspan="6"></td></tr>
+                    <tr>
+                      <td class="row-label">Operating Expenses</td>
+                      <td class="value" id="fy24-opex">--</td>
+                      <td class="value" id="fy25-opex">--</td>
+                      <td class="value scenario-col conservative" id="cons-opex">--</td>
+                      <td class="value scenario-col base" id="base-opex">--</td>
+                      <td class="value scenario-col stretch" id="str-opex">--</td>
+                    </tr>
+                    <tr class="section-divider"><td colspan="6"></td></tr>
+                    <tr class="row-total highlight-row">
+                      <td class="row-label">Net Profit</td>
+                      <td class="value" id="fy24-ebitda">--</td>
+                      <td class="value" id="fy25-ebitda">--</td>
+                      <td class="value scenario-col conservative" id="cons-net">--</td>
+                      <td class="value scenario-col base" id="base-net">--</td>
+                      <td class="value scenario-col stretch" id="str-net">--</td>
+                    </tr>
+                    <tr>
+                      <td class="row-label" style="font-size: 0.85rem; color: var(--color-text-secondary);">Net Margin %</td>
+                      <td class="pct" id="fy24-margin">--</td>
+                      <td class="pct" id="fy25-margin">--</td>
+                      <td class="pct scenario-col conservative" id="cons-margin">--</td>
+                      <td class="pct scenario-col base" id="base-margin">--</td>
+                      <td class="pct scenario-col stretch" id="str-margin">--</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="data-source">Source: PKF Indonesia / Xero P&L Reports | Full Year Actuals</div>
+              </div>
+
+              <div class="assumptions-editor">
+                <h3 style="margin-bottom: 16px; color: var(--color-text-primary);">Customize Assumptions</h3>
+                <div class="assumptions-grid">
+                  <div class="assumption-header"></div>
+                  <div class="assumption-header conservative">Conservative</div>
+                  <div class="assumption-header base">Base</div>
+                  <div class="assumption-header stretch">Stretch</div>
+                  <div class="assumption-row-label">Revenue Growth %</div>
+                  <input type="number" id="cons-growth-input" class="scenario-input conservative" value="10" onchange="updateAllScenarios()">
+                  <input type="number" id="base-growth-input" class="scenario-input base" value="20" onchange="updateAllScenarios()">
+                  <input type="number" id="str-growth-input" class="scenario-input stretch" value="50" onchange="updateAllScenarios()">
+                  <div class="assumption-row-label">COGS % of Revenue</div>
+                  <input type="number" id="cons-cogs-input" class="scenario-input conservative" value="50" onchange="updateAllScenarios()">
+                  <input type="number" id="base-cogs-input" class="scenario-input base" value="48" onchange="updateAllScenarios()">
+                  <input type="number" id="str-cogs-input" class="scenario-input stretch" value="45" onchange="updateAllScenarios()">
+                  <div class="assumption-row-label">OpEx Growth %</div>
+                  <input type="number" id="cons-opex-input" class="scenario-input conservative" value="5" onchange="updateAllScenarios()">
+                  <input type="number" id="base-opex-input" class="scenario-input base" value="10" onchange="updateAllScenarios()">
+                  <input type="number" id="str-opex-input" class="scenario-input stretch" value="15" onchange="updateAllScenarios()">
                 </div>
-                <div class="result-divider"></div>
-                <div class="result-grid">
-                  <div class="result-item">
-                    <span class="item-label">Gross Margin</span>
-                    <span class="item-value" id="growth-gross-margin">--</span>
-                  </div>
-                  <div class="result-item">
-                    <span class="item-label">Net Margin</span>
-                    <span class="item-value" id="growth-net-margin-pct">--</span>
-                  </div>
-                  <div class="result-item">
-                    <span class="item-label">vs FY2025</span>
-                    <span class="item-value" id="growth-vs-fy25">--</span>
-                  </div>
-                  <div class="result-item">
-                    <span class="item-label">Cases Needed*</span>
-                    <span class="item-value" id="growth-rev-per-case">--</span>
-                  </div>
-                </div>
-                <p class="result-note">*Based on avg 90K/case</p>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Mode 3: Reverse Calculator (Target EBITDA) -->
-        <div id="reverse-mode" class="builder-mode">
-          <div class="reverse-layout">
-            <!-- Inputs Panel -->
-            <div class="builder-panel">
-              <h3>Reverse Calculator</h3>
-              <p class="panel-description">Enter your targets to find required revenue</p>
+            <!-- Tool 2: Volume × Price -->
+            <div id="tool-volume" class="tool-panel">
+              <div class="tool-panel-header">
+                <h2>Volume × Price</h2>
+                <p>Project revenue from SKU volumes and pricing</p>
+              </div>
 
-              <table class="growth-table">
-                <thead>
-                  <tr>
-                    <th>Metric</th>
-                    <th>FY2025</th>
-                    <th>Target</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Net Profit</td>
-                    <td class="value">445M</td>
-                    <td><input type="number" id="target-profit" value="1000000000" onchange="calculateReverseRevenue()"></td>
-                  </tr>
-                  <tr>
-                    <td>Total OpEx</td>
-                    <td class="value">2.53B</td>
-                    <td><input type="number" id="planned-opex" value="2800000000" onchange="calculateReverseRevenue()"></td>
-                  </tr>
-                  <tr>
-                    <td>Gross Margin</td>
-                    <td class="value">54.8%</td>
-                    <td><input type="number" id="target-gm-pct" value="50" onchange="calculateReverseRevenue()"><span class="input-suffix">%</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Results Panel -->
-            <div class="growth-results">
-              <div class="result-card-full">
-                <div class="result-main">
-                  <div class="result-label">Required Revenue</div>
-                  <div class="result-value" id="required-revenue">--</div>
+              <div class="builder-panel">
+                <div class="price-toggle">
+                  <span class="toggle-label">Show prices per:</span>
+                  <button class="toggle-btn active" data-unit="can" onclick="setPriceUnit('can')">Can</button>
+                  <button class="toggle-btn" data-unit="case" onclick="setPriceUnit('case')">Case (24)</button>
                 </div>
-                <div class="result-divider"></div>
-                <div class="result-grid">
-                  <div class="result-item">
-                    <span class="item-label">vs FY2025</span>
-                    <span class="item-value" id="required-growth">--</span>
-                  </div>
-                  <div class="result-item">
-                    <span class="item-label">Gross Profit</span>
-                    <span class="item-value" id="required-gross">--</span>
-                  </div>
-                  <div class="result-item">
-                    <span class="item-label">COGS</span>
-                    <span class="item-value" id="required-cogs">--</span>
-                  </div>
-                  <div class="result-item">
-                    <span class="item-label">Cases Needed*</span>
-                    <span class="item-value" id="reverse-cases">--</span>
-                  </div>
-                </div>
-                <p class="result-note">*Based on avg 90K/case</p>
+                <table class="sku-table">
+                  <thead>
+                    <tr>
+                      <th>SKU</th>
+                      <th id="price-header">Price/Can (IDR)</th>
+                      <th>FY2026 Cases</th>
+                      <th>FY2026 Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sku-table-body"></tbody>
+                  <tfoot>
+                    <tr class="total-row">
+                      <td colspan="2"><strong>Total Revenue</strong></td>
+                      <td id="total-cases">0</td>
+                      <td id="total-sku-revenue">IDR 0</td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
             </div>
+
+            <!-- Tool 3: Growth % -->
+            <div id="tool-growth" class="tool-panel">
+              <div class="tool-panel-header">
+                <h2>Growth %</h2>
+                <p>Apply growth rates to FY2025 actuals</p>
+              </div>
+
+              <div class="growth-layout">
+                <div class="builder-panel">
+                  <table class="growth-table">
+                    <thead>
+                      <tr>
+                        <th>Metric</th>
+                        <th>FY2025</th>
+                        <th>Change</th>
+                        <th>FY2026</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Revenue</td>
+                        <td class="value">5.52B</td>
+                        <td><input type="number" id="growth-revenue-pct" value="15" onchange="calculateGrowthTargets()"><span class="input-suffix">%</span></td>
+                        <td class="value result" id="growth-revenue-target">--</td>
+                      </tr>
+                      <tr>
+                        <td>COGS</td>
+                        <td class="value">45.2%</td>
+                        <td><input type="number" id="growth-cogs-pct" value="45" onchange="calculateGrowthTargets()"><span class="input-suffix">%</span></td>
+                        <td class="value result" id="growth-cogs-target">--</td>
+                      </tr>
+                      <tr>
+                        <td>Gross Profit</td>
+                        <td class="value">3.02B</td>
+                        <td class="computed" id="growth-gross-change">--</td>
+                        <td class="value result" id="growth-gross-target">--</td>
+                      </tr>
+                      <tr>
+                        <td>OpEx</td>
+                        <td class="value">2.53B</td>
+                        <td><input type="number" id="growth-opex-pct" value="10" onchange="calculateGrowthTargets()"><span class="input-suffix">%</span></td>
+                        <td class="value result" id="growth-opex-target">--</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="growth-results">
+                  <div class="result-card-full">
+                    <div class="result-main">
+                      <div class="result-label">FY2026 Net Profit</div>
+                      <div class="result-value" id="growth-net-profit">--</div>
+                    </div>
+                    <div class="result-divider"></div>
+                    <div class="result-grid">
+                      <div class="result-item">
+                        <span class="item-label">Gross Margin</span>
+                        <span class="item-value" id="growth-gross-margin">--</span>
+                      </div>
+                      <div class="result-item">
+                        <span class="item-label">Net Margin</span>
+                        <span class="item-value" id="growth-net-margin-pct">--</span>
+                      </div>
+                      <div class="result-item">
+                        <span class="item-label">vs FY2025</span>
+                        <span class="item-value" id="growth-vs-fy25">--</span>
+                      </div>
+                      <div class="result-item">
+                        <span class="item-label">Cases Needed*</span>
+                        <span class="item-value" id="growth-rev-per-case">--</span>
+                      </div>
+                    </div>
+                    <p class="result-note">*Based on avg 90K/case</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tool 4: Target EBITDA -->
+            <div id="tool-reverse" class="tool-panel">
+              <div class="tool-panel-header">
+                <h2>Target EBITDA</h2>
+                <p>Calculate required revenue from profit targets</p>
+              </div>
+
+              <div class="reverse-layout">
+                <div class="builder-panel">
+                  <table class="growth-table">
+                    <thead>
+                      <tr>
+                        <th>Metric</th>
+                        <th>FY2025</th>
+                        <th>Target</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Net Profit</td>
+                        <td class="value">445M</td>
+                        <td><input type="number" id="target-profit" value="1000000000" onchange="calculateReverseRevenue()"></td>
+                      </tr>
+                      <tr>
+                        <td>Total OpEx</td>
+                        <td class="value">2.53B</td>
+                        <td><input type="number" id="planned-opex" value="2800000000" onchange="calculateReverseRevenue()"></td>
+                      </tr>
+                      <tr>
+                        <td>Gross Margin</td>
+                        <td class="value">54.8%</td>
+                        <td><input type="number" id="target-gm-pct" value="50" onchange="calculateReverseRevenue()"><span class="input-suffix">%</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="growth-results">
+                  <div class="result-card-full">
+                    <div class="result-main">
+                      <div class="result-label">Required Revenue</div>
+                      <div class="result-value" id="required-revenue">--</div>
+                    </div>
+                    <div class="result-divider"></div>
+                    <div class="result-grid">
+                      <div class="result-item">
+                        <span class="item-label">vs FY2025</span>
+                        <span class="item-value" id="required-growth">--</span>
+                      </div>
+                      <div class="result-item">
+                        <span class="item-label">Gross Profit</span>
+                        <span class="item-value" id="required-gross">--</span>
+                      </div>
+                      <div class="result-item">
+                        <span class="item-label">COGS</span>
+                        <span class="item-value" id="required-cogs">--</span>
+                      </div>
+                      <div class="result-item">
+                        <span class="item-label">Cases Needed*</span>
+                        <span class="item-value" id="reverse-cases">--</span>
+                      </div>
+                    </div>
+                    <p class="result-note">*Based on avg 90K/case</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tool 5: Detailed Budget Planner -->
+            <div id="tool-detailed" class="tool-panel">
+              <div class="tool-panel-header" style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 16px;">
+                <div>
+                  <h2>Detailed Budget Planner</h2>
+                  <p>Line-by-line budget with custom inputs</p>
+                </div>
+                <div class="export-buttons">
+                  <button class="export-btn" onclick="exportToCSV()">Export CSV</button>
+                  <button class="export-btn" onclick="copyToClipboard()">Copy Table</button>
+                </div>
+              </div>
+
+              <div class="detailed-table-container">
+                <table class="detailed-table" id="detailed-budget-table">
+                  <thead>
+                    <tr>
+                      <th style="min-width: 200px;">Line Item</th>
+                      <th>FY2024</th>
+                      <th>% Rev</th>
+                      <th>FY2025</th>
+                      <th>YoY</th>
+                      <th>FY2026 Suggested</th>
+                      <th class="custom-col">FY2026 Custom</th>
+                      <th class="custom-col">%</th>
+                    </tr>
+                  </thead>
+                  <tbody id="detailed-body"></tbody>
+                </table>
+              </div>
+
+              <div class="totals-summary">
+                <div class="total-card">
+                  <div class="label">FY2026 Revenue</div>
+                  <div class="amount" id="summary-revenue">--</div>
+                </div>
+                <div class="total-card">
+                  <div class="label">FY2026 COGS</div>
+                  <div class="amount" id="summary-cogs">--</div>
+                </div>
+                <div class="total-card">
+                  <div class="label">FY2026 Gross Profit</div>
+                  <div class="amount" id="summary-gross">--</div>
+                </div>
+                <div class="total-card">
+                  <div class="label">FY2026 Total OpEx</div>
+                  <div class="amount" id="summary-opex">--</div>
+                </div>
+                <div class="total-card">
+                  <div class="label">FY2026 Net Profit</div>
+                  <div class="amount" id="summary-net">--</div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
-
       </div>
     </section>
   </main>

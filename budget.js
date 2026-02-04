@@ -1,5 +1,29 @@
 // Budget Planner - Calculation Engine
 
+// Tool switching
+function switchTool(toolId) {
+  // Update sidebar buttons
+  document.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tool === toolId);
+  });
+
+  // Update tool panels
+  document.querySelectorAll('.tool-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === 'tool-' + toolId);
+  });
+
+  // Initialize tool-specific content if needed
+  if (toolId === 'volume') {
+    initSkuTable();
+  } else if (toolId === 'growth') {
+    calculateGrowthTargets();
+  } else if (toolId === 'reverse') {
+    calculateReverseRevenue();
+  } else if (toolId === 'detailed') {
+    populateDetailedTable();
+  }
+}
+
 // Format number as IDR
 function formatIDR(num) {
   if (num >= 1000000000) {
