@@ -155,3 +155,34 @@ const detailedLineItems = [
 
   { name: "Net Profit", fy2024: 471564185, fy2025: 445004103, category: "total", isHeader: false },
 ];
+
+// SKU Data for Revenue Builder
+// Prices in IDR per case
+const skuData = [
+  { sku: "Club Soda", pricePerCase: 163200, fy2025Volume: 0, channel: "On Trade" },
+  { sku: "Imperial", pricePerCase: 163200, fy2025Volume: 0, channel: "On Trade" },
+  { sku: "Ginger", pricePerCase: 163200, fy2025Volume: 0, channel: "On Trade" },
+  { sku: "Green Tea", pricePerCase: 115200, fy2025Volume: 0, channel: "On Trade" },
+  { sku: "Finn's Breeze", pricePerCase: 163200, fy2025Volume: 0, channel: "On Trade" },
+];
+
+// Channel data
+const channelData = [
+  { channel: "On Trade", fy2024: 5032806434, fy2025: 5516371625, description: "Hotels, Restaurants, Bars" },
+  { channel: "Modern Trade", fy2024: 0, fy2025: 0, description: "Supermarkets, Convenience Stores" },
+  { channel: "E-commerce", fy2024: 0, fy2025: 0, description: "Online marketplaces" },
+];
+
+// Expense ratios based on FY2025 actuals (as % of revenue)
+const expenseRatios = {
+  cogs: 45.2,           // COGS as % of revenue
+  wages: 11.0,          // Wages & salaries
+  marketing: 9.7,       // Marketing
+  consulting: 5.8,      // Consulting & accounting
+  transport: 4.0,       // Transport/logistics
+  storage: 2.6,         // Storage & warehousing
+  legal: 3.8,           // Legal
+  subscriptions: 2.3,   // Subscriptions
+  other: 6.5,           // Other OpEx
+  totalOpex: 45.9,      // Total OpEx as % of revenue
+};

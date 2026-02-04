@@ -14,6 +14,11 @@ function formatIDR(num) {
 
 // Format as full IDR with separators
 function formatIDRFull(num) {
+  if (Math.abs(num) >= 1000000000) {
+    return 'IDR ' + (num / 1000000000).toFixed(2) + 'B';
+  } else if (Math.abs(num) >= 1000000) {
+    return 'IDR ' + (num / 1000000).toFixed(0) + 'M';
+  }
   return 'IDR ' + Math.round(num).toLocaleString('id-ID');
 }
 
@@ -379,6 +384,130 @@ function copyToClipboard() {
   alert('Table copied to clipboard! Paste into Excel or Google Sheets.');
 }
 
+// ===============================
+// REVENUE BUILDER
+// ===============================
+
+// SKU volumes for volume mode
+const skuVolumes = {};
+
+// Set builder mode
+function setBuilderMode(mode) {
+  // Update buttons
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+
+  // Update panels
+  document.querySelectorAll('.builder-mode').forEach(panel => {
+    panel.classList.toggle('active', panel.id === mode + '-mode');
+  });
+}
+
+// Initialize SKU table
+function initSkuTable() {
+  const tbody = document.getElementById('sku-table-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  skuData.forEach((item, index) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.sku}</td>
+      <td class="value">${formatIDRFull(item.pricePerCase)}</td>
+      <td>
+        <input type="number" id="sku-vol-${index}" value="0" min="0" onchange="updateSkuRevenue()">
+      </td>
+      <td class="value" id="sku-rev-${index}">IDR 0</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Update SKU revenue calculations
+function updateSkuRevenue() {
+  let totalCases = 0;
+  let totalRevenue = 0;
+
+  skuData.forEach((item, index) => {
+    const volInput = document.getElementById(`sku-vol-${index}`);
+    const revCell = document.getElementById(`sku-rev-${index}`);
+
+    const volume = parseInt(volInput.value) || 0;
+    const revenue = volume * item.pricePerCase;
+
+    totalCases += volume;
+    totalRevenue += revenue;
+
+    revCell.textContent = formatIDRFull(revenue);
+    skuVolumes[item.sku] = volume;
+  });
+
+  document.getElementById('total-cases').textContent = totalCases.toLocaleString();
+  document.getElementById('total-sku-revenue').textContent = formatIDRFull(totalRevenue);
+}
+
+// Calculate growth-based targets
+function calculateGrowthTargets() {
+  const fy25 = historicalData.fy2025;
+
+  const revGrowth = parseFloat(document.getElementById('growth-revenue-pct').value) || 0;
+  const cogsPct = parseFloat(document.getElementById('growth-cogs-pct').value) || 45;
+  const opexGrowth = parseFloat(document.getElementById('growth-opex-pct').value) || 0;
+
+  const targetRevenue = fy25.revenue * (1 + revGrowth / 100);
+  const targetCogs = targetRevenue * (cogsPct / 100);
+  const targetGross = targetRevenue - targetCogs;
+  const targetOpex = fy25.totalOpex * (1 + opexGrowth / 100);
+  const targetNet = targetGross - targetOpex;
+  const netMargin = (targetNet / targetRevenue) * 100;
+
+  document.getElementById('growth-revenue-target').textContent = formatIDRFull(targetRevenue);
+  document.getElementById('growth-cogs-target').textContent = formatIDRFull(targetCogs);
+  document.getElementById('growth-opex-target').textContent = formatIDRFull(targetOpex);
+  document.getElementById('growth-net-profit').textContent = formatIDRFull(targetNet);
+  document.getElementById('growth-net-margin').textContent = formatPct(netMargin) + ' margin';
+
+  // Color the net profit
+  const netEl = document.getElementById('growth-net-profit');
+  netEl.style.color = targetNet >= 0 ? '#10b981' : '#ef4444';
+}
+
+// Reverse calculator - find required revenue from target profit
+function calculateReverseRevenue() {
+  const targetProfit = parseFloat(document.getElementById('target-profit').value) || 0;
+  const plannedOpex = parseFloat(document.getElementById('planned-opex').value) || 0;
+  const targetGmPct = parseFloat(document.getElementById('target-gm-pct').value) || 50;
+
+  // Required Gross Profit = Target Net Profit + OpEx
+  const requiredGross = targetProfit + plannedOpex;
+
+  // Required Revenue = Gross Profit / Gross Margin %
+  const requiredRevenue = requiredGross / (targetGmPct / 100);
+
+  // Required COGS = Revenue - Gross Profit
+  const requiredCogs = requiredRevenue - requiredGross;
+  const cogsPct = 100 - targetGmPct;
+
+  // Growth vs FY2025
+  const fy25Revenue = historicalData.fy2025.revenue;
+  const growthVsFy25 = ((requiredRevenue - fy25Revenue) / fy25Revenue) * 100;
+
+  // Update display
+  document.getElementById('required-revenue').textContent = formatIDRFull(requiredRevenue);
+  document.getElementById('required-growth').textContent = (growthVsFy25 >= 0 ? '+' : '') + formatPct(growthVsFy25) + ' vs FY2025';
+  document.getElementById('required-gross').textContent = formatIDRFull(requiredGross);
+  document.getElementById('reverse-opex').textContent = formatIDRFull(plannedOpex);
+  document.getElementById('reverse-net').textContent = formatIDRFull(targetProfit);
+  document.getElementById('reverse-cogs-pct').textContent = formatPct(cogsPct);
+  document.getElementById('required-cogs').textContent = formatIDRFull(requiredCogs);
+
+  // Color the growth indicator
+  const growthEl = document.getElementById('required-growth');
+  growthEl.style.color = growthVsFy25 <= 30 ? '#10b981' : (growthVsFy25 <= 50 ? '#f59e0b' : '#ef4444');
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
   // Populate FY24 actuals
@@ -406,4 +535,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize detailed planner
   populateDetailedTable();
+
+  // Initialize revenue builder
+  initSkuTable();
+  calculateGrowthTargets();
+  calculateReverseRevenue();
 });
