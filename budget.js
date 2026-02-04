@@ -83,105 +83,86 @@ function calculateBudget(assumptions) {
   };
 }
 
-// Current assumptions state
-let currentAssumptions = { ...defaultAssumptions };
-
-// Update display with calculated budget
-function updateBudgetDisplay() {
-  const budget = calculateBudget(currentAssumptions);
-  const fy24 = historicalData.fy2024;
-
-  // Update FY26 Budget column
-  document.getElementById('fy26-revenue').textContent = formatIDR(budget.revenue);
-  document.getElementById('fy26-cogs').textContent = formatIDR(budget.cogs);
-  document.getElementById('fy26-gross').textContent = formatIDR(budget.grossProfit);
-  document.getElementById('fy26-gross-pct').textContent = formatPct(budget.grossMarginPct);
-  document.getElementById('fy26-opex').textContent = formatIDR(budget.totalOpex);
-  document.getElementById('fy26-ebitda').textContent = formatIDR(budget.ebitda);
-  document.getElementById('fy26-ebitda-pct').textContent = formatPct(budget.netMarginPct);
-
-  // Update YoY changes (vs FY2025)
+// Calculate scenario from simple inputs (growth %, COGS %, OpEx growth %)
+function calculateScenarioSimple(revenueGrowthPct, cogsPct, opexGrowthPct) {
   const fy25 = historicalData.fy2025;
-  const revenueChange = ((budget.revenue - fy25.revenue) / fy25.revenue) * 100;
-  const grossChange = budget.grossMarginPct - fy25.grossMarginPct;
-  const ebitdaChange = ((budget.ebitda - fy25.netProfit) / Math.abs(fy25.netProfit)) * 100;
 
-  updateChangeIndicator('revenue-change', revenueChange);
-  updateChangeIndicator('gross-change', grossChange, true);
-  updateChangeIndicator('ebitda-change', ebitdaChange);
+  const revenue = fy25.revenue * (1 + revenueGrowthPct / 100);
+  const cogs = revenue * (cogsPct / 100);
+  const grossProfit = revenue - cogs;
+  const totalOpex = fy25.totalOpex * (1 + opexGrowthPct / 100);
+  const netProfit = grossProfit - totalOpex;
+  const netMarginPct = (netProfit / revenue) * 100;
 
-  // Update assumption displays
-  document.getElementById('revenue-growth-value').textContent = currentAssumptions.revenueGrowthPct + '%';
-  document.getElementById('cogs-ratio-value').textContent = currentAssumptions.cogsRatioPct + '%';
-  document.getElementById('headcount-value').textContent = (currentAssumptions.headcountChange >= 0 ? '+' : '') + currentAssumptions.headcountChange;
-  document.getElementById('marketing-value').textContent = currentAssumptions.marketingPct + '%';
-  document.getElementById('salary-increase-value').textContent = currentAssumptions.salaryIncreasePct + '%';
+  return { revenue, cogs, grossProfit, totalOpex, netProfit, netMarginPct };
 }
 
-// Update change indicator element
-function updateChangeIndicator(elementId, change, isPercentagePoints = false) {
-  const el = document.getElementById(elementId);
-  if (!el) return;
+// Update all three scenarios in the comparison table
+function updateAllScenarios() {
+  const fy24 = historicalData.fy2024;
+  const fy25 = historicalData.fy2025;
 
-  const arrow = change >= 0 ? '↑' : '↓';
-  const sign = change >= 0 ? '+' : '';
-  const suffix = isPercentagePoints ? 'pp' : '%';
+  // Get inputs
+  const consGrowth = parseFloat(document.getElementById('cons-growth-input').value) || 0;
+  const consCogs = parseFloat(document.getElementById('cons-cogs-input').value) || 50;
+  const consOpex = parseFloat(document.getElementById('cons-opex-input').value) || 0;
 
-  el.textContent = `${arrow} ${sign}${change.toFixed(1)}${suffix}`;
-  el.className = 'change-indicator ' + (change >= 0 ? 'positive' : 'negative');
-}
+  const baseGrowth = parseFloat(document.getElementById('base-growth-input').value) || 0;
+  const baseCogs = parseFloat(document.getElementById('base-cogs-input').value) || 50;
+  const baseOpex = parseFloat(document.getElementById('base-opex-input').value) || 0;
 
-// Slider event handlers
-function initSliders() {
-  const sliders = {
-    'revenue-growth': { key: 'revenueGrowthPct', min: 0, max: 50 },
-    'cogs-ratio': { key: 'cogsRatioPct', min: 40, max: 70 },
-    'headcount': { key: 'headcountChange', min: -5, max: 10 },
-    'marketing': { key: 'marketingPct', min: 0, max: 20 },
-    'salary-increase': { key: 'salaryIncreasePct', min: 0, max: 25 }
-  };
+  const strGrowth = parseFloat(document.getElementById('str-growth-input').value) || 0;
+  const strCogs = parseFloat(document.getElementById('str-cogs-input').value) || 50;
+  const strOpex = parseFloat(document.getElementById('str-opex-input').value) || 0;
 
-  Object.entries(sliders).forEach(([id, config]) => {
-    const slider = document.getElementById(id + '-slider');
-    if (slider) {
-      slider.min = config.min;
-      slider.max = config.max;
-      slider.value = currentAssumptions[config.key];
+  // Calculate scenarios
+  const cons = calculateScenarioSimple(consGrowth, consCogs, consOpex);
+  const base = calculateScenarioSimple(baseGrowth, baseCogs, baseOpex);
+  const str = calculateScenarioSimple(strGrowth, strCogs, strOpex);
 
-      slider.addEventListener('input', (e) => {
-        currentAssumptions[config.key] = parseFloat(e.target.value);
-        updateBudgetDisplay();
-      });
-    }
-  });
-}
+  // Update FY24 column
+  document.getElementById('fy24-revenue').textContent = formatIDR(fy24.revenue);
+  document.getElementById('fy24-cogs').textContent = formatIDR(fy24.cogs);
+  document.getElementById('fy24-gross').textContent = formatIDR(fy24.grossProfit);
+  document.getElementById('fy24-opex').textContent = formatIDR(fy24.totalOpex);
+  document.getElementById('fy24-ebitda').textContent = formatIDR(fy24.netProfit);
+  document.getElementById('fy24-margin').textContent = formatPct(fy24.netMarginPct);
 
-// Scenario buttons
-function loadScenario(scenario) {
-  switch(scenario) {
-    case 'base':
-      currentAssumptions = { ...defaultAssumptions };
-      break;
-    case 'stretch':
-      currentAssumptions = { ...stretchAssumptions };
-      break;
-    case 'conservative':
-      currentAssumptions = { ...conservativeAssumptions };
-      break;
-  }
+  // Update FY25 column
+  document.getElementById('fy25-revenue').textContent = formatIDR(fy25.revenue);
+  document.getElementById('fy25-cogs').textContent = formatIDR(fy25.cogs);
+  document.getElementById('fy25-gross').textContent = formatIDR(fy25.grossProfit);
+  document.getElementById('fy25-opex').textContent = formatIDR(fy25.totalOpex);
+  document.getElementById('fy25-ebitda').textContent = formatIDR(fy25.netProfit);
+  document.getElementById('fy25-margin').textContent = formatPct(fy25.netMarginPct);
 
-  // Update slider positions
-  document.getElementById('revenue-growth-slider').value = currentAssumptions.revenueGrowthPct;
-  document.getElementById('cogs-ratio-slider').value = currentAssumptions.cogsRatioPct;
-  document.getElementById('headcount-slider').value = currentAssumptions.headcountChange;
-  document.getElementById('marketing-slider').value = currentAssumptions.marketingPct;
-  document.getElementById('salary-increase-slider').value = currentAssumptions.salaryIncreasePct;
+  // Update Conservative column
+  document.getElementById('cons-revenue').textContent = formatIDR(cons.revenue);
+  document.getElementById('cons-cogs').textContent = formatIDR(cons.cogs);
+  document.getElementById('cons-gross').textContent = formatIDR(cons.grossProfit);
+  document.getElementById('cons-opex').textContent = formatIDR(cons.totalOpex);
+  document.getElementById('cons-net').textContent = formatIDR(cons.netProfit);
+  document.getElementById('cons-margin').textContent = formatPct(cons.netMarginPct);
 
-  // Update active button
-  document.querySelectorAll('.scenario-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelector(`[data-scenario="${scenario}"]`).classList.add('active');
+  // Update Base column
+  document.getElementById('base-revenue').textContent = formatIDR(base.revenue);
+  document.getElementById('base-cogs').textContent = formatIDR(base.cogs);
+  document.getElementById('base-gross').textContent = formatIDR(base.grossProfit);
+  document.getElementById('base-opex').textContent = formatIDR(base.totalOpex);
+  document.getElementById('base-net').textContent = formatIDR(base.netProfit);
+  document.getElementById('base-margin').textContent = formatPct(base.netMarginPct);
 
-  updateBudgetDisplay();
+  // Update Stretch column
+  document.getElementById('str-revenue').textContent = formatIDR(str.revenue);
+  document.getElementById('str-cogs').textContent = formatIDR(str.cogs);
+  document.getElementById('str-gross').textContent = formatIDR(str.grossProfit);
+  document.getElementById('str-opex').textContent = formatIDR(str.totalOpex);
+  document.getElementById('str-net').textContent = formatIDR(str.netProfit);
+  document.getElementById('str-margin').textContent = formatPct(str.netMarginPct);
+
+  // Also update the current assumptions for the detailed planner
+  currentAssumptions.revenueGrowthPct = baseGrowth;
+  currentAssumptions.cogsRatioPct = baseCogs;
 }
 
 // ===============================
@@ -519,30 +500,13 @@ function calculateReverseRevenue() {
   growthEl.style.color = growthVsFy25 <= 30 ? '#10b981' : (growthVsFy25 <= 50 ? '#f59e0b' : '#ef4444');
 }
 
+// Current assumptions state (used by detailed planner)
+let currentAssumptions = { ...defaultAssumptions };
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-  // Populate FY24 actuals
-  const fy24 = historicalData.fy2024;
-  document.getElementById('fy24-revenue').textContent = formatIDR(fy24.revenue);
-  document.getElementById('fy24-cogs').textContent = formatIDR(fy24.cogs);
-  document.getElementById('fy24-gross').textContent = formatIDR(fy24.grossProfit);
-  document.getElementById('fy24-gross-pct').textContent = formatPct(fy24.grossMarginPct);
-  document.getElementById('fy24-opex').textContent = formatIDR(fy24.totalOpex);
-  document.getElementById('fy24-ebitda').textContent = formatIDR(fy24.netProfit);
-  document.getElementById('fy24-ebitda-pct').textContent = formatPct(fy24.netMarginPct);
-
-  // Populate FY25 actuals
-  const fy25 = historicalData.fy2025;
-  document.getElementById('fy25-revenue').textContent = formatIDR(fy25.revenue);
-  document.getElementById('fy25-cogs').textContent = formatIDR(fy25.cogs);
-  document.getElementById('fy25-gross').textContent = formatIDR(fy25.grossProfit);
-  document.getElementById('fy25-gross-pct').textContent = formatPct(fy25.grossMarginPct);
-  document.getElementById('fy25-opex').textContent = formatIDR(fy25.totalOpex);
-  document.getElementById('fy25-ebitda').textContent = formatIDR(fy25.netProfit);
-  document.getElementById('fy25-ebitda-pct').textContent = formatPct(fy25.netMarginPct);
-
-  initSliders();
-  updateBudgetDisplay();
+  // Initialize scenario comparison
+  updateAllScenarios();
 
   // Initialize detailed planner
   populateDetailedTable();

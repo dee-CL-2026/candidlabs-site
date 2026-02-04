@@ -223,6 +223,108 @@
       background: var(--color-border);
     }
 
+    /* Scenario Table Styles */
+    .scenario-table .scenario-col.conservative {
+      background: rgba(234, 179, 8, 0.05);
+    }
+    .scenario-table .scenario-col.base {
+      background: rgba(59, 130, 246, 0.05);
+    }
+    .scenario-table .scenario-col.stretch {
+      background: rgba(16, 185, 129, 0.05);
+    }
+    .scenario-table thead .scenario-col.conservative {
+      color: #ca8a04;
+    }
+    .scenario-table thead .scenario-col.base {
+      color: #3b82f6;
+    }
+    .scenario-table thead .scenario-col.stretch {
+      color: #10b981;
+    }
+
+    /* Assumptions Editor */
+    .assumptions-editor {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .assumptions-grid {
+      display: grid;
+      grid-template-columns: 180px repeat(3, 1fr);
+      gap: 12px;
+      align-items: center;
+    }
+
+    .assumption-header {
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px;
+      text-align: center;
+      border-radius: 6px;
+    }
+    .assumption-header.conservative {
+      color: #ca8a04;
+      background: rgba(234, 179, 8, 0.1);
+    }
+    .assumption-header.base {
+      color: #3b82f6;
+      background: rgba(59, 130, 246, 0.1);
+    }
+    .assumption-header.stretch {
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .assumption-row-label {
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      padding: 8px 0;
+    }
+
+    .scenario-input {
+      padding: 10px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 0.9rem;
+      text-align: center;
+      width: 100%;
+    }
+    .scenario-input:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    .scenario-input.conservative:focus {
+      border-color: #ca8a04;
+    }
+    .scenario-input.base:focus {
+      border-color: #3b82f6;
+    }
+    .scenario-input.stretch:focus {
+      border-color: #10b981;
+    }
+
+    @media (max-width: 700px) {
+      .assumptions-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+      .assumption-row-label {
+        grid-column: 1 / -1;
+        padding-top: 16px;
+        font-weight: 500;
+      }
+      .assumption-header:first-child {
+        display: none;
+      }
+    }
+
     /* Detailed Planner Styles */
     .detailed-divider {
       border: none;
@@ -759,148 +861,106 @@
     <!-- Budget Content -->
     <section class="section">
       <div class="container">
-        <div class="budget-layout">
 
-          <!-- Assumptions Panel -->
-          <aside class="assumptions-panel">
-            <h3>Assumptions</h3>
-
-            <div class="assumption-group">
-              <div class="assumption-label">
-                <span>Revenue Growth</span>
-                <span class="value" id="revenue-growth-value">20%</span>
-              </div>
-              <input type="range" id="revenue-growth-slider" min="0" max="50" value="20">
-            </div>
-
-            <div class="assumption-group">
-              <div class="assumption-label">
-                <span>COGS % of Revenue</span>
-                <span class="value" id="cogs-ratio-value">55%</span>
-              </div>
-              <input type="range" id="cogs-ratio-slider" min="40" max="70" value="55">
-            </div>
-
-            <div class="assumption-group">
-              <div class="assumption-label">
-                <span>Headcount Change</span>
-                <span class="value" id="headcount-value">+2</span>
-              </div>
-              <input type="range" id="headcount-slider" min="-5" max="10" value="2">
-            </div>
-
-            <div class="assumption-group">
-              <div class="assumption-label">
-                <span>Marketing % of Revenue</span>
-                <span class="value" id="marketing-value">8%</span>
-              </div>
-              <input type="range" id="marketing-slider" min="0" max="20" value="8">
-            </div>
-
-            <div class="assumption-group">
-              <div class="assumption-label">
-                <span>Salary Increase</span>
-                <span class="value" id="salary-increase-value">10%</span>
-              </div>
-              <input type="range" id="salary-increase-slider" min="0" max="25" value="10">
-            </div>
-
-            <div class="scenario-buttons">
-              <button class="scenario-btn" data-scenario="conservative" onclick="loadScenario('conservative')">Conservative</button>
-              <button class="scenario-btn active" data-scenario="base" onclick="loadScenario('base')">Base</button>
-              <button class="scenario-btn" data-scenario="stretch" onclick="loadScenario('stretch')">Stretch</button>
-            </div>
-          </aside>
-
-          <!-- Results Panel -->
-          <div class="results-panel">
-            <div class="budget-table-container">
-              <table class="budget-table">
-                <thead>
-                  <tr>
-                    <th>P&L Line Item</th>
-                    <th>FY2024</th>
-                    <th>FY2025</th>
-                    <th class="fy26-col">FY2026 Budget</th>
-                    <th>vs FY25</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <!-- Revenue -->
-                  <tr class="highlight-row">
-                    <td class="row-label">Revenue</td>
-                    <td class="value" id="fy24-revenue">--</td>
-                    <td class="value" id="fy25-revenue">--</td>
-                    <td class="value fy26-col" id="fy26-revenue">--</td>
-                    <td><span class="change-indicator" id="revenue-change">--</span></td>
-                  </tr>
-
-                  <!-- COGS -->
-                  <tr>
-                    <td class="row-label">Cost of Goods Sold</td>
-                    <td class="value" id="fy24-cogs">--</td>
-                    <td class="value" id="fy25-cogs">--</td>
-                    <td class="value fy26-col" id="fy26-cogs">--</td>
-                    <td></td>
-                  </tr>
-
-                  <!-- Gross Profit -->
-                  <tr class="row-total">
-                    <td class="row-label">Gross Profit</td>
-                    <td>
-                      <span class="value" id="fy24-gross">--</span>
-                      <span class="pct">(<span id="fy24-gross-pct">--</span>)</span>
-                    </td>
-                    <td>
-                      <span class="value" id="fy25-gross">--</span>
-                      <span class="pct">(<span id="fy25-gross-pct">--</span>)</span>
-                    </td>
-                    <td class="fy26-col">
-                      <span class="value" id="fy26-gross">--</span>
-                      <span class="pct">(<span id="fy26-gross-pct">--</span>)</span>
-                    </td>
-                    <td><span class="change-indicator" id="gross-change">--</span></td>
-                  </tr>
-
-                  <tr class="section-divider"><td colspan="5"></td></tr>
-
-                  <!-- Operating Expenses -->
-                  <tr>
-                    <td class="row-label">Operating Expenses</td>
-                    <td class="value" id="fy24-opex">--</td>
-                    <td class="value" id="fy25-opex">--</td>
-                    <td class="value fy26-col" id="fy26-opex">--</td>
-                    <td></td>
-                  </tr>
-
-                  <tr class="section-divider"><td colspan="5"></td></tr>
-
-                  <!-- EBITDA -->
-                  <tr class="row-total highlight-row">
-                    <td class="row-label">Net Profit</td>
-                    <td>
-                      <span class="value" id="fy24-ebitda">--</span>
-                      <span class="pct">(<span id="fy24-ebitda-pct">--</span>)</span>
-                    </td>
-                    <td>
-                      <span class="value" id="fy25-ebitda">--</span>
-                      <span class="pct">(<span id="fy25-ebitda-pct">--</span>)</span>
-                    </td>
-                    <td class="fy26-col">
-                      <span class="value" id="fy26-ebitda">--</span>
-                      <span class="pct">(<span id="fy26-ebitda-pct">--</span>)</span>
-                    </td>
-                    <td><span class="change-indicator" id="ebitda-change">--</span></td>
-                  </tr>
-                </tbody>
-              </table>
-              <div class="data-source">
-                Source: PKF Indonesia / Xero P&L Reports | Full Year Actuals
-              </div>
-            </div>
+        <!-- Scenario Comparison Table -->
+        <div class="budget-table-container" style="margin-bottom: 24px;">
+          <table class="budget-table scenario-table">
+            <thead>
+              <tr>
+                <th>P&L Line Item</th>
+                <th>FY2024</th>
+                <th>FY2025</th>
+                <th class="scenario-col conservative">Conservative</th>
+                <th class="scenario-col base">Base</th>
+                <th class="scenario-col stretch">Stretch</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="highlight-row">
+                <td class="row-label">Revenue</td>
+                <td class="value" id="fy24-revenue">--</td>
+                <td class="value" id="fy25-revenue">--</td>
+                <td class="value scenario-col conservative" id="cons-revenue">--</td>
+                <td class="value scenario-col base" id="base-revenue">--</td>
+                <td class="value scenario-col stretch" id="str-revenue">--</td>
+              </tr>
+              <tr>
+                <td class="row-label">Cost of Goods Sold</td>
+                <td class="value" id="fy24-cogs">--</td>
+                <td class="value" id="fy25-cogs">--</td>
+                <td class="value scenario-col conservative" id="cons-cogs">--</td>
+                <td class="value scenario-col base" id="base-cogs">--</td>
+                <td class="value scenario-col stretch" id="str-cogs">--</td>
+              </tr>
+              <tr class="row-total">
+                <td class="row-label">Gross Profit</td>
+                <td class="value" id="fy24-gross">--</td>
+                <td class="value" id="fy25-gross">--</td>
+                <td class="value scenario-col conservative" id="cons-gross">--</td>
+                <td class="value scenario-col base" id="base-gross">--</td>
+                <td class="value scenario-col stretch" id="str-gross">--</td>
+              </tr>
+              <tr class="section-divider"><td colspan="6"></td></tr>
+              <tr>
+                <td class="row-label">Operating Expenses</td>
+                <td class="value" id="fy24-opex">--</td>
+                <td class="value" id="fy25-opex">--</td>
+                <td class="value scenario-col conservative" id="cons-opex">--</td>
+                <td class="value scenario-col base" id="base-opex">--</td>
+                <td class="value scenario-col stretch" id="str-opex">--</td>
+              </tr>
+              <tr class="section-divider"><td colspan="6"></td></tr>
+              <tr class="row-total highlight-row">
+                <td class="row-label">Net Profit</td>
+                <td class="value" id="fy24-ebitda">--</td>
+                <td class="value" id="fy25-ebitda">--</td>
+                <td class="value scenario-col conservative" id="cons-net">--</td>
+                <td class="value scenario-col base" id="base-net">--</td>
+                <td class="value scenario-col stretch" id="str-net">--</td>
+              </tr>
+              <tr>
+                <td class="row-label" style="font-size: 0.85rem; color: var(--color-text-secondary);">Net Margin %</td>
+                <td class="pct" id="fy24-margin">--</td>
+                <td class="pct" id="fy25-margin">--</td>
+                <td class="pct scenario-col conservative" id="cons-margin">--</td>
+                <td class="pct scenario-col base" id="base-margin">--</td>
+                <td class="pct scenario-col stretch" id="str-margin">--</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="data-source">
+            Source: PKF Indonesia / Xero P&L Reports | Full Year Actuals
           </div>
-
         </div>
+
+        <!-- Scenario Assumptions Editor -->
+        <div class="assumptions-editor">
+          <h3 style="margin-bottom: 16px; color: var(--color-text-primary);">Customize Scenario Assumptions</h3>
+          <p style="color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 20px;">Define what Conservative, Base, and Stretch mean for your business. Changes update the table above in real-time.</p>
+
+          <div class="assumptions-grid">
+            <div class="assumption-header"></div>
+            <div class="assumption-header conservative">Conservative</div>
+            <div class="assumption-header base">Base</div>
+            <div class="assumption-header stretch">Stretch</div>
+
+            <div class="assumption-row-label">Revenue Growth %</div>
+            <input type="number" id="cons-growth-input" class="scenario-input conservative" value="10" onchange="updateAllScenarios()">
+            <input type="number" id="base-growth-input" class="scenario-input base" value="20" onchange="updateAllScenarios()">
+            <input type="number" id="str-growth-input" class="scenario-input stretch" value="50" onchange="updateAllScenarios()">
+
+            <div class="assumption-row-label">COGS % of Revenue</div>
+            <input type="number" id="cons-cogs-input" class="scenario-input conservative" value="50" onchange="updateAllScenarios()">
+            <input type="number" id="base-cogs-input" class="scenario-input base" value="48" onchange="updateAllScenarios()">
+            <input type="number" id="str-cogs-input" class="scenario-input stretch" value="45" onchange="updateAllScenarios()">
+
+            <div class="assumption-row-label">OpEx Growth %</div>
+            <input type="number" id="cons-opex-input" class="scenario-input conservative" value="5" onchange="updateAllScenarios()">
+            <input type="number" id="base-opex-input" class="scenario-input base" value="10" onchange="updateAllScenarios()">
+            <input type="number" id="str-opex-input" class="scenario-input stretch" value="15" onchange="updateAllScenarios()">
+          </div>
+        </div>
+
       </div>
     </section>
 
