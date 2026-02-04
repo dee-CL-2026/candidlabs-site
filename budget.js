@@ -1,7 +1,8 @@
 // Budget Planner - Calculation Engine
 
 // Tool switching (sidebar navigation)
-function switchTool(toolId) {
+// Using window.switchTool to ensure global accessibility from onclick handlers
+window.switchTool = function(toolId) {
   // Update sidebar buttons
   document.querySelectorAll('.tool-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tool === toolId);
@@ -22,7 +23,7 @@ function switchTool(toolId) {
   } else if (toolId === 'detailed') {
     populateDetailedTable();
   }
-}
+};
 
 // Format number as IDR
 function formatIDR(num) {
