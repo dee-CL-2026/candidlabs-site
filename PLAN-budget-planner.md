@@ -100,33 +100,33 @@ Display (Tables + Charts)
 ## Implementation Steps
 
 ### Step 1: Data Setup
-- [ ] User provides PKF historical data
-- [ ] Convert to JSON format in `budget-data.js`
-- [ ] Structure: { fy2023: {...}, fy2024: {...}, fy2025: {...} }
+- [x] User provides PKF historical data
+- [x] Convert to JSON format in `budget-data.js`
+- [x] Structure: { fy2024: {...}, fy2025_ytd: {...} }
 
 ### Step 2: Build Calculation Engine
-- [ ] Create `budget.js` with projection functions
-- [ ] applyGrowth(base, rate)
-- [ ] calculateCOGS(revenue, cogsPercent)
-- [ ] calculateOpEx(headcount, avgSalary, marketing, other)
-- [ ] calculateEBITDA(grossProfit, opex)
+- [x] Create `budget.js` with projection functions
+- [x] applyGrowth(base, rate)
+- [x] calculateCOGS(revenue, cogsPercent)
+- [x] calculateOpEx(headcount, avgSalary, marketing, other)
+- [x] calculateEBITDA(grossProfit, opex)
 
 ### Step 3: Build UI
-- [ ] Assumptions panel with sliders
-- [ ] P&L summary table (FY24, FY25, FY26 Budget)
-- [ ] YoY change indicators
-- [ ] Scenario preset buttons
+- [x] Assumptions panel with sliders
+- [x] P&L summary table (FY24, FY26 Budget)
+- [x] YoY change indicators
+- [x] Scenario preset buttons
 
 ### Step 4: Add Interactivity
-- [ ] Slider event listeners
-- [ ] Real-time recalculation
-- [ ] Scenario switching
-- [ ] Number formatting (IDR)
+- [x] Slider event listeners
+- [x] Real-time recalculation
+- [x] Scenario switching
+- [x] Number formatting (IDR)
 
 ### Step 5: Polish
-- [ ] Mobile responsive
-- [ ] Dark mode support
-- [ ] Export functionality
+- [x] Mobile responsive
+- [x] Dark mode support (via existing theme toggle)
+- [ ] Export functionality (future enhancement)
 
 ---
 
