@@ -1,29 +1,17 @@
 // Budget Planner - Calculation Engine
 
-// Tool switching (sidebar navigation)
-// Using window.switchTool to ensure global accessibility from onclick handlers
-window.switchTool = function(toolId) {
-  // Update sidebar buttons
+// Tool switching (sidebar navigation) - matches setBuilderMode pattern exactly
+function switchTool(toolId) {
+  // Update buttons
   document.querySelectorAll('.tool-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tool === toolId);
   });
 
-  // Update tool panels
+  // Update panels
   document.querySelectorAll('.tool-panel').forEach(panel => {
     panel.classList.toggle('active', panel.id === 'tool-' + toolId);
   });
-
-  // Initialize tool-specific content
-  if (toolId === 'volume') {
-    initSkuTable();
-  } else if (toolId === 'growth') {
-    calculateGrowthTargets();
-  } else if (toolId === 'reverse') {
-    calculateReverseRevenue();
-  } else if (toolId === 'detailed') {
-    populateDetailedTable();
-  }
-};
+}
 
 // Format number as IDR
 function formatIDR(num) {
