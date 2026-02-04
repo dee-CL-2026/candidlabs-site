@@ -12,7 +12,11 @@ Display project status for each active project. Samples to be shared for referen
 
 ### Budget Planner Layout Improvements
 **Added:** 2026-02-04
-Sections 1 & 3 have too much empty space. Review mobile view first, then optimize layout.
+**Status:** ✅ Completed - Implemented sidebar navigation layout
+
+### Monthly Planner Tool
+**Added:** 2026-02-04
+Detailed budget planning tool with 12-month breakdown. Allow line-by-line entry for each P&L line (Revenue, COGS, OpEx categories) across all months of 2026. Should integrate with existing scenarios and show monthly vs annual totals.
 
 ### Quick Access External Links
 **Added:** 2026-02-04
