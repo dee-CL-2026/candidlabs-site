@@ -532,6 +532,11 @@ h4 { font-size: 1.25rem; }
   color: var(--color-error);
 }
 
+.badge-info {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
 /* ===========================================
    HERO SECTION
    =========================================== */
