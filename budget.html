@@ -731,14 +731,16 @@
     .growth-layout,
     .reverse-layout {
       display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 24px;
+      grid-template-columns: auto 280px;
+      gap: 16px;
       align-items: start;
+      max-width: 800px;
     }
     @media (max-width: 900px) {
       .growth-layout,
       .reverse-layout {
         grid-template-columns: 1fr;
+        max-width: 100%;
       }
       .growth-results {
         margin-top: 0;
@@ -751,7 +753,7 @@
     }
     .growth-table th,
     .growth-table td {
-      padding: 14px 16px;
+      padding: 12px 10px;
       text-align: right;
       border-bottom: 1px solid var(--color-border);
     }
@@ -778,14 +780,14 @@
       font-size: 0.85rem;
     }
     .growth-table input[type="number"] {
-      width: 70px;
+      width: 140px;
       padding: 10px 8px;
       border: 2px solid var(--color-primary);
       border-radius: 6px;
       background: rgba(59, 130, 246, 0.1);
       color: var(--color-text-primary);
       font-family: 'Monaco', 'Consolas', monospace;
-      font-size: 1rem;
+      font-size: 0.9rem;
       text-align: right;
     }
     .growth-table input[type="number"]:focus {
