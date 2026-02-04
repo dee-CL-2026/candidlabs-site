@@ -288,27 +288,28 @@
 
     .scenario-input {
       padding: 10px 12px;
-      border: 1px solid var(--color-border);
       border-radius: 6px;
-      background: var(--color-surface);
       color: var(--color-text-primary);
       font-family: 'Monaco', 'Consolas', monospace;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       text-align: center;
       width: 100%;
     }
+    .scenario-input.conservative {
+      border: 2px solid #ca8a04;
+      background: rgba(234, 179, 8, 0.1);
+    }
+    .scenario-input.base {
+      border: 2px solid #3b82f6;
+      background: rgba(59, 130, 246, 0.1);
+    }
+    .scenario-input.stretch {
+      border: 2px solid #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
     .scenario-input:focus {
       outline: none;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-    }
-    .scenario-input.conservative:focus {
-      border-color: #ca8a04;
-    }
-    .scenario-input.base:focus {
-      border-color: #3b82f6;
-    }
-    .scenario-input.stretch:focus {
-      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
     }
 
     @media (max-width: 700px) {
@@ -794,6 +795,7 @@
     .growth-results {
       display: flex;
       flex-direction: column;
+      margin-top: 85px; /* Align with table body, below header */
     }
     .result-card-full {
       background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.05));
