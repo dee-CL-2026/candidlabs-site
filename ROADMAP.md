@@ -21,10 +21,16 @@
 - [ ] Secure tool access based on permissions
 
 ## Phase 4: Budget Planner Tool
-- [ ] Import PKF Indonesia historical financials (FY2023-2025)
-- [ ] Build assumptions engine (growth %, margins, headcount)
-- [ ] Scenario comparison (base vs stretch)
+- [x] Import PKF Indonesia historical financials (FY2024-2025)
+- [x] Build assumptions engine (growth %, margins, headcount)
+- [x] Scenario comparison (Conservative / Base / Stretch)
 - [ ] P&L projection with monthly breakdown
+- [ ] Section 2: Detailed Budget Planner improvements
+
+## Phase 5: Homepage & UX Improvements
+- [ ] Homepage hero/about section - casual copy explaining available tools
+- [ ] Scorecards - decide on appropriate metrics to display
+- [ ] Configurable Quick Access for logged-in users
 
 ---
 
