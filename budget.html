@@ -553,20 +553,19 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 12px 24px;
-      border: 2px solid var(--color-border);
+      padding: 14px 28px;
+      border: 2px solid var(--color-primary);
       border-radius: 10px;
-      background: var(--color-surface);
-      color: var(--color-text-secondary);
-      font-size: 0.95rem;
-      font-weight: 500;
+      background: transparent;
+      color: var(--color-primary);
+      font-size: 1rem;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
     }
 
     .mode-btn:hover {
-      border-color: var(--color-primary);
-      color: var(--color-primary);
+      background: rgba(59, 130, 246, 0.1);
     }
 
     .mode-btn.active {
@@ -632,13 +631,19 @@
 
     .sku-table input[type="number"] {
       width: 100px;
-      padding: 8px 12px;
-      border: 1px solid var(--color-border);
+      padding: 10px 12px;
+      border: 2px solid var(--color-primary);
       border-radius: 6px;
-      background: var(--color-surface);
+      background: rgba(59, 130, 246, 0.1);
       color: var(--color-text-primary);
       font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 1rem;
       text-align: right;
+    }
+    .sku-table input[type="number"]:focus {
+      outline: none;
+      background: rgba(59, 130, 246, 0.2);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
     }
 
     .sku-table .total-row {
@@ -680,14 +685,19 @@
     }
 
     .growth-row input[type="number"] {
-      width: 80px;
-      padding: 8px 12px;
-      border: 1px solid var(--color-border);
+      width: 90px;
+      padding: 10px 12px;
+      border: 2px solid var(--color-primary);
       border-radius: 6px;
-      background: var(--color-surface);
+      background: rgba(59, 130, 246, 0.1);
       color: var(--color-text-primary);
       font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 1rem;
       text-align: right;
+    }
+    .growth-row input[type="number"]:focus {
+      outline: none;
+      background: rgba(59, 130, 246, 0.2);
     }
 
     .reverse-inputs {
@@ -709,19 +719,19 @@
     }
 
     .input-group input {
-      padding: 12px 16px;
-      border: 1px solid var(--color-border);
+      padding: 14px 16px;
+      border: 2px solid var(--color-primary);
       border-radius: 8px;
-      background: var(--color-surface);
+      background: rgba(59, 130, 246, 0.1);
       color: var(--color-text-primary);
       font-family: 'Monaco', 'Consolas', monospace;
-      font-size: 1rem;
+      font-size: 1.1rem;
     }
 
     .input-group input:focus {
       outline: none;
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      background: rgba(59, 130, 246, 0.2);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
     }
 
     .input-hint {
