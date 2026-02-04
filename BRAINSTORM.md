@@ -22,6 +22,17 @@ Detailed budget planning tool with 12-month breakdown. Allow line-by-line entry 
 **Added:** 2026-02-04
 Identify other useful shortcuts beyond Submit Expenses - what external tools does the team use frequently?
 
+### Taste Your Spirit Card
+**Added:** 2026-02-04
+Homepage card featuring the company tagline. Ideas for content:
+- **Inspirational quotes** - Rotating daily/weekly quotes about teamwork, innovation, craft
+- **Team check-in questions** - Simple reflection prompts like "What energised you this week?" or "What's one thing you're proud of today?"
+- **Wellness pulse** - Quick emoji-based mood check (optional anonymous submission)
+- **Fun facts** - Random facts about mixers, spirits, or the beverage industry
+- **Team shoutouts** - Highlight recent wins or kudos from colleagues
+
+Could eventually integrate with a simple backend to rotate content or collect responses.
+
 ---
 
 *This file may be converted to a kanban board in future.*
