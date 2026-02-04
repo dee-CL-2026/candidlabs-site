@@ -1,57 +1,27 @@
 // Budget Planner - Calculation Engine
 
-// Tool switching
+// Tool switching (sidebar navigation)
 function switchTool(toolId) {
-  console.log('Switching to tool:', toolId);
-
   // Update sidebar buttons
-  const buttons = document.querySelectorAll('.tool-btn');
-  buttons.forEach(btn => {
-    if (btn.dataset.tool === toolId) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
+  document.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tool === toolId);
   });
 
   // Update tool panels
-  const panels = document.querySelectorAll('.tool-panel');
-  panels.forEach(panel => {
-    if (panel.id === 'tool-' + toolId) {
-      panel.classList.add('active');
-    } else {
-      panel.classList.remove('active');
-    }
+  document.querySelectorAll('.tool-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === 'tool-' + toolId);
   });
 
-  // Initialize tool-specific content if needed
-  try {
-    if (toolId === 'volume') {
-      initSkuTable();
-    } else if (toolId === 'growth') {
-      calculateGrowthTargets();
-    } else if (toolId === 'reverse') {
-      calculateReverseRevenue();
-    } else if (toolId === 'detailed') {
-      populateDetailedTable();
-    }
-  } catch (e) {
-    console.error('Error initializing tool:', e);
+  // Initialize tool-specific content
+  if (toolId === 'volume') {
+    initSkuTable();
+  } else if (toolId === 'growth') {
+    calculateGrowthTargets();
+  } else if (toolId === 'reverse') {
+    calculateReverseRevenue();
+  } else if (toolId === 'detailed') {
+    populateDetailedTable();
   }
-}
-
-// Setup tool button click handlers
-function setupToolButtons() {
-  document.querySelectorAll('.tool-btn').forEach(btn => {
-    if (!btn.classList.contains('disabled')) {
-      btn.addEventListener('click', function() {
-        const toolId = this.dataset.tool;
-        if (toolId) {
-          switchTool(toolId);
-        }
-      });
-    }
-  });
 }
 
 // Format number as IDR
@@ -643,9 +613,6 @@ let currentAssumptions = { ...defaultAssumptions };
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-  // Setup tool button click handlers
-  setupToolButtons();
-
   // Initialize scenario comparison
   updateAllScenarios();
 
