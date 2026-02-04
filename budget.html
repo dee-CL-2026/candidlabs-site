@@ -726,9 +726,54 @@
       color: var(--color-text-primary);
     }
 
-    .growth-row input[type="number"] {
-      width: 90px;
-      padding: 10px 12px;
+    /* Growth Mode Layout */
+    .growth-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .growth-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .growth-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .growth-table th,
+    .growth-table td {
+      padding: 14px 16px;
+      text-align: right;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .growth-table th:first-child,
+    .growth-table td:first-child {
+      text-align: left;
+    }
+    .growth-table thead th {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .growth-table .value {
+      font-family: 'Monaco', 'Consolas', monospace;
+    }
+    .growth-table .result {
+      color: var(--color-primary);
+      font-weight: 600;
+    }
+    .growth-table .computed {
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+    }
+    .growth-table input[type="number"] {
+      width: 70px;
+      padding: 10px 8px;
       border: 2px solid var(--color-primary);
       border-radius: 6px;
       background: rgba(59, 130, 246, 0.1);
@@ -737,9 +782,48 @@
       font-size: 1rem;
       text-align: right;
     }
-    .growth-row input[type="number"]:focus {
+    .growth-table input[type="number"]:focus {
       outline: none;
       background: rgba(59, 130, 246, 0.2);
+    }
+    .input-suffix {
+      margin-left: 4px;
+      color: var(--color-text-secondary);
+    }
+
+    .growth-results {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .result-metrics {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .metric-row:last-child {
+      border-bottom: none;
+    }
+    .metric-label {
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+    }
+    .metric-value {
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+    .result-note {
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+      font-style: italic;
     }
 
     .reverse-inputs {
@@ -1145,59 +1229,76 @@
 
         <!-- Mode 2: Growth % Builder -->
         <div id="growth-mode" class="builder-mode">
-          <div class="builder-panel">
-            <h3>Growth-Based Projections</h3>
-            <p class="panel-description">Apply growth rates to FY2025 actuals</p>
+          <div class="growth-layout">
+            <!-- Inputs Table -->
+            <div class="builder-panel">
+              <h3>Growth-Based Projections</h3>
+              <p class="panel-description">Apply growth rates to FY2025 actuals</p>
 
-            <div class="growth-inputs">
-              <div class="growth-row">
-                <label>FY2025 Revenue</label>
-                <span class="value">IDR 5.52B</span>
-              </div>
-              <div class="growth-row">
-                <label>Revenue Growth %</label>
-                <input type="number" id="growth-revenue-pct" value="15" min="-50" max="100" onchange="calculateGrowthTargets()">
-              </div>
-              <div class="growth-row highlight">
-                <label>FY2026 Revenue Target</label>
-                <span class="value" id="growth-revenue-target">IDR 6.34B</span>
-              </div>
+              <table class="growth-table">
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    <th>FY2025</th>
+                    <th>Change</th>
+                    <th>FY2026</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Revenue</td>
+                    <td class="value">5.52B</td>
+                    <td><input type="number" id="growth-revenue-pct" value="15" onchange="calculateGrowthTargets()"><span class="input-suffix">%</span></td>
+                    <td class="value result" id="growth-revenue-target">--</td>
+                  </tr>
+                  <tr>
+                    <td>COGS</td>
+                    <td class="value">45.2%</td>
+                    <td><input type="number" id="growth-cogs-pct" value="45" onchange="calculateGrowthTargets()"><span class="input-suffix">%</span></td>
+                    <td class="value result" id="growth-cogs-target">--</td>
+                  </tr>
+                  <tr>
+                    <td>Gross Profit</td>
+                    <td class="value">3.02B</td>
+                    <td class="computed">--</td>
+                    <td class="value result" id="growth-gross-target">--</td>
+                  </tr>
+                  <tr>
+                    <td>OpEx</td>
+                    <td class="value">2.53B</td>
+                    <td><input type="number" id="growth-opex-pct" value="10" onchange="calculateGrowthTargets()"><span class="input-suffix">%</span></td>
+                    <td class="value result" id="growth-opex-target">--</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <div class="growth-inputs" style="margin-top: 24px;">
-              <div class="growth-row">
-                <label>FY2025 COGS %</label>
-                <span class="value">45.2%</span>
+            <!-- Results Panel -->
+            <div class="growth-results">
+              <div class="result-card primary">
+                <div class="result-label">FY2026 Net Profit</div>
+                <div class="result-value" id="growth-net-profit">--</div>
+                <div class="result-pct" id="growth-net-margin">--</div>
               </div>
-              <div class="growth-row">
-                <label>Target COGS %</label>
-                <input type="number" id="growth-cogs-pct" value="45" min="30" max="80" onchange="calculateGrowthTargets()">
+              <div class="result-metrics">
+                <div class="metric-row">
+                  <span class="metric-label">Gross Margin</span>
+                  <span class="metric-value" id="growth-gross-margin">--</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Net Margin</span>
+                  <span class="metric-value" id="growth-net-margin-pct">--</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">vs FY2025 Net Profit</span>
+                  <span class="metric-value" id="growth-vs-fy25">--</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Revenue per Case*</span>
+                  <span class="metric-value" id="growth-rev-per-case">--</span>
+                </div>
               </div>
-              <div class="growth-row">
-                <label>FY2026 COGS</label>
-                <span class="value" id="growth-cogs-target">IDR 2.85B</span>
-              </div>
-            </div>
-
-            <div class="growth-inputs" style="margin-top: 24px;">
-              <div class="growth-row">
-                <label>FY2025 OpEx</label>
-                <span class="value">IDR 2.53B</span>
-              </div>
-              <div class="growth-row">
-                <label>OpEx Growth %</label>
-                <input type="number" id="growth-opex-pct" value="10" min="-30" max="50" onchange="calculateGrowthTargets()">
-              </div>
-              <div class="growth-row">
-                <label>FY2026 OpEx</label>
-                <span class="value" id="growth-opex-target">IDR 2.79B</span>
-              </div>
-            </div>
-
-            <div class="result-card" style="margin-top: 24px;">
-              <div class="result-label">Projected FY2026 Net Profit</div>
-              <div class="result-value" id="growth-net-profit">IDR 700M</div>
-              <div class="result-pct" id="growth-net-margin">11.0% margin</div>
+              <p class="result-note">*Based on avg 90K/case (Club Soda pricing)</p>
             </div>
           </div>
         </div>

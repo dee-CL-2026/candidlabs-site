@@ -509,19 +509,41 @@ function calculateGrowthTargets() {
   const targetRevenue = fy25.revenue * (1 + revGrowth / 100);
   const targetCogs = targetRevenue * (cogsPct / 100);
   const targetGross = targetRevenue - targetCogs;
+  const grossMarginPct = (targetGross / targetRevenue) * 100;
   const targetOpex = fy25.totalOpex * (1 + opexGrowth / 100);
   const targetNet = targetGross - targetOpex;
-  const netMargin = (targetNet / targetRevenue) * 100;
+  const netMarginPct = (targetNet / targetRevenue) * 100;
 
-  document.getElementById('growth-revenue-target').textContent = formatIDRFull(targetRevenue);
-  document.getElementById('growth-cogs-target').textContent = formatIDRFull(targetCogs);
-  document.getElementById('growth-opex-target').textContent = formatIDRFull(targetOpex);
+  // Calculate YoY change vs FY2025
+  const netChange = ((targetNet - fy25.netProfit) / Math.abs(fy25.netProfit)) * 100;
+
+  // Estimate cases needed (based on avg 90K/case - Club Soda pricing)
+  const avgCasePrice = 90000;
+  const casesNeeded = Math.round(targetRevenue / avgCasePrice);
+
+  // Update table values
+  document.getElementById('growth-revenue-target').textContent = formatIDR(targetRevenue);
+  document.getElementById('growth-cogs-target').textContent = formatIDR(targetCogs);
+  document.getElementById('growth-gross-target').textContent = formatIDR(targetGross);
+  document.getElementById('growth-opex-target').textContent = formatIDR(targetOpex);
+
+  // Update result card
   document.getElementById('growth-net-profit').textContent = formatIDRFull(targetNet);
-  document.getElementById('growth-net-margin').textContent = formatPct(netMargin) + ' margin';
+  document.getElementById('growth-net-margin').textContent = targetNet >= 0 ? 'Profit' : 'Loss';
 
   // Color the net profit
   const netEl = document.getElementById('growth-net-profit');
   netEl.style.color = targetNet >= 0 ? '#10b981' : '#ef4444';
+
+  // Update additional metrics
+  document.getElementById('growth-gross-margin').textContent = formatPct(grossMarginPct);
+  document.getElementById('growth-net-margin-pct').textContent = formatPct(netMarginPct);
+
+  const vsEl = document.getElementById('growth-vs-fy25');
+  vsEl.textContent = (netChange >= 0 ? '+' : '') + formatPct(netChange);
+  vsEl.style.color = netChange >= 0 ? '#10b981' : '#ef4444';
+
+  document.getElementById('growth-rev-per-case').textContent = casesNeeded.toLocaleString() + ' cases';
 }
 
 // Reverse calculator - find required revenue from target profit
