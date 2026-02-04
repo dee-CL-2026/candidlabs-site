@@ -557,9 +557,10 @@
                 <thead>
                   <tr>
                     <th>P&L Line Item</th>
-                    <th>FY2024 Actual</th>
+                    <th>FY2024</th>
+                    <th>FY2025</th>
                     <th class="fy26-col">FY2026 Budget</th>
-                    <th>YoY Change</th>
+                    <th>vs FY25</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -567,6 +568,7 @@
                   <tr class="highlight-row">
                     <td class="row-label">Revenue</td>
                     <td class="value" id="fy24-revenue">--</td>
+                    <td class="value" id="fy25-revenue">--</td>
                     <td class="value fy26-col" id="fy26-revenue">--</td>
                     <td><span class="change-indicator" id="revenue-change">--</span></td>
                   </tr>
@@ -575,6 +577,7 @@
                   <tr>
                     <td class="row-label">Cost of Goods Sold</td>
                     <td class="value" id="fy24-cogs">--</td>
+                    <td class="value" id="fy25-cogs">--</td>
                     <td class="value fy26-col" id="fy26-cogs">--</td>
                     <td></td>
                   </tr>
@@ -586,6 +589,10 @@
                       <span class="value" id="fy24-gross">--</span>
                       <span class="pct">(<span id="fy24-gross-pct">--</span>)</span>
                     </td>
+                    <td>
+                      <span class="value" id="fy25-gross">--</span>
+                      <span class="pct">(<span id="fy25-gross-pct">--</span>)</span>
+                    </td>
                     <td class="fy26-col">
                       <span class="value" id="fy26-gross">--</span>
                       <span class="pct">(<span id="fy26-gross-pct">--</span>)</span>
@@ -593,24 +600,29 @@
                     <td><span class="change-indicator" id="gross-change">--</span></td>
                   </tr>
 
-                  <tr class="section-divider"><td colspan="4"></td></tr>
+                  <tr class="section-divider"><td colspan="5"></td></tr>
 
                   <!-- Operating Expenses -->
                   <tr>
                     <td class="row-label">Operating Expenses</td>
                     <td class="value" id="fy24-opex">--</td>
+                    <td class="value" id="fy25-opex">--</td>
                     <td class="value fy26-col" id="fy26-opex">--</td>
                     <td></td>
                   </tr>
 
-                  <tr class="section-divider"><td colspan="4"></td></tr>
+                  <tr class="section-divider"><td colspan="5"></td></tr>
 
                   <!-- EBITDA -->
                   <tr class="row-total highlight-row">
-                    <td class="row-label">EBITDA / Net Profit</td>
+                    <td class="row-label">Net Profit</td>
                     <td>
                       <span class="value" id="fy24-ebitda">--</span>
                       <span class="pct">(<span id="fy24-ebitda-pct">--</span>)</span>
+                    </td>
+                    <td>
+                      <span class="value" id="fy25-ebitda">--</span>
+                      <span class="pct">(<span id="fy25-ebitda-pct">--</span>)</span>
                     </td>
                     <td class="fy26-col">
                       <span class="value" id="fy26-ebitda">--</span>
@@ -621,7 +633,7 @@
                 </tbody>
               </table>
               <div class="data-source">
-                Source: PKF Indonesia / Xero P&L Reports | FY2024 Actuals (Jan-Dec 2024)
+                Source: PKF Indonesia / Xero P&L Reports | Full Year Actuals
               </div>
             </div>
           </div>
@@ -657,7 +669,7 @@
                 <th style="min-width: 200px;">Line Item</th>
                 <th>FY2024 Actual</th>
                 <th>% of Rev</th>
-                <th>FY2025 YTD</th>
+                <th>FY2025 Actual</th>
                 <th>YoY Trend</th>
                 <th>FY2026 Suggested</th>
                 <th class="custom-col">FY2026 Custom</th>

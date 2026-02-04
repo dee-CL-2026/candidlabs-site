@@ -29,16 +29,18 @@ const historicalData = {
     netMarginPct: 9.4
   },
 
-  fy2025_ytd: {
-    // Jan - Mar 2025 (Q1)
-    months: 3,
-    revenue: 611886227,
-    cogs: 113192554,
-    grossProfit: 498693673,
-    totalOpex: 672205418,  // Includes high legal fees (one-time)
-    netProfit: -172509205,
-    // Note: Q1 has unusually high OpEx due to one-time legal costs
-    notes: "Q1 includes ~400M IDR one-time legal expenses"
+  fy2025: {
+    // Full Year Jan - Dec 2025
+    revenue: 5516371625,
+    cogs: 2495023912,
+    grossProfit: 3021347713,
+    totalOpex: 2531965598,
+    ebitda: 489382115,
+    netProfit: 445004103,
+    // Calculated ratios
+    grossMarginPct: 54.8,
+    opexPct: 45.9,
+    netMarginPct: 8.1
   },
 
   // Monthly breakdown for 2024 (for trend analysis)
@@ -98,49 +100,58 @@ const conservativeAssumptions = {
 };
 
 // Detailed P&L Line Items with Historical Data
-// Source: PKF Indonesia / Xero Monthly P&L (Jan 2024 - Mar 2025)
+// Source: PKF Indonesia / Xero Monthly P&L
+// FY2024: Jan-Dec 2024 | FY2025: Jan-Dec 2025 (Full Year)
 const detailedLineItems = [
-  { name: "Trading Income", fy2024: 0, fy2025_ytd: 0, category: "revenue", isHeader: true },
-  { name: "Sales", fy2024: 5032806434, fy2025_ytd: 611886227, category: "revenue", isHeader: false },
+  { name: "Trading Income", fy2024: 0, fy2025: 0, category: "revenue", isHeader: true },
+  { name: "Sales", fy2024: 5032806434, fy2025: 5516371625, category: "revenue", isHeader: false },
 
-  { name: "Cost of Sales", fy2024: 0, fy2025_ytd: 0, category: "cogs", isHeader: true },
-  { name: "Cost of Goods Sold", fy2024: 2985848724, fy2025_ytd: 113192554, category: "cogs", isHeader: false },
+  { name: "Cost of Sales", fy2024: 0, fy2025: 0, category: "cogs", isHeader: true },
+  { name: "Cost of Goods Sold", fy2024: 2985848724, fy2025: 2495023912, category: "cogs", isHeader: false },
 
-  { name: "Gross Profit", fy2024: 2046957710, fy2025_ytd: 498693673, category: "subtotal", isHeader: false },
+  { name: "Gross Profit", fy2024: 2046957710, fy2025: 3021347713, category: "subtotal", isHeader: false },
 
-  { name: "Operating Expenses", fy2024: 0, fy2025_ytd: 0, category: "expense", isHeader: true },
-  { name: "Wages and Salaries", fy2024: 170550000, fy2025_ytd: 173825528, category: "expense", isHeader: false, editable: true },
-  { name: "BPJS Kesehatan", fy2024: 3600000, fy2025_ytd: 4800000, category: "expense", isHeader: false, editable: true },
-  { name: "BPJS Ketenagakerjaan", fy2024: 8734014, fy2025_ytd: 8939000, category: "expense", isHeader: false, editable: true },
-  { name: "Marketing", fy2024: 405491137, fy2025_ytd: 271236348, category: "expense", isHeader: false, editable: true },
-  { name: "Listing Fee", fy2024: 111740946, fy2025_ytd: 0, category: "expense", isHeader: false, editable: true },
-  { name: "Transport/Logistics", fy2024: 148445730, fy2025_ytd: 5212000, category: "expense", isHeader: false, editable: true },
-  { name: "Storage and Warehousing", fy2024: 85680000, fy2025_ytd: 29790000, category: "expense", isHeader: false, editable: true },
-  { name: "Consulting & Accounting", fy2024: 71000000, fy2025_ytd: 0, category: "expense", isHeader: false, editable: true },
-  { name: "Legal expenses", fy2024: 286984299, fy2025_ytd: 136920376, category: "expense", isHeader: false, editable: true, note: "Includes one-time costs" },
-  { name: "Flight and Accommodation", fy2024: 62509289, fy2025_ytd: 8674060, category: "expense", isHeader: false, editable: true },
-  { name: "Meal and Entertainment", fy2024: 47795672, fy2025_ytd: 1582350, category: "expense", isHeader: false, editable: true },
-  { name: "Subscriptions", fy2024: 40031346, fy2025_ytd: 15332396, category: "expense", isHeader: false, editable: true },
-  { name: "Third Party Expenses", fy2024: 29481523, fy2025_ytd: 8562654, category: "expense", isHeader: false, editable: true },
-  { name: "PPh Income Tax", fy2024: 26525228, fy2025_ytd: 0, category: "expense", isHeader: false, editable: true },
-  { name: "Shareholder Strategy Meeting", fy2024: 17084232, fy2025_ytd: 0, category: "expense", isHeader: false, editable: true },
-  { name: "Outsourcing", fy2024: 15175207, fy2025_ytd: 0, category: "expense", isHeader: false, editable: true },
-  { name: "Research and Development", fy2024: 10825000, fy2025_ytd: 2722500, category: "expense", isHeader: false, editable: true },
-  { name: "Motor Vehicle Expenses", fy2024: 7002794, fy2025_ytd: 1178852, category: "expense", isHeader: false, editable: true },
-  { name: "Pallet Rent", fy2024: 7388200, fy2025_ytd: 1180000, category: "expense", isHeader: false, editable: true },
-  { name: "Unrealized FX Gain/Loss", fy2024: 6863143, fy2025_ytd: 286773, category: "expense", isHeader: false, editable: true },
-  { name: "Tax Allowance", fy2024: 5423200, fy2025_ytd: 0, category: "expense", isHeader: false, editable: true },
-  { name: "Office Expenses", fy2024: 3841757, fy2025_ytd: 0, category: "expense", isHeader: false, editable: true },
-  { name: "Bank Fees", fy2024: 1557469, fy2025_ytd: 1821095, category: "expense", isHeader: false, editable: true },
-  { name: "Depreciation", fy2024: 1361004, fy2025_ytd: 0, category: "expense", isHeader: false, editable: true },
-  { name: "Bad Debt", fy2024: 799200, fy2025_ytd: 0, category: "expense", isHeader: false, editable: true },
-  { name: "Telephone & Internet", fy2024: 226645, fy2025_ytd: 0, category: "expense", isHeader: false, editable: true },
-  { name: "Interest Expense", fy2024: 0, fy2025_ytd: 141486, category: "expense", isHeader: false, editable: true },
+  { name: "Operating Expenses", fy2024: 0, fy2025: 0, category: "expense", isHeader: true },
+  { name: "Wages and Salaries", fy2024: 170550000, fy2025: 605083333, category: "expense", isHeader: false, editable: true },
+  { name: "Marketing", fy2024: 405491137, fy2025: 533385084, category: "expense", isHeader: false, editable: true },
+  { name: "Consulting & Accounting", fy2024: 71000000, fy2025: 322640840, category: "expense", isHeader: false, editable: true },
+  { name: "Transport/Logistics", fy2024: 148445730, fy2025: 222285150, category: "expense", isHeader: false, editable: true },
+  { name: "Legal expenses", fy2024: 286984299, fy2025: 209909694, category: "expense", isHeader: false, editable: true },
+  { name: "Storage and Warehousing", fy2024: 85680000, fy2025: 142830000, category: "expense", isHeader: false, editable: true },
+  { name: "Subscriptions", fy2024: 40031346, fy2025: 125400887, category: "expense", isHeader: false, editable: true },
+  { name: "Outsourcing", fy2024: 15175207, fy2025: 75573701, category: "expense", isHeader: false, editable: true },
+  { name: "Flight and Accommodation", fy2024: 62509289, fy2025: 51390190, category: "expense", isHeader: false, editable: true },
+  { name: "PIT 21 Allowance", fy2024: 5423200, fy2025: 51672141, category: "expense", isHeader: false, editable: true },
+  { name: "BPJS Ketenagakerjaan", fy2024: 8734014, fy2025: 41407979, category: "expense", isHeader: false, editable: true },
+  { name: "Shareholder Strategy Meeting", fy2024: 17084232, fy2025: 27087780, category: "expense", isHeader: false, editable: true },
+  { name: "General Expenses", fy2024: 0, fy2025: 22806738, category: "expense", isHeader: false, editable: true },
+  { name: "Meal and Entertainment", fy2024: 47795672, fy2025: 19512594, category: "expense", isHeader: false, editable: true },
+  { name: "BPJS Kesehatan", fy2024: 3600000, fy2025: 18400000, category: "expense", isHeader: false, editable: true },
+  { name: "Printing & Stationery", fy2024: 0, fy2025: 8853447, category: "expense", isHeader: false, editable: true },
+  { name: "Third Party Expenses", fy2024: 29481523, fy2025: 8562654, category: "expense", isHeader: false, editable: true },
+  { name: "Pallet Rent", fy2024: 7388200, fy2025: 8068750, category: "expense", isHeader: false, editable: true },
+  { name: "Office Expenses", fy2024: 3841757, fy2025: 7185000, category: "expense", isHeader: false, editable: true },
+  { name: "Motor Vehicle Expenses", fy2024: 7002794, fy2025: 7212852, category: "expense", isHeader: false, editable: true },
+  { name: "Advertising", fy2024: 0, fy2025: 6862600, category: "expense", isHeader: false, editable: true },
+  { name: "Bank Fees", fy2024: 1557469, fy2025: 6808564, category: "expense", isHeader: false, editable: true },
+  { name: "Research and Development", fy2024: 10825000, fy2025: 2722500, category: "expense", isHeader: false, editable: true },
+  { name: "Donation", fy2024: 0, fy2025: 2255000, category: "expense", isHeader: false, editable: true },
+  { name: "Tax Expense", fy2024: 0, fy2025: 1958075, category: "expense", isHeader: false, editable: true },
+  { name: "Freight & Courier", fy2024: 0, fy2025: 1803685, category: "expense", isHeader: false, editable: true },
+  { name: "Depreciation", fy2024: 1361004, fy2025: 935896, category: "expense", isHeader: false, editable: true },
+  { name: "Unrealized FX Gain/Loss", fy2024: 6863143, fy2025: 232659, category: "expense", isHeader: false, editable: true },
+  { name: "Bad Debt", fy2024: 799200, fy2025: 53700, category: "expense", isHeader: false, editable: true },
+  { name: "Listing Fee", fy2024: 111740946, fy2025: 0, category: "expense", isHeader: false, editable: true },
+  { name: "PPh Income Tax", fy2024: 26525228, fy2025: 0, category: "expense", isHeader: false, editable: true },
 
-  { name: "Total Operating Expenses", fy2024: 1576117035, fy2025_ytd: 672205418, category: "subtotal", isHeader: false },
+  { name: "Total Operating Expenses", fy2024: 1576117035, fy2025: 2531965598, category: "subtotal", isHeader: false },
 
-  { name: "Other Income", fy2024: 0, fy2025_ytd: 0, category: "other_income", isHeader: true },
-  { name: "Interest Income", fy2024: 723510, fy2025_ytd: 1002540, category: "other_income", isHeader: false, editable: true },
+  { name: "EBITDA", fy2024: 470840675, fy2025: 489382115, category: "subtotal", isHeader: false },
 
-  { name: "Net Profit", fy2024: 471564185, fy2025_ytd: -172509205, category: "total", isHeader: false },
+  { name: "Other Income/Expense", fy2024: 0, fy2025: 0, category: "other_income", isHeader: true },
+  { name: "Interest Income", fy2024: 723510, fy2025: 3479074, category: "other_income", isHeader: false, editable: true },
+  { name: "Interest Loan", fy2024: 0, fy2025: -46441420, category: "other_income", isHeader: false, editable: true },
+  { name: "Interest Expense", fy2024: 0, fy2025: -479771, category: "other_income", isHeader: false, editable: true },
+
+  { name: "Net Profit", fy2024: 471564185, fy2025: 445004103, category: "total", isHeader: false },
 ];

@@ -24,7 +24,7 @@ function formatPct(num) {
 
 // Calculate 2026 budget based on assumptions
 function calculateBudget(assumptions) {
-  const base = historicalData.fy2024;
+  const base = historicalData.fy2025;  // Base on FY2025
 
   // Revenue
   const baseRevenue = base.revenue;
@@ -95,10 +95,11 @@ function updateBudgetDisplay() {
   document.getElementById('fy26-ebitda').textContent = formatIDR(budget.ebitda);
   document.getElementById('fy26-ebitda-pct').textContent = formatPct(budget.netMarginPct);
 
-  // Update YoY changes
-  const revenueChange = ((budget.revenue - fy24.revenue) / fy24.revenue) * 100;
-  const grossChange = budget.grossMarginPct - fy24.grossMarginPct;
-  const ebitdaChange = ((budget.ebitda - fy24.netProfit) / Math.abs(fy24.netProfit)) * 100;
+  // Update YoY changes (vs FY2025)
+  const fy25 = historicalData.fy2025;
+  const revenueChange = ((budget.revenue - fy25.revenue) / fy25.revenue) * 100;
+  const grossChange = budget.grossMarginPct - fy25.grossMarginPct;
+  const ebitdaChange = ((budget.ebitda - fy25.netProfit) / Math.abs(fy25.netProfit)) * 100;
 
   updateChangeIndicator('revenue-change', revenueChange);
   updateChangeIndicator('gross-change', grossChange, true);
@@ -188,38 +189,41 @@ const customBudget = {};
 // Calculate suggested FY2026 value based on historical trend
 function calculateSuggested(item) {
   const fy24 = item.fy2024;
+  const fy25 = item.fy2025;
 
-  // If it's a header or zero, return 0
-  if (item.isHeader || fy24 === 0) return 0;
+  // If it's a header, return 0
+  if (item.isHeader) return 0;
 
-  // Annualize FY2025 YTD (Q1 = 3 months)
-  const fy25Annualized = item.fy2025_ytd * 4;
-
-  // Calculate growth rate
-  let growthRate = 0;
-  if (fy24 > 0 && fy25Annualized > 0) {
-    growthRate = (fy25Annualized - fy24) / fy24;
-  }
-
-  // For revenue, use the scenario assumption
+  // For revenue, use the scenario assumption based on FY2025
   if (item.category === 'revenue' && item.name === 'Sales') {
-    return Math.round(fy24 * (1 + currentAssumptions.revenueGrowthPct / 100));
+    return Math.round(fy25 * (1 + currentAssumptions.revenueGrowthPct / 100));
   }
 
   // For COGS, use the COGS ratio assumption
   if (item.category === 'cogs' && item.name === 'Cost of Goods Sold') {
-    const suggestedRevenue = historicalData.fy2024.revenue * (1 + currentAssumptions.revenueGrowthPct / 100);
+    const fy25Revenue = detailedLineItems.find(i => i.name === 'Sales').fy2025;
+    const suggestedRevenue = fy25Revenue * (1 + currentAssumptions.revenueGrowthPct / 100);
     return Math.round(suggestedRevenue * (currentAssumptions.cogsRatioPct / 100));
   }
 
-  // For expenses, apply a reasonable growth (cap at 50% growth, min -20%)
-  const cappedGrowth = Math.max(-0.2, Math.min(0.5, growthRate));
+  // Calculate YoY growth rate from FY24 to FY25
+  let growthRate = 0;
+  if (fy24 > 0 && fy25 > 0) {
+    growthRate = (fy25 - fy24) / fy24;
+  } else if (fy25 > 0 && fy24 === 0) {
+    // New expense in FY25, assume flat
+    return Math.round(fy25);
+  } else if (fy25 === 0 && fy24 > 0) {
+    // Expense dropped to zero, keep at zero
+    return 0;
+  }
 
-  // Default: grow by 5-10% or follow capped trend
-  const defaultGrowth = item.category === 'expense' ? 0.05 : cappedGrowth;
-  const effectiveGrowth = fy25Annualized > 0 ? cappedGrowth : defaultGrowth;
+  // For expenses, apply a reasonable growth (cap at 30% growth, min -30%)
+  const cappedGrowth = Math.max(-0.3, Math.min(0.3, growthRate));
 
-  return Math.round(fy24 * (1 + effectiveGrowth));
+  // Default: use FY25 as base and apply capped growth
+  const baseValue = fy25 > 0 ? fy25 : fy24;
+  return Math.round(baseValue * (1 + cappedGrowth * 0.5)); // Moderate the trend
 }
 
 // Calculate % of revenue
@@ -248,14 +252,18 @@ function populateDetailedTable() {
     const suggested = calculateSuggested(item);
     const customValue = customBudget[item.name] !== undefined ? customBudget[item.name] : suggested;
 
-    // YoY calculation (FY25 annualized vs FY24)
-    const fy25Ann = item.fy2025_ytd * 4;
+    // YoY calculation (FY25 vs FY24)
     let yoyChange = 0;
     let yoyDisplay = '-';
-    if (item.fy2024 > 0 && fy25Ann > 0) {
-      yoyChange = ((fy25Ann - item.fy2024) / item.fy2024) * 100;
+    if (item.fy2024 > 0 && item.fy2025 !== 0) {
+      yoyChange = ((item.fy2025 - item.fy2024) / item.fy2024) * 100;
       const sign = yoyChange >= 0 ? '+' : '';
       yoyDisplay = `${sign}${yoyChange.toFixed(0)}%`;
+    } else if (item.fy2024 === 0 && item.fy2025 > 0) {
+      yoyDisplay = 'New';
+    } else if (item.fy2024 > 0 && item.fy2025 === 0) {
+      yoyDisplay = '-100%';
+      yoyChange = -100;
     }
 
     // % of revenue
@@ -266,7 +274,7 @@ function populateDetailedTable() {
       <td class="${item.isHeader ? '' : 'indent'}">${item.name}</td>
       <td class="value">${item.isHeader ? '' : formatIDR(item.fy2024)}</td>
       <td class="pct-of-rev">${item.isHeader || item.category === 'revenue' ? '' : formatPct(pctOfRev2024)}</td>
-      <td class="value">${item.isHeader ? '' : formatIDR(item.fy2025_ytd)}</td>
+      <td class="value">${item.isHeader ? '' : formatIDR(item.fy2025)}</td>
       <td>${item.isHeader ? '' : `<span class="yoy-change ${yoyChange >= 0 ? 'yoy-positive' : 'yoy-negative'}">${yoyDisplay}</span>`}</td>
       <td class="value suggested-value">${item.isHeader ? '' : formatIDR(suggested)}</td>
       <td class="custom-col">
@@ -345,7 +353,7 @@ function exportToCSV() {
       const pct2024 = calcPctOfRevenue(item.fy2024, historicalData.fy2024.revenue);
       const pctBudget = calcPctOfRevenue(customValue, suggestedRevenue);
 
-      csv += `${item.name},${item.fy2024},${pct2024.toFixed(1)}%,${item.fy2025_ytd},${Math.round(customValue)},${pctBudget.toFixed(1)}%\n`;
+      csv += `${item.name},${item.fy2024},${pct2024.toFixed(1)}%,${item.fy2025},${Math.round(customValue)},${pctBudget.toFixed(1)}%\n`;
     }
   });
 
@@ -382,6 +390,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('fy24-opex').textContent = formatIDR(fy24.totalOpex);
   document.getElementById('fy24-ebitda').textContent = formatIDR(fy24.netProfit);
   document.getElementById('fy24-ebitda-pct').textContent = formatPct(fy24.netMarginPct);
+
+  // Populate FY25 actuals
+  const fy25 = historicalData.fy2025;
+  document.getElementById('fy25-revenue').textContent = formatIDR(fy25.revenue);
+  document.getElementById('fy25-cogs').textContent = formatIDR(fy25.cogs);
+  document.getElementById('fy25-gross').textContent = formatIDR(fy25.grossProfit);
+  document.getElementById('fy25-gross-pct').textContent = formatPct(fy25.grossMarginPct);
+  document.getElementById('fy25-opex').textContent = formatIDR(fy25.totalOpex);
+  document.getElementById('fy25-ebitda').textContent = formatIDR(fy25.netProfit);
+  document.getElementById('fy25-ebitda-pct').textContent = formatPct(fy25.netMarginPct);
 
   initSliders();
   updateBudgetDisplay();
