@@ -348,17 +348,28 @@ function updateDetailedTotals() {
 function exportToCSV() {
   const suggestedRevenue = calculateSuggested(detailedLineItems.find(i => i.name === 'Sales'));
 
-  let csv = 'Line Item,FY2024 Actual,% of Rev,FY2025 YTD,FY2026 Budget,Budget % of Rev\n';
+  let csv = 'Line Item,FY2024 Actual,% of Rev,FY2025 Actual,YoY %,FY2026 Budget,Budget % of Rev\n';
 
   detailedLineItems.forEach(item => {
     if (item.isHeader) {
-      csv += `\n${item.name},,,,\n`;
+      csv += `\n${item.name},,,,,\n`;
     } else {
       const customValue = customBudget[item.name] !== undefined ? customBudget[item.name] : calculateSuggested(item);
       const pct2024 = calcPctOfRevenue(item.fy2024, historicalData.fy2024.revenue);
       const pctBudget = calcPctOfRevenue(customValue, suggestedRevenue);
 
-      csv += `${item.name},${item.fy2024},${pct2024.toFixed(1)}%,${item.fy2025},${Math.round(customValue)},${pctBudget.toFixed(1)}%\n`;
+      // Calculate YoY % (FY25 vs FY24)
+      let yoyPct = '';
+      if (item.fy2024 > 0 && item.fy2025 !== 0) {
+        const yoyChange = ((item.fy2025 - item.fy2024) / item.fy2024) * 100;
+        yoyPct = (yoyChange >= 0 ? '+' : '') + yoyChange.toFixed(0) + '%';
+      } else if (item.fy2024 === 0 && item.fy2025 > 0) {
+        yoyPct = 'New';
+      } else if (item.fy2024 > 0 && item.fy2025 === 0) {
+        yoyPct = '-100%';
+      }
+
+      csv += `${item.name},${item.fy2024},${pct2024.toFixed(1)}%,${item.fy2025},${yoyPct},${Math.round(customValue)},${pctBudget.toFixed(1)}%\n`;
     }
   });
 
