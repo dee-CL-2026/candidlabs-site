@@ -629,6 +629,36 @@
       border-bottom: 2px solid var(--color-border);
     }
 
+    .price-toggle {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .toggle-label {
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+    }
+    .toggle-btn {
+      padding: 8px 16px;
+      border: 2px solid var(--color-border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .toggle-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    .toggle-btn.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: white;
+    }
+
     .sku-table input[type="number"] {
       width: 100px;
       padding: 10px 12px;
@@ -644,6 +674,18 @@
       outline: none;
       background: rgba(59, 130, 246, 0.2);
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    .sku-table input[type="number"].price-input {
+      width: 90px;
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+    .sku-table input[type="number"].price-input:focus {
+      background: rgba(16, 185, 129, 0.2);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
+    }
+    .sku-inactive {
+      opacity: 0.5;
     }
 
     .sku-table .total-row {
@@ -1070,14 +1112,20 @@
         <div id="volume-mode" class="builder-mode active">
           <div class="builder-panel">
             <h3>SKU Volume Projections</h3>
-            <p class="panel-description">Enter projected cases per SKU for FY2026</p>
+            <p class="panel-description">Enter projected volumes per SKU for FY2026. Prices are editable.</p>
+
+            <div class="price-toggle">
+              <span class="toggle-label">Show prices per:</span>
+              <button class="toggle-btn active" data-unit="can" onclick="setPriceUnit('can')">Can</button>
+              <button class="toggle-btn" data-unit="case" onclick="setPriceUnit('case')">Case (24)</button>
+            </div>
 
             <table class="sku-table">
               <thead>
                 <tr>
                   <th>SKU</th>
-                  <th>Price/Case (IDR)</th>
-                  <th>FY2026 Cases</th>
+                  <th id="price-header">Price/Can (IDR)</th>
+                  <th id="volume-header">FY2026 Cases</th>
                   <th>FY2026 Revenue</th>
                 </tr>
               </thead>

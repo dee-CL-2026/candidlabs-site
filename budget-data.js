@@ -170,13 +170,13 @@ const detailedLineItems = [
 ];
 
 // SKU Data for Revenue Builder
-// Prices in IDR per case
+// Prices to SKD, including PPN
 const skuData = [
-  { sku: "Club Soda", pricePerCase: 163200, fy2025Volume: 0, channel: "On Trade" },
-  { sku: "Imperial", pricePerCase: 163200, fy2025Volume: 0, channel: "On Trade" },
-  { sku: "Ginger", pricePerCase: 163200, fy2025Volume: 0, channel: "On Trade" },
-  { sku: "Green Tea", pricePerCase: 115200, fy2025Volume: 0, channel: "On Trade" },
-  { sku: "Finn's Breeze", pricePerCase: 163200, fy2025Volume: 0, channel: "On Trade" },
+  { sku: "Club Soda", pricePerCan: 3750, cansPerCase: 24, active: true },
+  { sku: "Imperial", pricePerCan: 4250, cansPerCase: 24, active: true },
+  { sku: "Ginger", pricePerCan: 4250, cansPerCase: 24, active: true },
+  { sku: "Green Tea", pricePerCan: 0, cansPerCase: 24, active: false },
+  { sku: "Finn's Breeze", pricePerCan: 0, cansPerCase: 24, active: false },
 ];
 
 // Channel data

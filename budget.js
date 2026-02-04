@@ -380,8 +380,10 @@ function copyToClipboard() {
 // REVENUE BUILDER
 // ===============================
 
-// SKU volumes for volume mode
-const skuVolumes = {};
+// SKU state
+let priceUnit = 'can'; // 'can' or 'case'
+const skuPrices = {}; // Store edited prices (per can)
+const skuVolumes = {}; // Store volumes (in cases)
 
 // Set builder mode
 function setBuilderMode(mode) {
@@ -396,6 +398,25 @@ function setBuilderMode(mode) {
   });
 }
 
+// Set price display unit (can vs case)
+function setPriceUnit(unit) {
+  priceUnit = unit;
+
+  // Update toggle buttons
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.unit === unit);
+  });
+
+  // Update header
+  const header = document.getElementById('price-header');
+  if (header) {
+    header.textContent = unit === 'can' ? 'Price/Can (IDR)' : 'Price/Case (IDR)';
+  }
+
+  // Re-render table with new unit
+  initSkuTable();
+}
+
 // Initialize SKU table
 function initSkuTable() {
   const tbody = document.getElementById('sku-table-body');
@@ -404,17 +425,47 @@ function initSkuTable() {
   tbody.innerHTML = '';
 
   skuData.forEach((item, index) => {
+    // Get current price (from edited state or default)
+    const pricePerCan = skuPrices[item.sku] !== undefined ? skuPrices[item.sku] : item.pricePerCan;
+    const pricePerCase = pricePerCan * item.cansPerCase;
+    const displayPrice = priceUnit === 'can' ? pricePerCan : pricePerCase;
+
+    // Get current volume
+    const volume = skuVolumes[item.sku] || 0;
+
     const tr = document.createElement('tr');
+    if (!item.active && pricePerCan === 0) {
+      tr.classList.add('sku-inactive');
+    }
+
     tr.innerHTML = `
       <td>${item.sku}</td>
-      <td class="value">${formatIDRFull(item.pricePerCase)}</td>
       <td>
-        <input type="number" id="sku-vol-${index}" value="0" min="0" onchange="updateSkuRevenue()">
+        <input type="number" class="price-input" id="sku-price-${index}"
+               value="${displayPrice}" min="0" onchange="updateSkuPrice(${index}, this.value)">
+      </td>
+      <td>
+        <input type="number" id="sku-vol-${index}" value="${volume}" min="0" onchange="updateSkuRevenue()">
       </td>
       <td class="value" id="sku-rev-${index}">IDR 0</td>
     `;
     tbody.appendChild(tr);
   });
+
+  // Calculate initial revenue
+  updateSkuRevenue();
+}
+
+// Update SKU price when edited
+function updateSkuPrice(index, value) {
+  const item = skuData[index];
+  const inputPrice = parseFloat(value) || 0;
+
+  // Convert to price per can for storage
+  const pricePerCan = priceUnit === 'can' ? inputPrice : inputPrice / item.cansPerCase;
+  skuPrices[item.sku] = pricePerCan;
+
+  updateSkuRevenue();
 }
 
 // Update SKU revenue calculations
@@ -425,15 +476,22 @@ function updateSkuRevenue() {
   skuData.forEach((item, index) => {
     const volInput = document.getElementById(`sku-vol-${index}`);
     const revCell = document.getElementById(`sku-rev-${index}`);
+    if (!volInput || !revCell) return;
 
     const volume = parseInt(volInput.value) || 0;
-    const revenue = volume * item.pricePerCase;
+    skuVolumes[item.sku] = volume;
+
+    // Get price per can (edited or default)
+    const pricePerCan = skuPrices[item.sku] !== undefined ? skuPrices[item.sku] : item.pricePerCan;
+    const pricePerCase = pricePerCan * item.cansPerCase;
+
+    // Revenue = cases × price per case
+    const revenue = volume * pricePerCase;
 
     totalCases += volume;
     totalRevenue += revenue;
 
     revCell.textContent = formatIDRFull(revenue);
-    skuVolumes[item.sku] = volume;
   });
 
   document.getElementById('total-cases').textContent = totalCases.toLocaleString();
