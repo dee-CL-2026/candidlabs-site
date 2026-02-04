@@ -681,6 +681,25 @@ h4 { font-size: 1.25rem; }
   font-weight: 500;
 }
 
+.stat-card-link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.stat-card-link:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+}
+
+.stat-card-link:hover .stat-number {
+  color: var(--color-primary);
+}
+
+.stat-card-link:hover .stat-label {
+  color: var(--color-text-primary);
+}
+
 /* ===========================================
    TOOLS GRID
    =========================================== */
