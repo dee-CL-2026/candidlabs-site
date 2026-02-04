@@ -521,18 +521,19 @@ function calculateGrowthTargets() {
   const avgCasePrice = 90000;
   const casesNeeded = Math.round(targetRevenue / avgCasePrice);
 
+  // Calculate gross profit change vs FY2025
+  const grossChange = ((targetGross - fy25.grossProfit) / fy25.grossProfit) * 100;
+
   // Update table values
   document.getElementById('growth-revenue-target').textContent = formatIDR(targetRevenue);
   document.getElementById('growth-cogs-target').textContent = formatIDR(targetCogs);
   document.getElementById('growth-gross-target').textContent = formatIDR(targetGross);
+  document.getElementById('growth-gross-change').textContent = (grossChange >= 0 ? '+' : '') + grossChange.toFixed(0) + '%';
   document.getElementById('growth-opex-target').textContent = formatIDR(targetOpex);
 
   // Update result card
-  document.getElementById('growth-net-profit').textContent = formatIDRFull(targetNet);
-  document.getElementById('growth-net-margin').textContent = targetNet >= 0 ? 'Profit' : 'Loss';
-
-  // Color the net profit
   const netEl = document.getElementById('growth-net-profit');
+  netEl.textContent = formatIDRFull(targetNet);
   netEl.style.color = targetNet >= 0 ? '#10b981' : '#ef4444';
 
   // Update additional metrics

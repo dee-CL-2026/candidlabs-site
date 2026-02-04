@@ -794,36 +794,58 @@
     .growth-results {
       display: flex;
       flex-direction: column;
-      gap: 16px;
     }
-    .result-metrics {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
+    .result-card-full {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.05));
+      border: 2px solid var(--color-primary);
       border-radius: 12px;
-      padding: 16px;
+      padding: 20px;
     }
-    .metric-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--color-border);
+    .result-main {
+      text-align: center;
+      padding-bottom: 16px;
     }
-    .metric-row:last-child {
-      border-bottom: none;
-    }
-    .metric-label {
-      color: var(--color-text-secondary);
+    .result-main .result-label {
       font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 8px;
     }
-    .metric-value {
+    .result-main .result-value {
+      font-size: 2rem;
+      font-weight: 700;
+      font-family: 'Monaco', 'Consolas', monospace;
+    }
+    .result-divider {
+      height: 1px;
+      background: var(--color-border);
+      margin: 8px 0 16px 0;
+    }
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .result-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .item-label {
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+    }
+    .item-value {
       font-family: 'Monaco', 'Consolas', monospace;
       font-weight: 600;
+      font-size: 1rem;
       color: var(--color-text-primary);
     }
     .result-note {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: var(--color-text-secondary);
       font-style: italic;
+      margin-top: 12px;
+      text-align: center;
     }
 
     .reverse-inputs {
@@ -1260,7 +1282,7 @@
                   <tr>
                     <td>Gross Profit</td>
                     <td class="value">3.02B</td>
-                    <td class="computed">--</td>
+                    <td class="computed" id="growth-gross-change">--</td>
                     <td class="value result" id="growth-gross-target">--</td>
                   </tr>
                   <tr>
@@ -1275,30 +1297,32 @@
 
             <!-- Results Panel -->
             <div class="growth-results">
-              <div class="result-card primary">
-                <div class="result-label">FY2026 Net Profit</div>
-                <div class="result-value" id="growth-net-profit">--</div>
-                <div class="result-pct" id="growth-net-margin">--</div>
+              <div class="result-card-full">
+                <div class="result-main">
+                  <div class="result-label">FY2026 Net Profit</div>
+                  <div class="result-value" id="growth-net-profit">--</div>
+                </div>
+                <div class="result-divider"></div>
+                <div class="result-grid">
+                  <div class="result-item">
+                    <span class="item-label">Gross Margin</span>
+                    <span class="item-value" id="growth-gross-margin">--</span>
+                  </div>
+                  <div class="result-item">
+                    <span class="item-label">Net Margin</span>
+                    <span class="item-value" id="growth-net-margin-pct">--</span>
+                  </div>
+                  <div class="result-item">
+                    <span class="item-label">vs FY2025</span>
+                    <span class="item-value" id="growth-vs-fy25">--</span>
+                  </div>
+                  <div class="result-item">
+                    <span class="item-label">Cases Needed*</span>
+                    <span class="item-value" id="growth-rev-per-case">--</span>
+                  </div>
+                </div>
+                <p class="result-note">*Based on avg 90K/case</p>
               </div>
-              <div class="result-metrics">
-                <div class="metric-row">
-                  <span class="metric-label">Gross Margin</span>
-                  <span class="metric-value" id="growth-gross-margin">--</span>
-                </div>
-                <div class="metric-row">
-                  <span class="metric-label">Net Margin</span>
-                  <span class="metric-value" id="growth-net-margin-pct">--</span>
-                </div>
-                <div class="metric-row">
-                  <span class="metric-label">vs FY2025 Net Profit</span>
-                  <span class="metric-value" id="growth-vs-fy25">--</span>
-                </div>
-                <div class="metric-row">
-                  <span class="metric-label">Revenue per Case*</span>
-                  <span class="metric-value" id="growth-rev-per-case">--</span>
-                </div>
-              </div>
-              <p class="result-note">*Based on avg 90K/case (Club Soda pricing)</p>
             </div>
           </div>
         </div>
