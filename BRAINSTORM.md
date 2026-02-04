@@ -33,6 +33,16 @@ Homepage card featuring the company tagline. Ideas for content:
 
 Could eventually integrate with a simple backend to rotate content or collect responses.
 
+### On-Screen Help & Guided Tours
+**Added:** 2026-02-04
+Interactive step-by-step guides for each page/tool. Click-by-click walkthroughs to help users learn the platform.
+- Highlight elements one at a time with explanatory tooltips
+- "Next/Back/Skip" navigation through the tour
+- Option to restart tour from help menu
+- Could use a library like Intro.js, Shepherd.js, or Driver.js
+- Will need to be updated as the platform evolves
+- Consider: first-time user auto-trigger vs manual "Help" button
+
 ---
 
 *This file may be converted to a kanban board in future.*
