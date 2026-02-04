@@ -9,73 +9,218 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <style>
-    .budget-container {
-      max-width: 1200px;
+    .budget-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+      max-width: 1400px;
       margin: 0 auto;
     }
 
-    .budget-section {
+    @media (max-width: 900px) {
+      .budget-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .assumptions-panel {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: 12px;
       padding: 24px;
-      margin-bottom: 24px;
+      height: fit-content;
+      position: sticky;
+      top: 100px;
     }
 
-    .budget-section h3 {
-      margin-bottom: 16px;
+    .assumptions-panel h3 {
+      margin-bottom: 20px;
       color: var(--color-text-primary);
+      font-size: 1.1rem;
     }
 
-    .placeholder-message {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--color-text-secondary);
-    }
-
-    .placeholder-message .icon {
-      font-size: 4rem;
+    .assumption-group {
       margin-bottom: 20px;
     }
 
-    .placeholder-message h2 {
+    .assumption-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+
+    .assumption-label span:first-child {
+      color: var(--color-text-secondary);
+    }
+
+    .assumption-label .value {
+      font-weight: 600;
       color: var(--color-text-primary);
-      margin-bottom: 12px;
+      font-family: 'Monaco', 'Consolas', monospace;
     }
 
-    .placeholder-message p {
-      max-width: 500px;
-      margin: 0 auto 24px;
-      line-height: 1.6;
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--color-border);
+      outline: none;
+      -webkit-appearance: none;
     }
 
-    .features-preview {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-      margin-top: 40px;
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .scenario-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .scenario-btn {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .scenario-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .scenario-btn.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: white;
+    }
+
+    .results-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .budget-table-container {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .budget-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .budget-table th,
+    .budget-table td {
+      padding: 14px 20px;
+      text-align: right;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .budget-table th:first-child,
+    .budget-table td:first-child {
       text-align: left;
     }
 
-    .feature-item {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      padding: 20px;
+    .budget-table thead th {
+      background: var(--color-surface-elevated, #f8fafc);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .feature-item h4 {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
+    .budget-table tbody tr:hover {
+      background: var(--color-surface-elevated, #f8fafc);
+    }
+
+    .budget-table .row-label {
+      font-weight: 500;
       color: var(--color-text-primary);
     }
 
-    .feature-item p {
-      font-size: 0.9rem;
+    .budget-table .row-sublabel {
+      padding-left: 32px;
       color: var(--color-text-secondary);
-      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    .budget-table .row-total {
+      font-weight: 600;
+      background: var(--color-surface-elevated, #f8fafc);
+    }
+
+    .budget-table .row-total td {
+      border-top: 2px solid var(--color-border);
+    }
+
+    .budget-table .value {
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 0.95rem;
+    }
+
+    .budget-table .pct {
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+    }
+
+    .change-indicator {
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .change-indicator.positive {
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .change-indicator.negative {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .data-source {
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+      text-align: center;
+      padding: 16px;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .highlight-row {
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.05), transparent);
+    }
+
+    .fy26-col {
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .section-divider {
+      height: 8px;
+      background: var(--color-surface-elevated, #f8fafc);
     }
   </style>
 </head>
@@ -93,12 +238,7 @@
       </ul>
 
       <div class="nav-actions">
-        <button
-          id="theme-toggle"
-          class="theme-toggle"
-          type="button"
-          aria-label="Switch to dark mode"
-        >
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">
           <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
@@ -114,25 +254,12 @@
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
           </svg>
         </button>
-
         <a href="#" class="btn btn-primary btn-login" aria-label="Login (coming soon)">Login</a>
-
-        <button
-          id="mobile-menu-toggle"
-          class="mobile-menu-toggle"
-          type="button"
-          aria-label="Toggle navigation menu"
-          aria-expanded="false"
-          aria-controls="mobile-menu"
-        >
-          <span></span>
-          <span></span>
-          <span></span>
+        <button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu">
+          <span></span><span></span><span></span>
         </button>
       </div>
     </div>
-
-    <!-- Mobile Menu -->
     <div id="mobile-menu" class="mobile-menu" role="menu" aria-label="Mobile navigation">
       <ul>
         <li><a href="index.html" role="menuitem">Home</a></li>
@@ -148,37 +275,143 @@
     <!-- Page Header -->
     <header class="page-header">
       <div class="container">
-        <h1 class="page-title">Budget Planner</h1>
-        <p class="page-description">2026 Financial Planning & Scenario Analysis</p>
+        <h1 class="page-title">Budget Planner 2026</h1>
+        <p class="page-description">Interactive P&L projection based on FY2024 actuals</p>
       </div>
     </header>
 
-    <!-- Placeholder Content -->
+    <!-- Budget Content -->
     <section class="section">
-      <div class="container budget-container">
-        <div class="placeholder-message">
-          <div class="icon">📈</div>
-          <h2>Budget Planner - In Development</h2>
-          <p>Interactive budget planning tool with historical data integration from PKF Indonesia financials and real-time scenario modeling.</p>
+      <div class="container">
+        <div class="budget-layout">
 
-          <div class="features-preview">
-            <div class="feature-item">
-              <h4>📊 Historical Actuals</h4>
-              <p>Import FY2023-2025 actuals from PKF reports as baseline</p>
+          <!-- Assumptions Panel -->
+          <aside class="assumptions-panel">
+            <h3>Assumptions</h3>
+
+            <div class="assumption-group">
+              <div class="assumption-label">
+                <span>Revenue Growth</span>
+                <span class="value" id="revenue-growth-value">20%</span>
+              </div>
+              <input type="range" id="revenue-growth-slider" min="0" max="50" value="20">
             </div>
-            <div class="feature-item">
-              <h4>🎯 Assumptions Engine</h4>
-              <p>Adjust growth rates, margins, headcount, and see instant impact</p>
+
+            <div class="assumption-group">
+              <div class="assumption-label">
+                <span>COGS % of Revenue</span>
+                <span class="value" id="cogs-ratio-value">55%</span>
+              </div>
+              <input type="range" id="cogs-ratio-slider" min="40" max="70" value="55">
             </div>
-            <div class="feature-item">
-              <h4>📉 Scenario Comparison</h4>
-              <p>Compare base case vs stretch targets side-by-side</p>
+
+            <div class="assumption-group">
+              <div class="assumption-label">
+                <span>Headcount Change</span>
+                <span class="value" id="headcount-value">+2</span>
+              </div>
+              <input type="range" id="headcount-slider" min="-5" max="10" value="2">
             </div>
-            <div class="feature-item">
-              <h4>💰 P&L Projection</h4>
-              <p>Revenue, COGS, OpEx, EBITDA with monthly breakdown</p>
+
+            <div class="assumption-group">
+              <div class="assumption-label">
+                <span>Marketing % of Revenue</span>
+                <span class="value" id="marketing-value">8%</span>
+              </div>
+              <input type="range" id="marketing-slider" min="0" max="20" value="8">
+            </div>
+
+            <div class="assumption-group">
+              <div class="assumption-label">
+                <span>Salary Increase</span>
+                <span class="value" id="salary-increase-value">10%</span>
+              </div>
+              <input type="range" id="salary-increase-slider" min="0" max="25" value="10">
+            </div>
+
+            <div class="scenario-buttons">
+              <button class="scenario-btn" data-scenario="conservative" onclick="loadScenario('conservative')">Conservative</button>
+              <button class="scenario-btn active" data-scenario="base" onclick="loadScenario('base')">Base</button>
+              <button class="scenario-btn" data-scenario="stretch" onclick="loadScenario('stretch')">Stretch</button>
+            </div>
+          </aside>
+
+          <!-- Results Panel -->
+          <div class="results-panel">
+            <div class="budget-table-container">
+              <table class="budget-table">
+                <thead>
+                  <tr>
+                    <th>P&L Line Item</th>
+                    <th>FY2024 Actual</th>
+                    <th class="fy26-col">FY2026 Budget</th>
+                    <th>YoY Change</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Revenue -->
+                  <tr class="highlight-row">
+                    <td class="row-label">Revenue</td>
+                    <td class="value" id="fy24-revenue">--</td>
+                    <td class="value fy26-col" id="fy26-revenue">--</td>
+                    <td><span class="change-indicator" id="revenue-change">--</span></td>
+                  </tr>
+
+                  <!-- COGS -->
+                  <tr>
+                    <td class="row-label">Cost of Goods Sold</td>
+                    <td class="value" id="fy24-cogs">--</td>
+                    <td class="value fy26-col" id="fy26-cogs">--</td>
+                    <td></td>
+                  </tr>
+
+                  <!-- Gross Profit -->
+                  <tr class="row-total">
+                    <td class="row-label">Gross Profit</td>
+                    <td>
+                      <span class="value" id="fy24-gross">--</span>
+                      <span class="pct">(<span id="fy24-gross-pct">--</span>)</span>
+                    </td>
+                    <td class="fy26-col">
+                      <span class="value" id="fy26-gross">--</span>
+                      <span class="pct">(<span id="fy26-gross-pct">--</span>)</span>
+                    </td>
+                    <td><span class="change-indicator" id="gross-change">--</span></td>
+                  </tr>
+
+                  <tr class="section-divider"><td colspan="4"></td></tr>
+
+                  <!-- Operating Expenses -->
+                  <tr>
+                    <td class="row-label">Operating Expenses</td>
+                    <td class="value" id="fy24-opex">--</td>
+                    <td class="value fy26-col" id="fy26-opex">--</td>
+                    <td></td>
+                  </tr>
+
+                  <tr class="section-divider"><td colspan="4"></td></tr>
+
+                  <!-- EBITDA -->
+                  <tr class="row-total highlight-row">
+                    <td class="row-label">EBITDA / Net Profit</td>
+                    <td>
+                      <span class="value" id="fy24-ebitda">--</span>
+                      <span class="pct">(<span id="fy24-ebitda-pct">--</span>)</span>
+                    </td>
+                    <td class="fy26-col">
+                      <span class="value" id="fy26-ebitda">--</span>
+                      <span class="pct">(<span id="fy26-ebitda-pct">--</span>)</span>
+                    </td>
+                    <td><span class="change-indicator" id="ebitda-change">--</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="data-source">
+                Source: PKF Indonesia / Xero P&L Reports | FY2024 Actuals (Jan-Dec 2024)
+              </div>
             </div>
           </div>
+
         </div>
       </div>
     </section>
@@ -191,6 +424,8 @@
     </div>
   </footer>
 
+  <script src="budget-data.js"></script>
+  <script src="budget.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
