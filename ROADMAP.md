@@ -31,6 +31,7 @@
 - [ ] Homepage hero/about section - casual copy explaining available tools
 - [ ] Scorecards - decide on appropriate metrics to display
 - [ ] Configurable Quick Access for logged-in users
+- [ ] Quick Access external links - identify other useful shortcuts (like Submit Expenses)
 
 ## Phase 6: Tools Page Overhaul
 - [ ] Review and reorganize tools - separate team-level vs system/admin tools
