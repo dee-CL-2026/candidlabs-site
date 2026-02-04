@@ -728,15 +728,20 @@
     }
 
     /* Growth Mode Layout */
-    .growth-layout {
+    .growth-layout,
+    .reverse-layout {
       display: grid;
       grid-template-columns: 1fr 300px;
       gap: 24px;
       align-items: start;
     }
     @media (max-width: 900px) {
-      .growth-layout {
+      .growth-layout,
+      .reverse-layout {
         grid-template-columns: 1fr;
+      }
+      .growth-results {
+        margin-top: 0;
       }
     }
 
@@ -1331,54 +1336,67 @@
 
         <!-- Mode 3: Reverse Calculator (Target EBITDA) -->
         <div id="reverse-mode" class="builder-mode">
-          <div class="builder-panel">
-            <h3>Reverse Calculator</h3>
-            <p class="panel-description">Enter your target profit and expenses to find required revenue</p>
+          <div class="reverse-layout">
+            <!-- Inputs Panel -->
+            <div class="builder-panel">
+              <h3>Reverse Calculator</h3>
+              <p class="panel-description">Enter your targets to find required revenue</p>
 
-            <div class="reverse-inputs">
-              <div class="input-group">
-                <label>Target Net Profit (IDR)</label>
-                <input type="number" id="target-profit" value="1000000000" onchange="calculateReverseRevenue()">
-                <span class="input-hint">e.g., 1,000,000,000 = 1B</span>
-              </div>
-
-              <div class="input-group">
-                <label>Planned Total OpEx (IDR)</label>
-                <input type="number" id="planned-opex" value="2800000000" onchange="calculateReverseRevenue()">
-                <span class="input-hint">FY2025 was 2.53B</span>
-              </div>
-
-              <div class="input-group">
-                <label>Target Gross Margin %</label>
-                <input type="number" id="target-gm-pct" value="50" min="20" max="80" onchange="calculateReverseRevenue()">
-                <span class="input-hint">FY2025 was 54.8%</span>
-              </div>
+              <table class="growth-table">
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    <th>FY2025</th>
+                    <th>Target</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Net Profit</td>
+                    <td class="value">445M</td>
+                    <td><input type="number" id="target-profit" value="1000000000" onchange="calculateReverseRevenue()"></td>
+                  </tr>
+                  <tr>
+                    <td>Total OpEx</td>
+                    <td class="value">2.53B</td>
+                    <td><input type="number" id="planned-opex" value="2800000000" onchange="calculateReverseRevenue()"></td>
+                  </tr>
+                  <tr>
+                    <td>Gross Margin</td>
+                    <td class="value">54.8%</td>
+                    <td><input type="number" id="target-gm-pct" value="50" onchange="calculateReverseRevenue()"><span class="input-suffix">%</span></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <div class="reverse-results">
-              <div class="result-card primary">
-                <div class="result-label">Required Revenue</div>
-                <div class="result-value" id="required-revenue">IDR 7.60B</div>
-                <div class="result-pct" id="required-growth">+38% vs FY2025</div>
-              </div>
-
-              <div class="result-breakdown">
-                <div class="breakdown-row">
-                  <span>Required Gross Profit</span>
-                  <span id="required-gross">IDR 3.80B</span>
+            <!-- Results Panel -->
+            <div class="growth-results">
+              <div class="result-card-full">
+                <div class="result-main">
+                  <div class="result-label">Required Revenue</div>
+                  <div class="result-value" id="required-revenue">--</div>
                 </div>
-                <div class="breakdown-row">
-                  <span>Less: OpEx</span>
-                  <span id="reverse-opex">IDR 2.80B</span>
+                <div class="result-divider"></div>
+                <div class="result-grid">
+                  <div class="result-item">
+                    <span class="item-label">vs FY2025</span>
+                    <span class="item-value" id="required-growth">--</span>
+                  </div>
+                  <div class="result-item">
+                    <span class="item-label">Gross Profit</span>
+                    <span class="item-value" id="required-gross">--</span>
+                  </div>
+                  <div class="result-item">
+                    <span class="item-label">COGS</span>
+                    <span class="item-value" id="required-cogs">--</span>
+                  </div>
+                  <div class="result-item">
+                    <span class="item-label">Cases Needed*</span>
+                    <span class="item-value" id="reverse-cases">--</span>
+                  </div>
                 </div>
-                <div class="breakdown-row">
-                  <span>= Net Profit</span>
-                  <span id="reverse-net">IDR 1.00B</span>
-                </div>
-                <div class="breakdown-row">
-                  <span>Required COGS (at <span id="reverse-cogs-pct">50%</span>)</span>
-                  <span id="required-cogs">IDR 3.80B</span>
-                </div>
+                <p class="result-note">*Based on avg 90K/case</p>
               </div>
             </div>
           </div>

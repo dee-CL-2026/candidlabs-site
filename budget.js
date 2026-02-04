@@ -561,24 +561,27 @@ function calculateReverseRevenue() {
 
   // Required COGS = Revenue - Gross Profit
   const requiredCogs = requiredRevenue - requiredGross;
-  const cogsPct = 100 - targetGmPct;
 
   // Growth vs FY2025
   const fy25Revenue = historicalData.fy2025.revenue;
   const growthVsFy25 = ((requiredRevenue - fy25Revenue) / fy25Revenue) * 100;
 
-  // Update display
-  document.getElementById('required-revenue').textContent = formatIDRFull(requiredRevenue);
-  document.getElementById('required-growth').textContent = (growthVsFy25 >= 0 ? '+' : '') + formatPct(growthVsFy25) + ' vs FY2025';
-  document.getElementById('required-gross').textContent = formatIDRFull(requiredGross);
-  document.getElementById('reverse-opex').textContent = formatIDRFull(plannedOpex);
-  document.getElementById('reverse-net').textContent = formatIDRFull(targetProfit);
-  document.getElementById('reverse-cogs-pct').textContent = formatPct(cogsPct);
-  document.getElementById('required-cogs').textContent = formatIDRFull(requiredCogs);
+  // Estimate cases needed
+  const avgCasePrice = 90000;
+  const casesNeeded = Math.round(requiredRevenue / avgCasePrice);
 
-  // Color the growth indicator
+  // Update main result
+  const revenueEl = document.getElementById('required-revenue');
+  revenueEl.textContent = formatIDRFull(requiredRevenue);
+
+  // Update metrics
   const growthEl = document.getElementById('required-growth');
+  growthEl.textContent = (growthVsFy25 >= 0 ? '+' : '') + formatPct(growthVsFy25);
   growthEl.style.color = growthVsFy25 <= 30 ? '#10b981' : (growthVsFy25 <= 50 ? '#f59e0b' : '#ef4444');
+
+  document.getElementById('required-gross').textContent = formatIDR(requiredGross);
+  document.getElementById('required-cogs').textContent = formatIDR(requiredCogs);
+  document.getElementById('reverse-cases').textContent = casesNeeded.toLocaleString();
 }
 
 // Current assumptions state (used by detailed planner)
