@@ -87,8 +87,11 @@
 
 *See [[candid-labs-tiered]] for doctrine details*
 
-- [ ] Raw → Cleaned → Ready pipeline
-- [ ] sales_master spoke implementation
+- [x] Raw → Cleaned → Ready pipeline defined (Phase 1 doctrine)
+- [x] sales_master spoke implementation (cleanReceivables, buildRevenueMaster)
+- [x] Shared utilities (lineage, logging, retention)
+- [ ] Deploy tiered scripts to GAS
+- [ ] Validate parity with legacy outputs
 - [ ] Data dictionary maintenance
 
 ---
