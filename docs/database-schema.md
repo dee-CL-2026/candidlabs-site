@@ -14,7 +14,8 @@
 | Loan Tracker | 6 | 6,015 | 27 |
 | Sales Data Updates | 3 | 1,631 | 26 |
 | Control Centre | 8 | 8,000 | 26 |
-| **TOTAL** | **78** | **119,043** | |
+| **All Raw Data** | **12** | **22,868** | **35** |
+| **TOTAL** | **90** | **141,911** | |
 
 ---
 
@@ -124,6 +125,36 @@
 | Raw | 601 | (raw import data) |
 | New | 1,000 | Account, Venue, Market, Channel, Distributor |
 | Config | 30 | Group_Name, Market, City, Channel, Distributor |
+
+---
+
+## All Raw Data (Source Hub)
+`1JDkl-_Ii-Lh3_aKdB0wn80bScVubaWrWiJOvoq0-2gs`
+
+**This is THE input layer — VA drops data here, IMPORTRANGE pulls to DBs**
+
+| Tab | Rows | Key Columns |
+|-----|------|-------------|
+| Read.me | 1,000 | |
+| **IMPORTRANGE_FORMULAS** | 1,000 | Tab Name, Target Spoke, Status, Column Range |
+| Cash in Hand | 1,000 | Snapshot_Date, Balance Type, Bank_Name, Currency, Value |
+| AGED_RECEIVABLES_RAW | 1,000 | Contact, aging buckets |
+| AGED_PAYABLES_RAW | 1,000 | Contact, aging buckets |
+| PAYABLE_DETAIL_RAW | 2,939 | Invoice Date, Item Code, Quantity, Prices |
+| RECEIVABLE_DETAIL_RAW | 1,048 | Invoice Number/Date, Item, Quantity, Prices |
+| KMI_PACKAGING_RAW | 9,881 | Tanggal, Material, Stock awal/Masuk/Pemakaian/Stock akhir |
+| KMI_TAB-CLUB-RAW | 1,000 | Club Soda finished goods |
+| KMI_TAB-IMPERIAL-RAW | 1,000 | Imperial Tonic finished goods |
+| KMI_TAB-GINGER-RAW | 1,000 | Ginger Ale finished goods |
+| KMI_RM_RAW | 1,000 | Raw materials tracking |
+
+**Data Flow:**
+```
+All Raw Data (VA input)
+    ├── IMPORTRANGE → Sales DB (receivables, cash)
+    ├── IMPORTRANGE → Production DB (payables, KMI data)
+    └── IMPORTRANGE_FORMULAS tab = the mapping
+```
 
 ---
 
