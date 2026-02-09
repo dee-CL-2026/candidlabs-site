@@ -1,9 +1,10 @@
-import { canViewHub } from "./auth/rbac";
-import { createSession, destroySession, isAllowedDomain, loadSessionUser } from "./auth/session";
+import { createSession, destroySession, isAllowedDomain } from "./auth/session";
 import { isRole, isTool, loadConfig, type AppEnv } from "./config/env";
 import { handleToolsApi } from "./api/tools";
 import { renderLoginPage } from "./ui/routes/login";
 import { renderToolPage, renderToolsIndex } from "./ui/routes/tools";
+import { DbClient } from "./db/client";
+import { createRequestContext, requireHubAccess, requireUser } from "./auth/middleware";
 
 function html(body: string, status = 200): Response {
   return new Response(body, {
@@ -39,10 +40,11 @@ async function parseFormOrJson(request: Request): Promise<Record<string, unknown
 export default {
   async fetch(request: Request, env: AppEnv): Promise<Response> {
     const config = loadConfig(env);
+    const db = new DbClient(env);
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method.toUpperCase();
-    const user = await loadSessionUser(env, config, request);
+    const context = await createRequestContext(request, env, config);
 
     if (path === "/") {
       return redirect("/tools");
@@ -62,6 +64,7 @@ export default {
         return json({ error: "Invalid login payload for configured domain." }, 400);
       }
 
+      await db.upsertUser(email, name, role);
       const session = await createSession(env, config, { email, role, name: name || undefined });
       return redirect("/tools", session.cookie);
     }
@@ -72,23 +75,25 @@ export default {
     }
 
     if (path === "/api/me" && method === "GET") {
+      const user = requireUser(context);
       if (!user) return json({ error: "Unauthenticated" }, 401);
       return json(user);
     }
 
     if (path === "/tools" && method === "GET") {
-      if (!user || !canViewHub(user.role)) return redirect("/login");
+      if (!requireHubAccess(context)) return redirect("/login");
       return html(renderToolsIndex());
     }
 
     if (path.startsWith("/tools/") && method === "GET") {
-      if (!user || !canViewHub(user.role)) return redirect("/login");
+      if (!requireHubAccess(context)) return redirect("/login");
       const tool = path.slice("/tools/".length);
       if (!isTool(tool)) return html("Not found", 404);
       return html(renderToolPage(tool));
     }
 
     if (path.startsWith("/api/tools/")) {
+      const user = requireUser(context);
       if (!user) return json({ error: "Unauthenticated" }, 401);
       const segments = path.split("/").filter(Boolean);
       if (segments.length < 3) return json({ error: "Not found" }, 404);

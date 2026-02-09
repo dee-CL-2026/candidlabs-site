@@ -37,6 +37,26 @@ function getStore(env: AppEnv): KVNamespace | null {
   return env.SESSION_KV || null;
 }
 
+async function signSessionId(sessionId: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(sessionId));
+  const hex = [...new Uint8Array(signature)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `${sessionId}.${hex}`;
+}
+
+async function verifySignedSession(raw: string, secret: string): Promise<string | null> {
+  const [sessionId, signature] = raw.split(".");
+  if (!sessionId || !signature) return null;
+  const expected = await signSessionId(sessionId, secret);
+  return expected === raw ? sessionId : null;
+}
+
 export function isAllowedDomain(email: string, allowedDomain: string): boolean {
   const lowerEmail = email.toLowerCase();
   const suffix = `@${allowedDomain.toLowerCase()}`;
@@ -58,7 +78,11 @@ export async function createSession(
   }
   return {
     sessionId,
-    cookie: setCookieHeader(config.sessionCookieName, sessionId, config.cookieSecure)
+    cookie: setCookieHeader(
+      config.sessionCookieName,
+      await signSessionId(sessionId, config.sessionSecret),
+      config.cookieSecure
+    )
   };
 }
 
@@ -89,7 +113,9 @@ export async function loadSessionUser(
   config: AppConfig,
   request: Request
 ): Promise<SessionUser | null> {
-  const sessionId = getSessionIdFromRequest(config, request);
+  const rawSession = getSessionIdFromRequest(config, request);
+  if (!rawSession) return null;
+  const sessionId = await verifySignedSession(rawSession, config.sessionSecret);
   if (!sessionId) return null;
 
   const store = getStore(env);
