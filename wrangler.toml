@@ -1,0 +1,16 @@
+name = "candidlabs-site"
+main = "src/index.ts"
+compatibility_date = "2026-02-09"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "candidlabs-site-db"
+database_id = "D1_DATABASE_ID"
+
+[[kv_namespaces]]
+binding = "SESSION_KV"
+id = "KV_NAMESPACE_ID"
+
+[vars]
+ALLOWED_DOMAIN = "ALLOWED_DOMAIN"
+SESSION_SECRET = "SESSION_SECRET"
