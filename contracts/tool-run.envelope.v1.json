@@ -1,0 +1,37 @@
+{
+  "version": "v1",
+  "pattern": "standard-tool-run",
+  "endpoints": {
+    "run": "POST /api/tools/{tool}/run",
+    "status": "GET /api/tools/{tool}/runs/{runId}",
+    "approve": "POST /api/tools/{tool}/runs/{runId}/approve"
+  },
+  "statuses": [
+    "queued",
+    "running",
+    "completed",
+    "failed",
+    "needs_approval",
+    "approved",
+    "rejected"
+  ],
+  "auth": {
+    "type": "HMAC",
+    "headers": [
+      "X-Candid-Timestamp",
+      "X-Candid-Signature"
+    ]
+  },
+  "request_envelope": {
+    "idempotencyKey": "uuid",
+    "input": {},
+    "options": {
+      "dryRun": false
+    }
+  },
+  "response_envelope": {
+    "runId": "run_...",
+    "status": "queued",
+    "submittedAt": "ISO-8601"
+  }
+}
