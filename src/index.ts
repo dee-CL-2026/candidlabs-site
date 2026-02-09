@@ -104,7 +104,8 @@ export default {
           env,
           config,
           request,
-          user
+          user,
+          db
         },
         tool,
         segments
