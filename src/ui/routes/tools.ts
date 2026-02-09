@@ -103,7 +103,7 @@ function toolClientScript(tool: Tool): string {
   }
 
   async function refresh(runId) {
-    const env = await api(`\/api\/tools\/\${TOOL}\/runs\/\${encodeURIComponent(runId)}`, "GET");
+    const env = await api("/api/tools/" + TOOL + "/runs/" + encodeURIComponent(runId), "GET");
     updateFromEnvelope(env);
     showResponse(env);
   }
