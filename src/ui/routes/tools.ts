@@ -120,7 +120,7 @@ function toolClientScript(tool: Tool): string {
       options: { dryRun: false }
     };
 
-    const env = await api(`\/api\/tools\/\${TOOL}\/run`, "POST", payload);
+    const env = await api("/api/tools/" + TOOL + "/run", "POST", payload);
     updateFromEnvelope(env);
     showResponse(env);
 
@@ -136,7 +136,7 @@ function toolClientScript(tool: Tool): string {
     const notes = notesEl ? notesEl.value.trim() : "";
 
     const payload = { decision, notes: notes || undefined };
-    const env = await api(`\/api\/tools\/\${TOOL}\/runs\/\${encodeURIComponent(runId)}\/approve`, "POST", payload);
+    const env = await api("/api/tools/" + TOOL + "/runs/" + encodeURIComponent(runId) + "/approve", "POST", payload);
     updateFromEnvelope(env);
     showResponse(env);
   }
