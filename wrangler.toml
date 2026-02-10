@@ -5,9 +5,11 @@ pages_build_output_dir = "."
 [[d1_databases]]
 binding = "DB"
 database_name = "candidlabs-site-db"
-database_id = "PASTE_REAL_D1_DATABASE_ID_HERE"
+database_id = "c8cb0de8-3446-4d3d-a213-36bbce4e2df2"
 
-c66b00777634f4581ba77edb5371322"
+[[kv_namespaces]]
+binding = "SESSION_KV"
+id = "5c66b00777634f4581ba77edb5371322"
 
 [vars]
 ALLOWED_DOMAIN = "ALLOWED_DOMAIN"
