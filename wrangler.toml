@@ -1,5 +1,4 @@
 name = "candidlabs-site"
-main = "src/index.ts"
 compatibility_date = "2026-02-09"
 pages_build_output_dir = "."
 
