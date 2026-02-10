@@ -1,122 +1,76 @@
 # Phase 1 Foundation Scope – Candidlabs Hub
 
-Status: Draft  
-Applies to branch: feature/foundation-build
+Status: Active  
+Applies to branch: `feature/foundation-build`
 
 ---
 
 ## Purpose
 
-Phase 1 establishes the **durable foundation primitives** of the Candidlabs Hub.
-This phase exists to create a stable control plane that future tool integrations
-can plug into without rework.
-
-Phase 1 is explicitly **not** about business logic, automation depth, or GAS refactors.
+Phase 1 establishes a deployable control plane for role-gated tool run lifecycle management.
+It standardizes hub routes, auth/session scaffolding, RBAC checks, and D1 run/approval persistence.
 
 ---
 
-## Phase 1 Objectives (What We ARE Building)
+## In Scope (Implemented or Directly Scaffolded)
 
-### Control Plane Foundations
+### Routing and Deployment Foundation
 
-- A framework-based frontend for `candidlabs-site` suitable for Cloudflare Pages.
-- A Cloudflare Worker acting as the single public API gateway.
-- A clear `/api/*` routing structure (even if handlers are stubbed).
-- Deterministic request/response behaviour aligned to the Phase 0 contract.
+- Cloudflare Pages deployment with Pages Functions catch-all entrypoint.
+- Catch-all function forwards requests to the application router in `src/index.ts`.
+- `wrangler.toml` configured for Pages via `pages_build_output_dir` plus bindings/vars.
 
-### Authentication & Identity (Scaffold Only)
+### Auth and Session Foundation
 
-- Login flow scaffolding compatible with Google Workspace OAuth.
-- Domain-restricted identity model (email as primary key).
-- Session creation and validation primitives (can be mocked initially).
+- Login page and mock login endpoint.
+- Allowed-domain enforcement.
+- Signed session cookie handling.
+- Session lookup middleware for protected routes.
 
-### RBAC & Governance Primitives
+### RBAC and Governance Foundation
 
 - Role model: `founder | admin | sales | finance`.
-- RBAC middleware enforcing route- and action-level permissions.
-- Approval-state representation (draft / needs_approval / approved / rejected).
-- No UI polish required; functional placeholders are sufficient.
+- Route/action checks for run and approve operations.
+- Approval records persisted in D1.
 
-### Data Layer Foundations
+### Data Foundation
 
-- Cloudflare D1 schema for:
-  - users
-  - tool_runs
-  - approvals
-- Minimal data access layer (DAL) with deterministic behaviour.
-- No optimisations, caching strategies, or performance tuning.
+- D1 schema for users, tool_runs, approvals.
+- Deterministic run status transitions and idempotent run creation by key.
 
-### Tool UI Placeholders
+### Tool Surface Foundation
 
 - `/tools` index page.
-- Placeholder pages for:
-  - `/tools/kaa`
-  - `/tools/sales-assets`
-  - `/tools/reports`
-  - `/tools/budget`
-- Pages may show “Coming soon” or stub run actions.
-
-### API Stubs
-
-- `/api/tools/{tool}/run`
-- `/api/tools/{tool}/runs/{runId}`
-- `/api/tools/{tool}/runs/{runId}/approve`
-
-All endpoints may return **mock data**, but must conform exactly to
-`contracts/tool-run.envelope.v1.json`.
+- Tool pages: `/tools/kaa`, `/tools/sales-assets`, `/tools/reports`, `/tools/budget`.
+- API endpoints for run/status/approve lifecycle.
 
 ---
 
-## Explicit Non-Goals (What We ARE NOT Building)
+## Out of Scope (Not Implemented in This Phase)
 
-- No real tool execution.
-- No calls to Google Apps Script.
-- No GAS code changes.
-- No business logic porting.
-- No budget calculations or financial logic.
-- No PDF generation.
-- No report generation.
-- No Looker integration.
-- No scheduler / cron jobs.
-- No background workers beyond request handling.
-- No UI design polish or branding work.
+- Direct Worker-to-GAS or Pages-to-GAS execution wiring.
+- Real OAuth/OIDC provider integration.
+- Tool-specific business logic execution and artifact generation.
+- Scheduler/cron orchestration.
+- UI polish beyond functional scaffold.
 
 ---
 
-## Architectural Constraints (Must Be Respected)
+## Architectural Constraints
 
-- The Worker is the **only** public entrypoint.
-- No browser-to-GAS calls.
-- No hardcoded IDs, secrets, or magic values.
-- Configuration must be environment-driven.
-- Behaviour must be deterministic and auditable.
-- Phase 0 contracts and intent documents are authoritative.
+- Server requests must enter through Pages Functions (`/functions/[[path]].ts`).
+- Configuration must remain binding/var driven.
+- Status and envelope behavior must remain contract-consistent.
+- Documentation claims must map to current code paths.
 
 ---
 
 ## Phase Exit Criteria
 
-Phase 1 is considered complete when:
+Phase 1 is complete when:
 
-- The site deploys successfully to Cloudflare Pages.
-- Auth and RBAC middleware exist and can gate routes.
-- Tool run lifecycle can be simulated end-to-end with mock data.
-- Run records and approvals are persisted in D1.
-- The system can demonstrate:
-  User → Login → Tool Run (stub) → Approval → Status View
-
-No real-world output is required.
-
----
-
-## Handoff to Phase 2
-
-Once Phase 1 is complete:
-
-- Phase 2 may wire **real authentication** (OAuth fully enabled).
-- Phase 2 may add role management UI.
-- Phase 2 may introduce HMAC signing Worker → GAS.
-- Phase 2 may refine approval workflows.
-
-Phase 1 must remain stable and unchanged once exited.
+- Pages deploy validation passes for `wrangler.toml`.
+- Hub/tool/API routes are accessible with session and RBAC checks.
+- Tool run lifecycle (run/status/approve) persists deterministic records in D1.
+- Approvals are explicitly recorded.
 

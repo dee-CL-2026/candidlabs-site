@@ -3,75 +3,77 @@
 ## Platform Vision
 
 **What is the Candidlabs Hub?**  
-An internal business operating system (Candid OS) providing the foundational structure for documentation, operational automation, reporting, and governance.
+An internal operating system for Candidlabs that centralizes access, tool execution, and audit records.
 
 **Who is it for?**  
-Primarily for internal use by the Candid team to ensure operational rigor. Future expansion includes internal and external portals for staff, partners, distributors, and investors.
+Internal Candidlabs users (founder, admin, sales, finance roles) under a configured allowed email domain.
 
 **What problems does it solve?**  
-It eliminates fragmented knowledge, prevents speculative refactors, and provides a deterministic, auditable framework for decision traceability and reporting.
+It replaces disconnected tool entrypoints with a single role-gated hub and standardized run lifecycle records.
 
 **What does success look like?**  
-A system that is operable, auditable, and credible at scale. Success is defined by a foundation build that establishes durable invariants and architectural primitives allowing the system to evolve without rework.
+A deployable, auditable control plane where tool runs are submitted, tracked, and approved/rejected with deterministic state transitions.
 
 ---
 
 ## Roles & Access
 
 - **Founders**  
-  Full view and approval authority. Responsible for strategic narrative and final review of executive reporting.
+  Can view the hub, run all tools, and approve all tools.
 
 - **Admin**  
-  Full access to view, create, run, and approve all system components. Maintains the executable truth and manages manual migration protocols.
+  Can view the hub, run all tools, and approve all tools.
 
 - **Sales**  
-  Can run specific tools such as the KAA Generator and Sales Asset Generator. Can create mapping entries via forms but has no access to core database logic.
+  Can view the hub and run `kaa` and `sales-assets`.
 
 - **Finance**  
-  Owns the financial system of record (Xero). Views financial consistency checks and runs month-end refresh pipelines.
+  Can view the hub and run `reports` and `budget`; can approve `reports` and `budget`.
 
 - **Future Roles**  
-  External users (partners, investors) with permissioned view-only access to derived artefacts.
+  UNKNOWN. Confirm in `src/config/env.ts` and `src/auth/rbac.ts` if new roles are introduced.
 
 ---
 
 ## Data Sensitivity & Risk
 
-- Sensitive data includes financial records of truth, cost drivers (COGS), SKU-level profitability, receivables/payables, and runway estimates.
-- No part of the platform is public-facing.
-- All data must be traceable to a raw source.
-- Derived artefacts are disposable; doctrine and executable truth must always be reviewable and auditable.
+- Sensitive operational and financial tool inputs can be submitted through tool run APIs.
+- Access is session-gated and role-gated in server code.
+- Run and approval records persist to D1 tables (`tool_runs`, `approvals`).
+- Session records are stored in KV when bound, otherwise in-memory fallback.
 
 ---
 
 ## Constraints & Non-Goals
 
 **Non-goals**
-- Not a consumer-facing product.
-- Not a greenfield experiment.
-- Not an AI-governed system.
-- Not a collection of ad-hoc scripts.
+- Not a public consumer product.
+- Not a direct browser-to-GAS integration.
+- Not a replacement of existing GAS runtime logic in this phase.
 
 **Technology constraints**
-- Current execution logic lives in Google Apps Script (Hub-and-Spoke architecture).
-- Documentation must be compatible with NotebookLM knowledge synthesis.
+- Server entrypoint is Cloudflare Pages Functions (`functions/[[path]].ts`) forwarding to `src/index.ts`.
+- Cloudflare bindings/vars are configured in `wrangler.toml`.
+- Tool execution in this repo is lifecycle scaffolding; it does not call external GAS endpoints.
 
 ---
 
 ## Must-Not-Change Invariants
 
 - **No-Strings Mandate**  
-  No hardcoded identifiers or magic values.
+  IDs, secrets, and environment-specific values must come from config/bindings.
 
 - **Determinism Over Convenience**  
-  Predictable, repeatable behaviour is preferred over shortcuts.
+  The same request envelope should produce deterministic run lifecycle transitions.
 
 - **AI Taxonomy**  
-  AI is assistive (reasoning and synthesis) and has no authority to decide architecture or execute system changes.
+  AI may assist documentation and implementation but does not replace explicit human approval decisions.
 
-6. Integration Expectations
-• Conceptual Connection: Tools are isolated "Spokes" (execution contexts) that depend on a centralised "Hub" of pure logic and configuration.
-• Auth & Access Control: Authentication resides within the Candid Google Account (System of Record). Release safety is enforced via mechanical guardrails (e.g., .clasp.json bindings).
-• Future Expansion: Designed to eventually integrate directly with APIs (Unleashed/Xero) and support automated distributor reporting via external portals
 - **No Public Data or Platforms**  
-  The system is internal-first and private by design.
+  This hub is internal and role-gated.
+
+## 6. Integration Expectations
+
+- Conceptual connection: the hub is the control plane; execution spokes can remain external runtimes.
+- Auth and access control: session and RBAC checks are enforced in hub server routes.
+- Future expansion: UNKNOWN. Confirm future integration design in a versioned architecture doc before implementation.

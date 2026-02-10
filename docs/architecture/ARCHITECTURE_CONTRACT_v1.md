@@ -1,83 +1,101 @@
 # Architecture Contract v1 – Candidlabs Hub
 
-Status: Draft  
-Date: 2026-02-09
+Status: Active (Foundation branch)  
+Date: 2026-02-10  
+Applies to: `feature/foundation-build`
 
 ---
 
 ## 1. Canonical Architecture
 
-Candidlabs Hub = **Control Plane + Execution Plane**
+Candidlabs Hub in this repository uses Cloudflare Pages with a Pages Functions server router.
 
-### Control Plane (Cloudflare)
+### Control Plane (Implemented Here)
 
-- Cloudflare Pages – UI
-- Cloudflare Worker – API gateway and orchestration
-- Cloudflare D1 – users, roles, tool runs, approvals
-- Cloudflare KV – sessions and short-lived run status cache
+- Cloudflare Pages project for deploy target and static asset hosting.
+- Pages Functions catch-all route: `functions/[[path]].ts`.
+- Application router implementation: `src/index.ts`.
+- D1 binding (`DB`) for users/tool runs/approvals.
+- KV binding (`SESSION_KV`, optional) for session persistence.
 
-### Execution Plane (Current)
+### Execution Plane (Current in This Repo)
 
-- Key Account Agreement (KAA) Generator – Google Apps Script
-- Sales Asset Generator – Google Apps Script
-- Report Generator – Google Apps Script
-- Budget Planner – UI-only (site), backend optional
+- Tool run lifecycle is simulated/stubbed in API routes (`src/api/tools.ts`).
+- No direct outbound call to GAS is implemented in this repo.
 
-**Invariant:**  
-The Worker is the only public entrypoint. No browser-to-GAS calls are permitted.
+### Execution Plane (External Repos)
 
----
-
-## 2. Authentication Model
-
-- Google Workspace OAuth (domain-restricted)
-- Login via Google OIDC
-- Worker issues secure, httpOnly session cookie
-- User identity key = email
-- Domain restriction enforced via configuration
+- Existing GAS tool implementations are external and not executed directly by this codebase.
 
 ---
 
-## 3. RBAC Model
+## 2. Authentication Model (Current)
 
-Roles: Founder, Admin, Sales, Finance
+- Login form is served at `GET /login`.
+- Mock login endpoint: `POST /auth/mock-login`.
+- Domain restriction check enforced using configured `ALLOWED_DOMAIN`.
+- Session cookie is signed (HMAC) using `SESSION_SECRET`.
+- Session data stores in KV when configured; otherwise in-memory fallback.
+
+---
+
+## 3. RBAC Model (Current)
+
+Roles: `founder`, `admin`, `sales`, `finance`
 
 | Capability | Founder | Admin | Sales | Finance |
 |---------|---------|-------|-------|---------|
-| View Hub | ✓ | ✓ | ✓ | ✓ |
-| Manage users / roles | ✓ | ✓ | ✗ | ✗ |
-| Run KAA Generator | ✓ | ✓ | ✓ | ✗ |
-| Approve KAA Draft | ✓ | ✓ | ✗ | ✗ |
-| Run Sales Asset Generator | ✓ | ✓ | ✓ | ✗ |
-| Run Report Generator | ✓ | ✓ | ✗ | ✓ |
-| Approve monthly pack | ✓ | ✓ | ✗ | ✓ |
-| Budget view | ✓ | ✓ | ✗ | ✓ |
-| Budget edit | ✗ | ✓ | ✗ | ✓ |
+| View Hub | yes | yes | yes | yes |
+| Run `kaa` | yes | yes | yes | no |
+| Run `sales-assets` | yes | yes | yes | no |
+| Run `reports` | yes | yes | no | yes |
+| Run `budget` | no | yes | no | yes |
+| Approve `kaa` | yes | yes | no | no |
+| Approve `sales-assets` | yes | yes | no | no |
+| Approve `reports` | yes | yes | no | yes |
+| Approve `budget` | no | yes | no | yes |
 
-Approval is explicit and human-reviewed. Draft → Approved transitions must be represented in-system.
+Source of truth: `src/auth/rbac.ts`
 
 ---
 
-## 4. Standard Tool Contract
-
-Uniform interface for all tools.
+## 4. Standard Tool API Contract (Current)
 
 ### API Surface
 
-- POST `/api/tools/{tool}/run`
-- GET `/api/tools/{tool}/runs/{runId}`
-- POST `/api/tools/{tool}/runs/{runId}/approve`
-- GET `/api/tools/{tool}/runs/{runId}/artifact/{artifactId}`
+- `POST /api/tools/{tool}/run`
+- `GET /api/tools/{tool}/runs/{runId}`
+- `POST /api/tools/{tool}/runs/{runId}/approve`
 
-### Run Status Model
+`GET /api/tools/{tool}/runs/{runId}/artifact/{artifactId}` is not implemented in current server routes.
+
+### Status Model
 
 `queued | running | completed | failed | needs_approval | approved | rejected`
 
-### Request Envelope
+### Request Envelope (`run`)
 
 ```json
 {
-  "idempotencyKey": "uuid",
+  "idempotencyKey": "uuid-or-stable-key",
   "input": {},
   "options": { "dryRun": false }
 }
+```
+
+### Response Envelope (`run`, `status`, `approve`)
+
+```json
+{
+  "runId": "run_...",
+  "status": "queued",
+  "submittedAt": "ISO-8601"
+}
+```
+
+### Approval Workflow Rules (Current)
+
+- `kaa` and `reports` runs transition from `queued` to `needs_approval`.
+- `sales-assets` and `budget` runs transition from `queued` to `completed`.
+
+Source of truth: `src/api/tools.ts`
