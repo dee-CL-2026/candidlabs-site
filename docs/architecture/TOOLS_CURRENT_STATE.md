@@ -1,69 +1,96 @@
-# Tools – Current State (Evidence)
+# Tools Current State (Hub Inventory)
 
-This document captures the known current state of tools based on targeted inspection. Items marked "Needs verification" must be confirmed in the tiered GAS repo.
+Date: 2026-02-10  
+Scope: Current behavior in `candidlabs-site` codebase.
 
----
+## KAA (`kaa`)
 
-## KAA Generator (GAS)
-
-- Location: `tools/candid-labs/LEGACY/key-account-agreement-generator`
 - Entrypoints:
-  - Google Form submission
-  - Spreadsheet menu actions
-- Core scripts:
-  - GenerateDoc.gs
-  - Mapping.gs
-  - Helpers.gs
-  - Constants.gs
-- Outputs:
-  - Draft Google Doc
-  - Canonical sheet record
-- Status: Active (approval required)
-
----
-
-## Sales Asset Generator (GAS – WIP)
-
-- Location: `tools/candid-labs/LEGACY/sales-tool`
-- Entrypoints:
-  - `onOpen()` menu
-  - `doGet()` serving Form.html
-  - `generatePDF()` server-side
-- Core scripts:
-  - Menu.js
-  - code.js
-  - SetUp.js
-  - constants.js
-- Outputs:
-  - Branded pricing PDF
-- Status: Partial, needs verification
-
----
-
-## Report Generator (GAS – WIP)
-
-- Location: `tools/candid-labs/LEGACY/sales-master/ReportGenerator.js`
-- Entrypoints:
-  - Spreadsheet menu
-  - UI prompt for month selection
+  - UI: `GET /tools/kaa`
+  - Run: `POST /api/tools/kaa/run`
+  - Status: `GET /api/tools/kaa/runs/{runId}`
+  - Approve: `POST /api/tools/kaa/runs/{runId}/approve`
 - Data dependencies:
-  - DECK_METRICS sheet
-  - Slides template ID (Constants.js)
+  - D1 `tool_runs`
+  - D1 `approvals`
+  - session context (cookie + KV/in-memory)
+  - Tool-specific business input schema: UNKNOWN (confirm in future execution adapter file)
 - Outputs:
-  - Monthly partner deck
-- Status: Partial, needs verification
+  - API envelope `{ runId, status, submittedAt }`
+  - D1 run row + optional approval row
+- Run method:
+  - Hub-side stub lifecycle in `src/api/tools.ts`.
+  - No GAS invocation in this repository.
+- Approval requirement:
+  - Run transitions to `needs_approval`.
 
----
+## Sales Assets (`sales-assets`)
 
-## Budget Planner (Site)
+- Entrypoints:
+  - UI: `GET /tools/sales-assets`
+  - Run: `POST /api/tools/sales-assets/run`
+  - Status: `GET /api/tools/sales-assets/runs/{runId}`
+  - Approve: `POST /api/tools/sales-assets/runs/{runId}/approve`
+- Data dependencies:
+  - D1 `tool_runs`
+  - D1 `approvals`
+  - session context (cookie + KV/in-memory)
+  - Tool-specific business input schema: UNKNOWN (confirm in future execution adapter file)
+- Outputs:
+  - API envelope `{ runId, status, submittedAt }`
+  - D1 run row + optional approval row
+- Run method:
+  - Hub-side stub lifecycle in `src/api/tools.ts`.
+  - No GAS invocation in this repository.
+- Approval requirement:
+  - Run transitions to `completed` (no `needs_approval` step).
 
-- Location:
-  - `sites/candidlabs-site/budget.html`
-  - `budget.js`
-  - `budget-data.js`
-- Current run method:
-  - Static client-side JS
-- Risk:
-  - Client-side sensitive data exposure
-- Status:
-  - UI-only; backend migration optional
+## Reports (`reports`)
+
+- Entrypoints:
+  - UI: `GET /tools/reports`
+  - Run: `POST /api/tools/reports/run`
+  - Status: `GET /api/tools/reports/runs/{runId}`
+  - Approve: `POST /api/tools/reports/runs/{runId}/approve`
+- Data dependencies:
+  - D1 `tool_runs`
+  - D1 `approvals`
+  - session context (cookie + KV/in-memory)
+  - Tool-specific business input schema: UNKNOWN (confirm in future execution adapter file)
+- Outputs:
+  - API envelope `{ runId, status, submittedAt }`
+  - D1 run row + optional approval row
+- Run method:
+  - Hub-side stub lifecycle in `src/api/tools.ts`.
+  - No GAS invocation in this repository.
+- Approval requirement:
+  - Run transitions to `needs_approval`.
+
+## Budget (`budget`)
+
+- Entrypoints:
+  - UI: `GET /tools/budget`
+  - Run: `POST /api/tools/budget/run`
+  - Status: `GET /api/tools/budget/runs/{runId}`
+  - Approve: `POST /api/tools/budget/runs/{runId}/approve`
+- Data dependencies:
+  - D1 `tool_runs`
+  - D1 `approvals`
+  - session context (cookie + KV/in-memory)
+  - Tool-specific business input schema: UNKNOWN (confirm in future execution adapter file)
+- Outputs:
+  - API envelope `{ runId, status, submittedAt }`
+  - D1 run row + optional approval row
+- Run method:
+  - Hub-side stub lifecycle in `src/api/tools.ts`.
+  - No GAS invocation in this repository.
+- Approval requirement:
+  - Run transitions to `completed` (no `needs_approval` step).
+
+## Evidence Files
+
+- `src/config/env.ts`
+- `src/api/tools.ts`
+- `src/ui/routes/tools.ts`
+- `src/auth/rbac.ts`
+- `src/db/schema.sql`
