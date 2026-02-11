@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Candidlabs Tasks - Task management across all projects.">
+  <title>Tasks - Candidlabs</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <style>
+    .task-toolbar {
+      display: flex;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: var(--space-lg);
+    }
+    .task-toolbar select {
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+    }
+    .task-list { list-style: none; padding: 0; }
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-sm);
+      transition: border-color var(--transition-fast);
+      cursor: pointer;
+    }
+    .task-item:hover { border-color: var(--color-primary); }
+    .task-status-btn {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--text-muted);
+      background: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all var(--transition-fast);
+    }
+    .task-status-btn.done {
+      background: var(--color-success);
+      border-color: var(--color-success);
+    }
+    .task-status-btn.in_progress {
+      border-color: var(--color-primary);
+      background: rgba(27,112,139,0.2);
+    }
+    .task-status-btn.blocked {
+      border-color: var(--color-error);
+      background: rgba(239,68,68,0.2);
+    }
+    .task-content { flex: 1; min-width: 0; }
+    .task-title {
+      font-weight: 500;
+      font-size: 0.9rem;
+      margin-bottom: 2px;
+    }
+    .task-title.done { text-decoration: line-through; color: var(--text-muted); }
+    .task-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+    }
+    .priority-indicator {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      margin-right: 3px;
+    }
+    .priority-indicator.critical { background: var(--color-error); }
+    .priority-indicator.high { background: var(--color-warning); }
+    .priority-indicator.medium { background: #3b82f6; }
+    .priority-indicator.low { background: var(--text-muted); }
+    .task-due { font-family: var(--font-mono); }
+    .task-due.overdue { color: var(--color-error); font-weight: 600; }
+    .empty-state {
+      text-align: center;
+      padding: var(--space-3xl);
+      color: var(--text-muted);
+    }
+    /* Inline status dropdown */
+    .status-dropdown {
+      position: absolute;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 12px var(--shadow-color);
+      z-index: 100;
+      padding: var(--space-xs);
+    }
+    .status-dropdown button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: var(--space-xs) var(--space-md);
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: var(--text-primary);
+      border-radius: var(--radius-sm);
+    }
+    .status-dropdown button:hover { background: var(--bg-secondary); }
+  </style>
+</head>
+<body>
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-container">
+      <a href="index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
+      <ul class="nav-menu" role="menubar">
+        <li role="none"><a href="index.html" class="nav-link" role="menuitem">Home</a></li>
+        <li role="none"><a href="tools.html" class="nav-link" role="menuitem">Tools</a></li>
+        <li role="none"><a href="accounts.html" class="nav-link" role="menuitem">CRM</a></li>
+        <li role="none"><a href="projects.html" class="nav-link" role="menuitem">Projects</a></li>
+        <li role="none"><a href="reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none"><a href="audit.html" class="nav-link" role="menuitem">Platform</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
+        <button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+    <div id="mobile-menu" class="mobile-menu" role="menu" aria-label="Mobile navigation">
+      <ul>
+        <li><a href="index.html" role="menuitem">Home</a></li>
+        <li><a href="tools.html" role="menuitem">Tools</a></li>
+        <li><a href="accounts.html" role="menuitem">CRM</a></li>
+        <li><a href="projects.html" role="menuitem">Projects</a></li>
+        <li><a href="reports.html" role="menuitem">Reports</a></li>
+        <li><a href="audit.html" role="menuitem">Platform</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <header class="page-header">
+      <div class="container">
+        <h1 class="page-title">Tasks</h1>
+        <p class="page-description">All tasks across projects</p>
+      </div>
+    </header>
+
+    <section class="section">
+      <div class="container">
+        <div class="task-toolbar">
+          <select id="filter-status">
+            <option value="">All Statuses</option>
+            <option value="backlog">Backlog</option>
+            <option value="ready">Ready</option>
+            <option value="in_progress">In Progress</option>
+            <option value="blocked">Blocked</option>
+            <option value="done">Done</option>
+          </select>
+          <select id="filter-priority">
+            <option value="">All Priorities</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+
+        <ul class="task-list" id="task-list"></ul>
+        <div id="empty-state" class="empty-state" style="display:none;">
+          <p>No tasks found. Create tasks from the Projects page.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-content">&copy; 2026 Candidlabs - Internal Use Only</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+  (function() {
+    var STATUSES = ['backlog','ready','in_progress','blocked','done','archived'];
+    var list = document.getElementById('task-list');
+    var emptyState = document.getElementById('empty-state');
+    var activeDropdown = null;
+
+    function api(path, method, data) {
+      var opts = {method: method || 'GET', headers: {'content-type':'application/json'}};
+      if (data) opts.body = JSON.stringify(data);
+      return fetch(path, opts).then(function(r) { return r.json(); });
+    }
+
+    function isOverdue(dueDate) {
+      if (!dueDate) return false;
+      return new Date(dueDate) < new Date(new Date().toISOString().slice(0,10));
+    }
+
+    function renderTasks(tasks) {
+      if (!tasks || tasks.length === 0) {
+        list.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+      emptyState.style.display = 'none';
+      list.innerHTML = tasks.map(function(t) {
+        var overdue = t.status !== 'done' && isOverdue(t.due_date);
+        return '<li class="task-item" data-id="' + t.task_id + '">' +
+          '<button class="task-status-btn ' + t.status + '" data-task-id="' + t.task_id + '" data-status="' + t.status + '" title="Change status"></button>' +
+          '<div class="task-content">' +
+            '<div class="task-title ' + (t.status === 'done' ? 'done' : '') + '">' +
+              '<span class="priority-indicator ' + t.priority + '"></span>' +
+              t.title +
+            '</div>' +
+            '<div class="task-meta">' +
+              '<span>' + t.status.replace('_',' ') + '</span>' +
+              (t.assigned_to ? '<span>' + t.assigned_to.split('@')[0] + '</span>' : '') +
+              (t.due_date ? '<span class="task-due ' + (overdue ? 'overdue' : '') + '">' + t.due_date + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+        '</li>';
+      }).join('');
+    }
+
+    function loadTasks() {
+      var params = [];
+      var status = document.getElementById('filter-status').value;
+      var priority = document.getElementById('filter-priority').value;
+      if (status) params.push('status=' + status);
+      if (priority) params.push('priority=' + priority);
+      var qs = params.length ? '?' + params.join('&') : '';
+      api('/api/tasks' + qs).then(function(data) {
+        if (Array.isArray(data)) renderTasks(data);
+      });
+    }
+
+    function closeDropdown() {
+      if (activeDropdown) {
+        activeDropdown.remove();
+        activeDropdown = null;
+      }
+    }
+
+    function showStatusDropdown(btn) {
+      closeDropdown();
+      var currentStatus = btn.getAttribute('data-status');
+      var taskId = btn.getAttribute('data-task-id');
+      var dd = document.createElement('div');
+      dd.className = 'status-dropdown';
+      var rect = btn.getBoundingClientRect();
+      dd.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+      dd.style.left = (rect.left + window.scrollX) + 'px';
+
+      STATUSES.forEach(function(s) {
+        if (s === currentStatus || s === 'archived') return;
+        var b = document.createElement('button');
+        b.textContent = s.replace('_', ' ');
+        b.addEventListener('click', function(e) {
+          e.stopPropagation();
+          api('/api/tasks/' + taskId, 'PUT', {status: s}).then(function() {
+            closeDropdown();
+            loadTasks();
+          });
+        });
+        dd.appendChild(b);
+      });
+
+      document.body.appendChild(dd);
+      activeDropdown = dd;
+    }
+
+    list.addEventListener('click', function(e) {
+      var btn = e.target.closest('.task-status-btn');
+      if (btn) {
+        e.stopPropagation();
+        showStatusDropdown(btn);
+        return;
+      }
+    });
+
+    document.addEventListener('click', closeDropdown);
+
+    document.getElementById('filter-status').addEventListener('change', loadTasks);
+    document.getElementById('filter-priority').addEventListener('change', loadTasks);
+
+    loadTasks();
+  })();
+  </script>
+</body>
+</html>

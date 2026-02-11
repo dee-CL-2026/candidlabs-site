@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Candidlabs Projects - Task and project management for Candid Mixers.">
+  <title>Projects - Candidlabs</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <style>
+    .project-toolbar {
+      display: flex;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: var(--space-xl);
+    }
+    .project-toolbar select {
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+    }
+    /* Kanban board */
+    .kanban {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-md);
+      min-height: 300px;
+    }
+    @media (max-width: 1024px) { .kanban { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .kanban { grid-template-columns: 1fr; } }
+    .kanban-column {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-md);
+      min-height: 200px;
+    }
+    .kanban-header {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: var(--space-md);
+      padding-bottom: var(--space-sm);
+      border-bottom: 2px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .kanban-count {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .project-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      margin-bottom: var(--space-sm);
+      cursor: pointer;
+      transition: border-color var(--transition-fast), transform var(--transition-fast);
+    }
+    .project-card:hover {
+      border-color: var(--color-primary);
+      transform: translateY(-1px);
+    }
+    .project-card-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: var(--space-xs);
+    }
+    .project-card-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+    .type-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 1px 6px;
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    .type-tag.client { background: rgba(16,185,129,0.1); color: var(--color-success); }
+    .type-tag.internal { background: rgba(59,130,246,0.1); color: #3b82f6; }
+    .type-tag.rnd { background: rgba(168,85,247,0.1); color: #a855f7; }
+    .priority-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      margin-right: 3px;
+    }
+    .priority-dot.critical { background: var(--color-error); }
+    .priority-dot.high { background: var(--color-warning); }
+    .priority-dot.medium { background: #3b82f6; }
+    .priority-dot.low { background: var(--text-muted); }
+    .empty-column {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      padding: var(--space-lg);
+    }
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+      width: 90%; max-width: 500px;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { margin-bottom: var(--space-lg); }
+    .form-group { margin-bottom: var(--space-md); }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-xs);
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+    }
+    .form-group textarea { resize: vertical; min-height: 60px; }
+    .modal-actions {
+      display: flex;
+      gap: var(--space-md);
+      justify-content: flex-end;
+      margin-top: var(--space-lg);
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-container">
+      <a href="index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
+      <ul class="nav-menu" role="menubar">
+        <li role="none"><a href="index.html" class="nav-link" role="menuitem">Home</a></li>
+        <li role="none"><a href="tools.html" class="nav-link" role="menuitem">Tools</a></li>
+        <li role="none"><a href="accounts.html" class="nav-link" role="menuitem">CRM</a></li>
+        <li role="none"><a href="projects.html" class="nav-link active" role="menuitem">Projects</a></li>
+        <li role="none"><a href="reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none"><a href="audit.html" class="nav-link" role="menuitem">Platform</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
+        <button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+    <div id="mobile-menu" class="mobile-menu" role="menu" aria-label="Mobile navigation">
+      <ul>
+        <li><a href="index.html" role="menuitem">Home</a></li>
+        <li><a href="tools.html" role="menuitem">Tools</a></li>
+        <li><a href="accounts.html" role="menuitem">CRM</a></li>
+        <li><a href="projects.html" role="menuitem">Projects</a></li>
+        <li><a href="reports.html" role="menuitem">Reports</a></li>
+        <li><a href="audit.html" role="menuitem">Platform</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <header class="page-header">
+      <div class="container">
+        <h1 class="page-title">Projects</h1>
+        <p class="page-description">Track client work, internal initiatives, and R&D</p>
+      </div>
+    </header>
+
+    <section class="section">
+      <div class="container">
+        <div class="project-toolbar">
+          <select id="filter-type">
+            <option value="">All Types</option>
+            <option value="client">Client</option>
+            <option value="internal">Internal</option>
+            <option value="rnd">R&D</option>
+          </select>
+          <button class="btn btn-primary" id="btn-new-project">+ New Project</button>
+        </div>
+
+        <div class="kanban" id="kanban-board">
+          <div class="kanban-column" data-status="planning">
+            <div class="kanban-header">Planning <span class="kanban-count" id="count-planning">0</span></div>
+            <div id="col-planning"></div>
+          </div>
+          <div class="kanban-column" data-status="active">
+            <div class="kanban-header">Active <span class="kanban-count" id="count-active">0</span></div>
+            <div id="col-active"></div>
+          </div>
+          <div class="kanban-column" data-status="paused">
+            <div class="kanban-header">Paused <span class="kanban-count" id="count-paused">0</span></div>
+            <div id="col-paused"></div>
+          </div>
+          <div class="kanban-column" data-status="completed">
+            <div class="kanban-header">Completed <span class="kanban-count" id="count-completed">0</span></div>
+            <div id="col-completed"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- New Project Modal -->
+  <div class="modal-backdrop" id="modal-new">
+    <div class="modal">
+      <h2>New Project</h2>
+      <form id="form-new-project">
+        <div class="form-group">
+          <label for="f-name">Project Name *</label>
+          <input type="text" id="f-name" required>
+        </div>
+        <div class="form-group">
+          <label for="f-description">Description</label>
+          <textarea id="f-description"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="f-type">Type</label>
+          <select id="f-type">
+            <option value="internal">Internal</option>
+            <option value="client">Client</option>
+            <option value="rnd">R&D</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="f-priority">Priority</label>
+          <select id="f-priority">
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="f-start">Start Date</label>
+          <input type="date" id="f-start">
+        </div>
+        <div class="form-group">
+          <label for="f-target">Target Date</label>
+          <input type="date" id="f-target">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-new">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Project</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-content">&copy; 2026 Candidlabs - Internal Use Only</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+  (function() {
+    var COLUMNS = ['planning','active','paused','completed'];
+    var modal = document.getElementById('modal-new');
+    var form = document.getElementById('form-new-project');
+
+    function api(path, method, data) {
+      var opts = {method: method || 'GET', headers: {'content-type':'application/json'}};
+      if (data) opts.body = JSON.stringify(data);
+      return fetch(path, opts).then(function(r) { return r.json(); });
+    }
+
+    function renderCard(p) {
+      return '<div class="project-card" data-id="' + p.project_id + '">' +
+        '<div class="project-card-title"><span class="priority-dot ' + p.priority + '"></span>' + p.name + '</div>' +
+        '<div class="project-card-meta">' +
+          '<span class="type-tag ' + p.type + '">' + p.type + '</span>' +
+          (p.owner_email ? '<span>' + p.owner_email.split('@')[0] + '</span>' : '') +
+          (p.target_date ? '<span>' + p.target_date + '</span>' : '') +
+        '</div>' +
+      '</div>';
+    }
+
+    function loadProjects() {
+      var type = document.getElementById('filter-type').value;
+      var qs = type ? '?type=' + type : '';
+      api('/api/projects' + qs).then(function(projects) {
+        if (!Array.isArray(projects)) return;
+        var buckets = {};
+        COLUMNS.forEach(function(c) { buckets[c] = []; });
+        projects.forEach(function(p) {
+          if (buckets[p.status]) buckets[p.status].push(p);
+        });
+        COLUMNS.forEach(function(c) {
+          var col = document.getElementById('col-' + c);
+          var count = document.getElementById('count-' + c);
+          count.textContent = buckets[c].length;
+          if (buckets[c].length === 0) {
+            col.innerHTML = '<div class="empty-column">No projects</div>';
+          } else {
+            col.innerHTML = buckets[c].map(renderCard).join('');
+          }
+        });
+      });
+    }
+
+    document.getElementById('filter-type').addEventListener('change', loadProjects);
+
+    document.getElementById('btn-new-project').addEventListener('click', function() {
+      modal.classList.add('open');
+    });
+    document.getElementById('btn-cancel-new').addEventListener('click', function() {
+      modal.classList.remove('open');
+    });
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) modal.classList.remove('open');
+    });
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var data = {
+        name: document.getElementById('f-name').value.trim(),
+        description: document.getElementById('f-description').value.trim() || undefined,
+        type: document.getElementById('f-type').value,
+        priority: document.getElementById('f-priority').value,
+        start_date: document.getElementById('f-start').value || undefined,
+        target_date: document.getElementById('f-target').value || undefined
+      };
+      api('/api/projects', 'POST', data).then(function() {
+        modal.classList.remove('open');
+        form.reset();
+        loadProjects();
+      });
+    });
+
+    document.getElementById('kanban-board').addEventListener('click', function(e) {
+      var card = e.target.closest('.project-card');
+      if (card) {
+        window.location.href = 'project-detail.html?id=' + card.getAttribute('data-id');
+      }
+    });
+
+    loadProjects();
+  })();
+  </script>
+</body>
+</html>

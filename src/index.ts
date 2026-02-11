@@ -1,6 +1,9 @@
 import { createSession, destroySession, isAllowedDomain } from "./auth/session";
 import { isRole, isTool, loadConfig, type AppEnv } from "./config/env";
 import { handleToolsApi } from "./api/tools";
+import { handleAccountsApi } from "./api/accounts";
+import { handleProjectsApi } from "./api/projects";
+import { handleTasksApi } from "./api/tasks";
 import { renderLoginPage } from "./ui/routes/login";
 import { renderToolPage, renderToolsIndex } from "./ui/routes/tools";
 import { DbClient } from "./db/client";
@@ -90,6 +93,28 @@ export default {
       const tool = path.slice("/tools/".length);
       if (!isTool(tool)) return html("Not found", 404);
       return html(renderToolPage(tool));
+    }
+
+    // CRM & Project Management API
+    if (path.startsWith("/api/accounts")) {
+      const user = requireUser(context);
+      if (!user) return json({ error: "Unauthenticated" }, 401);
+      const segments = path.split("/").filter(Boolean);
+      return handleAccountsApi({ env, request, user }, segments);
+    }
+
+    if (path.startsWith("/api/projects")) {
+      const user = requireUser(context);
+      if (!user) return json({ error: "Unauthenticated" }, 401);
+      const segments = path.split("/").filter(Boolean);
+      return handleProjectsApi({ env, request, user }, segments);
+    }
+
+    if (path.startsWith("/api/tasks")) {
+      const user = requireUser(context);
+      if (!user) return json({ error: "Unauthenticated" }, 401);
+      const segments = path.split("/").filter(Boolean);
+      return handleTasksApi({ env, request, user }, segments);
     }
 
     if (path.startsWith("/api/tools/")) {

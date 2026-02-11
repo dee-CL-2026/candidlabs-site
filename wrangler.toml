@@ -6,6 +6,7 @@ pages_build_output_dir = "."
 binding = "DB"
 database_name = "candidlabs-site-db"
 database_id = "c8cb0de8-3446-4d3d-a213-36bbce4e2df2"
+migrations_dir = "migrations"
 
 [[kv_namespaces]]
 binding = "SESSION_KV"

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Candidlabs CRM - Account management for Candid Mixers.">
+  <title>Accounts - Candidlabs</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <style>
+    .crm-toolbar {
+      display: flex;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: var(--space-lg);
+    }
+    .crm-toolbar select, .crm-toolbar input {
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+    }
+    .crm-toolbar input { min-width: 200px; }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    .data-table th, .data-table td {
+      text-align: left;
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .data-table th {
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .data-table tr { cursor: pointer; transition: background var(--transition-fast); }
+    .data-table tr:hover { background: var(--bg-secondary); }
+    .status-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .status-dot.active { background: var(--color-success); }
+    .status-dot.at_risk { background: var(--color-warning); }
+    .status-dot.dormant { background: var(--color-error); }
+    .status-dot.lost { background: var(--text-muted); }
+    .status-dot.prospect { background: #3b82f6; }
+    .empty-state {
+      text-align: center;
+      padding: var(--space-3xl);
+      color: var(--text-muted);
+    }
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+      width: 90%; max-width: 500px;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { margin-bottom: var(--space-lg); }
+    .form-group { margin-bottom: var(--space-md); }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-xs);
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+    }
+    .form-group textarea { resize: vertical; min-height: 60px; }
+    .modal-actions {
+      display: flex;
+      gap: var(--space-md);
+      justify-content: flex-end;
+      margin-top: var(--space-lg);
+    }
+    @media (max-width: 768px) {
+      .data-table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-container">
+      <a href="index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
+      <ul class="nav-menu" role="menubar">
+        <li role="none"><a href="index.html" class="nav-link" role="menuitem">Home</a></li>
+        <li role="none"><a href="tools.html" class="nav-link" role="menuitem">Tools</a></li>
+        <li role="none"><a href="accounts.html" class="nav-link active" role="menuitem">CRM</a></li>
+        <li role="none"><a href="projects.html" class="nav-link" role="menuitem">Projects</a></li>
+        <li role="none"><a href="reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none"><a href="audit.html" class="nav-link" role="menuitem">Platform</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
+        <button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+    <div id="mobile-menu" class="mobile-menu" role="menu" aria-label="Mobile navigation">
+      <ul>
+        <li><a href="index.html" role="menuitem">Home</a></li>
+        <li><a href="tools.html" role="menuitem">Tools</a></li>
+        <li><a href="accounts.html" role="menuitem">CRM</a></li>
+        <li><a href="projects.html" role="menuitem">Projects</a></li>
+        <li><a href="reports.html" role="menuitem">Reports</a></li>
+        <li><a href="audit.html" role="menuitem">Platform</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <header class="page-header">
+      <div class="container">
+        <h1 class="page-title">Accounts</h1>
+        <p class="page-description">CRM - Manage clients, venues, and contacts</p>
+      </div>
+    </header>
+
+    <section class="section">
+      <div class="container">
+        <div class="crm-toolbar">
+          <select id="filter-status">
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="at_risk">At Risk</option>
+            <option value="dormant">Dormant</option>
+            <option value="lost">Lost</option>
+            <option value="prospect">Prospect</option>
+          </select>
+          <select id="filter-channel">
+            <option value="">All Channels</option>
+            <option value="hwg">Holywings</option>
+            <option value="big_chains">Big Chains</option>
+            <option value="modern_trade">Modern Trade</option>
+            <option value="hotels">Hotels</option>
+            <option value="distributor">Distributor</option>
+            <option value="direct">Direct</option>
+            <option value="other">Other</option>
+          </select>
+          <input type="text" id="search-input" placeholder="Search accounts...">
+          <button class="btn btn-primary" id="btn-new-account">+ New Account</button>
+        </div>
+
+        <div id="accounts-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Channel</th>
+                <th>Market</th>
+                <th>Status</th>
+                <th>Owner</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody id="accounts-body"></tbody>
+          </table>
+          <div id="empty-state" class="empty-state" style="display:none;">
+            <p>No accounts yet. Create your first account to get started.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- New Account Modal -->
+  <div class="modal-backdrop" id="modal-new">
+    <div class="modal">
+      <h2>New Account</h2>
+      <form id="form-new-account">
+        <div class="form-group">
+          <label for="f-display-name">Display Name *</label>
+          <input type="text" id="f-display-name" required>
+        </div>
+        <div class="form-group">
+          <label for="f-legal-name">Legal Name</label>
+          <input type="text" id="f-legal-name">
+        </div>
+        <div class="form-group">
+          <label for="f-channel">Channel</label>
+          <select id="f-channel">
+            <option value="">--</option>
+            <option value="hwg">Holywings</option>
+            <option value="big_chains">Big Chains</option>
+            <option value="modern_trade">Modern Trade</option>
+            <option value="hotels">Hotels</option>
+            <option value="distributor">Distributor</option>
+            <option value="direct">Direct</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="f-market">Market</label>
+          <input type="text" id="f-market">
+        </div>
+        <div class="form-group">
+          <label for="f-city">City</label>
+          <input type="text" id="f-city">
+        </div>
+        <div class="form-group">
+          <label for="f-status">Status</label>
+          <select id="f-status">
+            <option value="active">Active</option>
+            <option value="prospect">Prospect</option>
+            <option value="at_risk">At Risk</option>
+            <option value="dormant">Dormant</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="f-notes">Notes</label>
+          <textarea id="f-notes"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-new">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-content">&copy; 2026 Candidlabs - Internal Use Only</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+  (function() {
+    var CHANNEL_LABELS = {hwg:'Holywings',big_chains:'Big Chains',modern_trade:'Modern Trade',hotels:'Hotels',distributor:'Distributor',direct:'Direct',other:'Other'};
+    var body = document.getElementById('accounts-body');
+    var emptyState = document.getElementById('empty-state');
+    var modal = document.getElementById('modal-new');
+    var form = document.getElementById('form-new-account');
+    var searchTimeout;
+
+    function api(path, method, data) {
+      var opts = {method: method || 'GET', headers: {'content-type':'application/json'}};
+      if (data) opts.body = JSON.stringify(data);
+      return fetch(path, opts).then(function(r) { return r.json(); });
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '-';
+      return iso.slice(0,10);
+    }
+
+    function renderTable(accounts) {
+      if (!accounts || accounts.length === 0) {
+        body.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+      emptyState.style.display = 'none';
+      body.innerHTML = accounts.map(function(a) {
+        return '<tr data-id="' + a.account_id + '">' +
+          '<td><strong>' + (a.display_name||'') + '</strong>' + (a.legal_name ? '<br><small class="text-muted">' + a.legal_name + '</small>' : '') + '</td>' +
+          '<td>' + (CHANNEL_LABELS[a.channel] || a.channel || '-') + '</td>' +
+          '<td>' + (a.market || '-') + '</td>' +
+          '<td><span class="status-dot ' + a.status + '"></span>' + (a.status||'').replace('_',' ') + '</td>' +
+          '<td>' + (a.owner_email ? a.owner_email.split('@')[0] : '-') + '</td>' +
+          '<td>' + formatDate(a.updated_at) + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function loadAccounts() {
+      var params = [];
+      var status = document.getElementById('filter-status').value;
+      var channel = document.getElementById('filter-channel').value;
+      var q = document.getElementById('search-input').value.trim();
+      if (status) params.push('status=' + status);
+      if (channel) params.push('channel=' + channel);
+      if (q) params.push('q=' + encodeURIComponent(q));
+      var qs = params.length ? '?' + params.join('&') : '';
+      api('/api/accounts' + qs).then(function(data) {
+        if (Array.isArray(data)) renderTable(data);
+      });
+    }
+
+    document.getElementById('filter-status').addEventListener('change', loadAccounts);
+    document.getElementById('filter-channel').addEventListener('change', loadAccounts);
+    document.getElementById('search-input').addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(loadAccounts, 300);
+    });
+
+    document.getElementById('btn-new-account').addEventListener('click', function() {
+      modal.classList.add('open');
+    });
+    document.getElementById('btn-cancel-new').addEventListener('click', function() {
+      modal.classList.remove('open');
+    });
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) modal.classList.remove('open');
+    });
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var data = {
+        display_name: document.getElementById('f-display-name').value.trim(),
+        legal_name: document.getElementById('f-legal-name').value.trim() || undefined,
+        channel: document.getElementById('f-channel').value || undefined,
+        market: document.getElementById('f-market').value.trim() || undefined,
+        city: document.getElementById('f-city').value.trim() || undefined,
+        status: document.getElementById('f-status').value,
+        notes: document.getElementById('f-notes').value.trim() || undefined
+      };
+      api('/api/accounts', 'POST', data).then(function() {
+        modal.classList.remove('open');
+        form.reset();
+        loadAccounts();
+      });
+    });
+
+    body.addEventListener('click', function(e) {
+      var row = e.target.closest('tr[data-id]');
+      if (row) {
+        // For now, navigate to a detail view (future: inline panel)
+        // We'll use a query param approach until we build a dedicated detail page
+        window.location.href = 'account-detail.html?id=' + row.getAttribute('data-id');
+      }
+    });
+
+    loadAccounts();
+  })();
+  </script>
+</body>
+</html>
