@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Candidlabs Platform Overview - Architecture map of the Candid Labs hub-and-spoke platform.">
+  <title>Platform Overview - Candidlabs</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <style>
+    /* Architecture diagram */
+    .arch-diagram {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-xl);
+      padding: var(--space-2xl) 0;
+    }
+    .arch-hub {
+      background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+      color: var(--color-white);
+      border-radius: var(--radius-xl);
+      padding: var(--space-xl) var(--space-2xl);
+      text-align: center;
+      max-width: 320px;
+      width: 100%;
+      box-shadow: 0 8px 24px rgba(27, 112, 139, 0.3);
+    }
+    .arch-hub-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      margin-bottom: var(--space-xs);
+    }
+    .arch-hub-sub {
+      font-size: 0.85rem;
+      opacity: 0.85;
+    }
+    .arch-connector {
+      width: 2px;
+      height: 32px;
+      background: var(--border-color);
+    }
+    .arch-spokes {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-md);
+      width: 100%;
+    }
+    @media (min-width: 640px) {
+      .arch-spokes { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (min-width: 1024px) {
+      .arch-spokes { grid-template-columns: repeat(4, 1fr); }
+    }
+    .arch-spoke {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      text-align: center;
+      cursor: pointer;
+      transition: border-color var(--transition-fast), transform var(--transition-fast);
+    }
+    .arch-spoke:hover {
+      border-color: var(--color-primary);
+      transform: translateY(-2px);
+    }
+    .arch-spoke-icon { font-size: 1.75rem; margin-bottom: var(--space-xs); }
+    .arch-spoke-name {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      margin-bottom: var(--space-xs);
+    }
+    .arch-spoke-count {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Detail panel */
+    .spoke-detail {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid var(--color-primary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+      margin-top: var(--space-lg);
+    }
+    .spoke-detail.active { display: block; }
+    .spoke-detail h3 {
+      margin-bottom: var(--space-md);
+      color: var(--color-primary);
+    }
+    .spoke-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-lg);
+    }
+    @media (min-width: 768px) {
+      .spoke-detail-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .capability-list {
+      list-style: none;
+      padding: 0;
+    }
+    .capability-list li {
+      padding: var(--space-xs) 0;
+      padding-left: var(--space-lg);
+      position: relative;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+    .capability-list li::before {
+      content: '\2713';
+      position: absolute;
+      left: 0;
+      color: var(--color-success);
+      font-weight: 600;
+    }
+    .data-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      background: rgba(59, 130, 246, 0.1);
+      color: #3b82f6;
+      margin: 2px 4px 2px 0;
+    }
+
+    /* Data flow section */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-md);
+    }
+    @media (min-width: 768px) {
+      .flow-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .flow-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+    }
+    .flow-card h4 {
+      font-size: 1rem;
+      margin-bottom: var(--space-sm);
+      color: var(--color-primary);
+    }
+    .flow-path {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+    .flow-arrow {
+      color: var(--color-accent);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-container">
+      <a href="index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
+
+      <ul class="nav-menu" role="menubar">
+        <li role="none"><a href="index.html" class="nav-link" role="menuitem">Home</a></li>
+        <li role="none"><a href="tools.html" class="nav-link" role="menuitem">Tools</a></li>
+        <li role="none"><a href="reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none"><a href="audit.html" class="nav-link active" role="menuitem">Platform</a></li>
+        <li role="none"><a href="about.html" class="nav-link" role="menuitem">About</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button
+          id="theme-toggle"
+          class="theme-toggle"
+          type="button"
+          aria-label="Switch to dark mode"
+        >
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+
+        <a href="#" class="btn btn-primary btn-login" aria-label="Login (coming soon)">Login</a>
+
+        <button
+          id="mobile-menu-toggle"
+          class="mobile-menu-toggle"
+          type="button"
+          aria-label="Toggle navigation menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu" role="menu" aria-label="Mobile navigation">
+      <ul>
+        <li><a href="index.html" role="menuitem">Home</a></li>
+        <li><a href="tools.html" role="menuitem">Tools</a></li>
+        <li><a href="reports.html" role="menuitem">Reports</a></li>
+        <li><a href="audit.html" role="menuitem">Platform</a></li>
+        <li><a href="about.html" role="menuitem">About</a></li>
+        <li><a href="#" role="menuitem">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="container">
+        <h1 class="page-title">Platform Overview</h1>
+        <p class="page-description">Hub-and-spoke architecture powering Candid Mixers operations</p>
+      </div>
+    </header>
+
+    <!-- Architecture Diagram -->
+    <section class="section" aria-labelledby="arch-title">
+      <div class="container">
+        <h2 id="arch-title" class="text-center mb-4">Architecture</h2>
+        <div class="arch-diagram">
+          <div class="arch-hub" id="hub-card">
+            <div style="font-size:2rem; margin-bottom:var(--space-xs);" id="hub-icon"></div>
+            <div class="arch-hub-title" id="hub-name"></div>
+            <div class="arch-hub-sub" id="hub-desc"></div>
+          </div>
+          <div class="arch-connector"></div>
+          <div class="arch-spokes" id="spokes-grid"></div>
+        </div>
+
+        <!-- Detail Panel (shown when a spoke is clicked) -->
+        <div class="spoke-detail" id="spoke-detail">
+          <h3 id="detail-title"></h3>
+          <p class="card-description" id="detail-desc" style="margin-bottom:var(--space-lg);"></p>
+          <div class="spoke-detail-grid">
+            <div>
+              <h4 style="margin-bottom:var(--space-sm);">Capabilities</h4>
+              <ul class="capability-list" id="detail-caps"></ul>
+            </div>
+            <div>
+              <h4 style="margin-bottom:var(--space-sm);">Data Connections</h4>
+              <div id="detail-data"></div>
+              <p style="margin-top:var(--space-md);">
+                <span class="mono" style="color:var(--text-muted); font-size:0.8rem;" id="detail-modules"></span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Data Flows -->
+    <section class="section" aria-labelledby="flows-title">
+      <div class="container">
+        <h2 id="flows-title" class="text-center mb-4">Data Flows</h2>
+        <div class="flow-grid">
+          <div class="flow-card">
+            <h4>Production Pipeline</h4>
+            <div class="flow-path">
+              Xero API <span class="flow-arrow">&rarr;</span> Production Master<br>
+              KMI System <span class="flow-arrow">&rarr;</span> Production Master<br>
+              Production Master <span class="flow-arrow">&rarr;</span> SKU Costs<br>
+              SKU Costs <span class="flow-arrow">&rarr;</span> Sales Master (COGS)
+            </div>
+          </div>
+          <div class="flow-card">
+            <h4>Sales Analytics</h4>
+            <div class="flow-path">
+              Sales Data <span class="flow-arrow">&rarr;</span> Revenue Master<br>
+              Revenue + COGS <span class="flow-arrow">&rarr;</span> Gross Margin<br>
+              Gross Margin <span class="flow-arrow">&rarr;</span> Deck Metrics<br>
+              Deck Metrics <span class="flow-arrow">&rarr;</span> Exec Dashboard
+            </div>
+          </div>
+          <div class="flow-card">
+            <h4>Loan Management</h4>
+            <div class="flow-path">
+              Transactions <span class="flow-arrow">&rarr;</span> Interest Accrual<br>
+              Interest Accrual <span class="flow-arrow">&rarr;</span> Balances<br>
+              Balances <span class="flow-arrow">&rarr;</span> Statement Generator<br>
+              Statement Generator <span class="flow-arrow">&rarr;</span> PDF/Doc
+            </div>
+          </div>
+          <div class="flow-card">
+            <h4>Agreement Generation</h4>
+            <div class="flow-path">
+              Spreadsheet Row <span class="flow-arrow">&rarr;</span> KAA Generator<br>
+              Template Doc <span class="flow-arrow">&rarr;</span> Copy + Inject<br>
+              Rebate Clauses <span class="flow-arrow">&rarr;</span> Final Doc<br>
+              Final Doc <span class="flow-arrow">&rarr;</span> Email Notification
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Deployment Info -->
+    <section class="section" aria-labelledby="deploy-title">
+      <div class="container">
+        <h2 id="deploy-title" class="text-center mb-4">Deployment</h2>
+        <div class="flow-grid">
+          <div class="flow-card">
+            <h4>Apps Script (via clasp)</h4>
+            <div class="flow-path">
+              Hub + Spoke Code <span class="flow-arrow">&rarr;</span> dist/<br>
+              dist/ <span class="flow-arrow">&rarr;</span> clasp push<br>
+              clasp push <span class="flow-arrow">&rarr;</span> Apps Script API<br>
+              <br>
+              CI/CD: GitHub Actions on claude/** branches
+            </div>
+          </div>
+          <div class="flow-card">
+            <h4>Web Platform (Cloudflare)</h4>
+            <div class="flow-path">
+              Static HTML/JS/CSS <span class="flow-arrow">&rarr;</span> Pages<br>
+              Workers Functions <span class="flow-arrow">&rarr;</span> Edge Runtime<br>
+              D1 SQLite <span class="flow-arrow">&rarr;</span> Users, Tool Runs<br>
+              KV Namespace <span class="flow-arrow">&rarr;</span> Sessions
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-content">&copy; 2026 Candidlabs - Internal Use Only</p>
+    </div>
+  </footer>
+
+  <script src="platform-registry.js"></script>
+  <script src="script.js"></script>
+  <script>
+    (function() {
+      var reg = PLATFORM_REGISTRY;
+      var selectedId = null;
+
+      // Render hub
+      document.getElementById('hub-icon').textContent = reg.hub.icon;
+      document.getElementById('hub-name').textContent = reg.hub.name;
+      document.getElementById('hub-desc').textContent = reg.hub.modules + ' modules \u2014 shared library';
+
+      // Hub click shows detail
+      document.getElementById('hub-card').style.cursor = 'pointer';
+      document.getElementById('hub-card').addEventListener('click', function() {
+        showDetail(reg.hub);
+      });
+
+      // Render spokes
+      var grid = document.getElementById('spokes-grid');
+      var html = '';
+      for (var i = 0; i < reg.spokes.length; i++) {
+        var s = reg.spokes[i];
+        html += '<div class="arch-spoke" data-idx="' + i + '">' +
+          '<div class="arch-spoke-icon">' + s.icon + '</div>' +
+          '<div class="arch-spoke-name">' + s.name + '</div>' +
+          '<div class="arch-spoke-count">' + s.modules + ' files</div>' +
+        '</div>';
+      }
+      grid.innerHTML = html;
+
+      // Click handlers
+      grid.addEventListener('click', function(e) {
+        var spoke = e.target.closest('.arch-spoke');
+        if (!spoke) return;
+        var idx = parseInt(spoke.getAttribute('data-idx'), 10);
+        showDetail(reg.spokes[idx]);
+      });
+
+      function showDetail(item) {
+        var panel = document.getElementById('spoke-detail');
+        if (selectedId === item.id) {
+          panel.classList.remove('active');
+          selectedId = null;
+          return;
+        }
+        selectedId = item.id;
+
+        document.getElementById('detail-title').textContent = item.icon + ' ' + item.name;
+        document.getElementById('detail-desc').textContent = item.description;
+        document.getElementById('detail-modules').textContent = item.modules + ' files in this module';
+
+        var capsHtml = '';
+        for (var i = 0; i < item.capabilities.length; i++) {
+          capsHtml += '<li>' + item.capabilities[i] + '</li>';
+        }
+        document.getElementById('detail-caps').innerHTML = capsHtml;
+
+        var conns = item.dataConnections || [];
+        var dataHtml = '';
+        if (conns.length === 0) {
+          dataHtml = '<span class="text-muted" style="font-size:0.85rem;">Internal library \u2014 no external connections</span>';
+        } else {
+          for (var j = 0; j < conns.length; j++) {
+            dataHtml += '<span class="data-tag">' + conns[j] + '</span>';
+          }
+        }
+        document.getElementById('detail-data').innerHTML = dataHtml;
+
+        panel.classList.add('active');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    })();
+  </script>
+</body>
+</html>

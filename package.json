@@ -9,7 +9,7 @@
     "db:migrate:local": "wrangler d1 execute DB --local --file src/db/schema.sql"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260208.0",
+    "@cloudflare/workers-types": "^4.20260210.0",
     "typescript": "^5.9.2",
     "wrangler": "^4.1.0"
   }

@@ -20,6 +20,7 @@
         <li role="none"><a href="index.html" class="nav-link active" role="menuitem">Home</a></li>
         <li role="none"><a href="tools.html" class="nav-link" role="menuitem">Tools</a></li>
         <li role="none"><a href="reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none"><a href="audit.html" class="nav-link" role="menuitem">Platform</a></li>
         <li role="none"><a href="about.html" class="nav-link" role="menuitem">About</a></li>
       </ul>
 
@@ -69,6 +70,7 @@
         <li><a href="index.html" role="menuitem">Home</a></li>
         <li><a href="tools.html" role="menuitem">Tools</a></li>
         <li><a href="reports.html" role="menuitem">Reports</a></li>
+        <li><a href="audit.html" role="menuitem">Platform</a></li>
         <li><a href="about.html" role="menuitem">About</a></li>
         <li><a href="#" role="menuitem">Login</a></li>
       </ul>
@@ -92,18 +94,18 @@
       <div class="container">
         <h2 id="stats-title" class="sr-only">Platform Statistics</h2>
         <div class="stats-grid">
-          <a href="#" class="card stat-card stat-card-link">
-            <div class="stat-number mono">3</div>
-            <div class="stat-label">Current Projects</div>
+          <a href="audit.html" class="card stat-card stat-card-link">
+            <div class="stat-number mono" id="stat-modules">--</div>
+            <div class="stat-label">Platform Modules</div>
           </a>
-          <a href="#" class="card stat-card stat-card-link">
-            <div class="stat-number mono">7</div>
-            <div class="stat-label">Open Tasks</div>
+          <a href="tools.html" class="card stat-card stat-card-link">
+            <div class="stat-number mono" id="stat-live">--</div>
+            <div class="stat-label">Live Web Tools</div>
           </a>
-          <article class="card stat-card">
-            <div class="stat-number mono">150+</div>
-            <div class="stat-label">Reports Generated</div>
-          </article>
+          <a href="tools.html#gas-tools-title" class="card stat-card stat-card-link">
+            <div class="stat-number mono" id="stat-pending">--</div>
+            <div class="stat-label">Pending Integration</div>
+          </a>
           <article class="card stat-card stat-card-spirit">
             <div class="stat-tagline">Taste Your Spirit</div>
             <div class="stat-quote">"What energised you at work this week?"</div>
@@ -122,26 +124,29 @@
           <a href="https://my.xero.com" target="_blank" rel="noopener" class="btn btn-external">
             <span>💳</span> Submit Expenses (Xero)
           </a>
+          <a href="dashboard.html" class="btn btn-external">
+            <span>📋</span> Management Dashboard
+          </a>
         </div>
 
         <div class="tools-grid">
           <article class="card tool-card">
-            <div class="card-icon" aria-hidden="true">💰</div>
-            <h3 class="card-title">Loan Tracker</h3>
-            <p class="card-description">Track shareholder loans, repayments, and outstanding balances.</p>
-            <span class="card-link disabled">Coming Soon</span>
-          </article>
-          <article class="card tool-card">
-            <div class="card-icon" aria-hidden="true">📝</div>
-            <h3 class="card-title">KAA Generator</h3>
-            <p class="card-description">Generate Key Account Agreement documents for new partnerships.</p>
-            <span class="card-link disabled">Coming Soon</span>
-          </article>
-          <article class="card tool-card">
-            <div class="card-icon" aria-hidden="true">📊</div>
+            <div class="card-icon" aria-hidden="true">📈</div>
             <h3 class="card-title">Budget Planner</h3>
             <p class="card-description">FY2026 budget planning with scenario modeling and P&L projections.</p>
             <a href="budget.html" class="card-link">Open Tool</a>
+          </article>
+          <article class="card tool-card">
+            <div class="card-icon" aria-hidden="true">🏗️</div>
+            <h3 class="card-title">Platform Overview</h3>
+            <p class="card-description">Architecture map of the entire hub-and-spoke platform.</p>
+            <a href="audit.html" class="card-link">View Architecture</a>
+          </article>
+          <article class="card tool-card">
+            <div class="card-icon" aria-hidden="true">🔧</div>
+            <h3 class="card-title">All Tools</h3>
+            <p class="card-description">Browse all platform modules, web tools, and pending integrations.</p>
+            <a href="tools.html" class="card-link">View All</a>
           </article>
         </div>
       </div>
@@ -155,6 +160,15 @@
     </div>
   </footer>
 
+  <script src="platform-registry.js"></script>
   <script src="script.js"></script>
+  <script>
+    (function() {
+      var stats = PLATFORM_REGISTRY.getStats();
+      document.getElementById('stat-modules').textContent = stats.platformModules;
+      document.getElementById('stat-live').textContent = stats.liveWebTools;
+      document.getElementById('stat-pending').textContent = stats.pendingIntegrations;
+    })();
+  </script>
 </body>
 </html>

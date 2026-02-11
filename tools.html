@@ -19,6 +19,7 @@
         <li role="none"><a href="index.html" class="nav-link" role="menuitem">Home</a></li>
         <li role="none"><a href="tools.html" class="nav-link active" role="menuitem">Tools</a></li>
         <li role="none"><a href="reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none"><a href="audit.html" class="nav-link" role="menuitem">Platform</a></li>
         <li role="none"><a href="about.html" class="nav-link" role="menuitem">About</a></li>
       </ul>
 
@@ -68,6 +69,7 @@
         <li><a href="index.html" role="menuitem">Home</a></li>
         <li><a href="tools.html" role="menuitem">Tools</a></li>
         <li><a href="reports.html" role="menuitem">Reports</a></li>
+        <li><a href="audit.html" role="menuitem">Platform</a></li>
         <li><a href="about.html" role="menuitem">About</a></li>
         <li><a href="#" role="menuitem">Login</a></li>
       </ul>
@@ -83,128 +85,27 @@
       </div>
     </header>
 
-    <!-- Tools Grid Section -->
-    <section class="section" aria-labelledby="tools-grid-title">
+    <!-- Live Web Tools -->
+    <section class="section" aria-labelledby="web-tools-title">
       <div class="container">
-        <h2 id="tools-grid-title" class="sr-only">Available Tools</h2>
-        <div class="tools-grid">
-          <!-- CoreOS Hub -->
-          <article class="card tool-card">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">⚙️</div>
-              <span class="badge badge-success">Active</span>
-            </div>
-            <h3 class="card-title">CoreOS Hub</h3>
-            <p class="card-description">Central configuration and module management. Control all platform settings from a unified interface.</p>
-            <div class="tool-card-footer">
-              <a href="#" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
+        <h2 id="web-tools-title" class="mb-3">Live on this site</h2>
+        <div class="tools-grid" id="web-tools-grid"></div>
+      </div>
+    </section>
 
-          <!-- Production Master -->
-          <article class="card tool-card">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">🏭</div>
-              <span class="badge badge-success">Active</span>
-            </div>
-            <h3 class="card-title">Production Master</h3>
-            <p class="card-description">Manufacturing tracking, batch management, and SKU control for production operations.</p>
-            <div class="tool-card-footer">
-              <a href="#" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
+    <!-- Apps Script Tools (pending integration) -->
+    <section class="section" aria-labelledby="gas-tools-title">
+      <div class="container">
+        <h2 id="gas-tools-title" class="mb-3">Google Apps Script <span class="text-muted" style="font-size:0.75em; font-weight:400;">(pending web integration)</span></h2>
+        <div class="tools-grid" id="gas-tools-grid"></div>
+      </div>
+    </section>
 
-          <!-- Sales Master -->
-          <article class="card tool-card">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">📊</div>
-              <span class="badge badge-success">Active</span>
-            </div>
-            <h3 class="card-title">Sales Master</h3>
-            <p class="card-description">Order processing and channel analytics for comprehensive sales management.</p>
-            <div class="tool-card-footer">
-              <a href="#" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
-
-          <!-- Financial Tracker -->
-          <article class="card tool-card">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">💰</div>
-              <span class="badge badge-success">Active</span>
-            </div>
-            <h3 class="card-title">Financial Tracker</h3>
-            <p class="card-description">COGS calculation and margin analysis for financial insights and reporting.</p>
-            <div class="tool-card-footer">
-              <a href="#" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
-
-          <!-- Loan Tracker -->
-          <article class="card tool-card">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">🏦</div>
-              <span class="badge badge-success">Active</span>
-            </div>
-            <h3 class="card-title">Loan Tracker</h3>
-            <p class="card-description">Debt management and payment schedules for tracking financial obligations.</p>
-            <div class="tool-card-footer">
-              <a href="#" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
-
-          <!-- KAA Generator -->
-          <article class="card tool-card">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">📝</div>
-              <span class="badge badge-success">Active</span>
-            </div>
-            <h3 class="card-title">KAA Generator</h3>
-            <p class="card-description">Automated contract generation for key account agreements and partnerships.</p>
-            <div class="tool-card-footer">
-              <a href="#" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
-
-          <!-- Budget Planner -->
-          <article class="card tool-card">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">📈</div>
-              <span class="badge badge-info">In Development</span>
-            </div>
-            <h3 class="card-title">Budget Planner</h3>
-            <p class="card-description">2026 budget planning with historical actuals, assumptions modeling, and scenario analysis.</p>
-            <div class="tool-card-footer">
-              <a href="budget.html" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
-
-          <!-- Inventory System -->
-          <article class="card tool-card">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">📦</div>
-              <span class="badge badge-warning">Coming Soon</span>
-            </div>
-            <h3 class="card-title">Inventory System</h3>
-            <p class="card-description">Stock levels and reorder management for inventory optimization.</p>
-            <div class="tool-card-footer">
-              <button class="btn btn-disabled" disabled aria-label="Inventory System - Coming Soon">Access Tool</button>
-            </div>
-          </article>
-
-          <!-- Vendor Portal -->
-          <article class="card tool-card">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">🤝</div>
-              <span class="badge badge-warning">Coming Soon</span>
-            </div>
-            <h3 class="card-title">Vendor Portal</h3>
-            <p class="card-description">Supplier relationship management for vendor coordination and procurement.</p>
-            <div class="tool-card-footer">
-              <button class="btn btn-disabled" disabled aria-label="Vendor Portal - Coming Soon">Access Tool</button>
-            </div>
-          </article>
-        </div>
+    <!-- Planned Tools -->
+    <section class="section" aria-labelledby="planned-tools-title">
+      <div class="container">
+        <h2 id="planned-tools-title" class="mb-3">Planned</h2>
+        <div class="tools-grid" id="planned-tools-grid"></div>
       </div>
     </section>
   </main>
@@ -216,6 +117,53 @@
     </div>
   </footer>
 
+  <script src="platform-registry.js"></script>
   <script src="script.js"></script>
+  <script>
+    (function() {
+      var reg = PLATFORM_REGISTRY;
+
+      function toolCard(tool, badgeClass, badgeText, footerHtml) {
+        return '<article class="card tool-card">' +
+          '<div class="tool-card-header">' +
+            '<div class="card-icon" aria-hidden="true">' + tool.icon + '</div>' +
+            '<span class="badge ' + badgeClass + '">' + badgeText + '</span>' +
+          '</div>' +
+          '<h3 class="card-title">' + tool.name + '</h3>' +
+          '<p class="card-description">' + tool.description + '</p>' +
+          '<div class="tool-card-footer">' + footerHtml + '</div>' +
+        '</article>';
+      }
+
+      // Live web tools
+      var webHtml = '';
+      for (var i = 0; i < reg.webTools.length; i++) {
+        var t = reg.webTools[i];
+        webHtml += toolCard(t, 'badge-success', 'Active',
+          '<a href="' + t.href + '" class="btn btn-primary">Open Tool</a>');
+      }
+      document.getElementById('web-tools-grid').innerHTML = webHtml;
+
+      // Apps Script spokes
+      var gasHtml = '';
+      gasHtml += toolCard(reg.hub, 'badge-info', 'Apps Script',
+        '<span class="btn btn-disabled" style="pointer-events:none;opacity:0.5;">' + reg.hub.modules + ' modules</span>');
+      for (var j = 0; j < reg.spokes.length; j++) {
+        var s = reg.spokes[j];
+        gasHtml += toolCard(s, 'badge-info', 'Apps Script',
+          '<span class="btn btn-disabled" style="pointer-events:none;opacity:0.5;">' + s.modules + ' modules</span>');
+      }
+      document.getElementById('gas-tools-grid').innerHTML = gasHtml;
+
+      // Planned
+      var planHtml = '';
+      for (var k = 0; k < reg.planned.length; k++) {
+        var p = reg.planned[k];
+        planHtml += toolCard(p, 'badge-warning', 'Coming Soon',
+          '<button class="btn btn-disabled" disabled>Coming Soon</button>');
+      }
+      document.getElementById('planned-tools-grid').innerHTML = planHtml;
+    })();
+  </script>
 </body>
 </html>
