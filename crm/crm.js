@@ -141,10 +141,11 @@ function renderContacts(filter) {
       '<td class="row-secondary">' + escapeHtml(c.phone || '-') + '</td>' +
       '<td><div class="row-actions">' +
         '<button class="btn-row-action" onclick="openEditContact(\'' + c.id + '\')">Edit</button>' +
-        '<button class="btn-row-action danger" onclick="deleteContact(\'' + c.id + '\')">Delete</button>' +
+        '<button class="btn-row-action danger" data-auth-role="admin" onclick="deleteContact(\'' + c.id + '\')">Delete</button>' +
       '</div></td>' +
     '</tr>';
   }).join('');
+  applyAuthVisibility();
 }
 
 function openAddContact() {
@@ -243,10 +244,11 @@ function renderCompanies(filter) {
       '<td class="row-secondary">' + numContacts + '</td>' +
       '<td><div class="row-actions">' +
         '<button class="btn-row-action" onclick="openEditCompany(\'' + co.id + '\')">Edit</button>' +
-        '<button class="btn-row-action danger" onclick="deleteCompany(\'' + co.id + '\')">Delete</button>' +
+        '<button class="btn-row-action danger" data-auth-role="admin" onclick="deleteCompany(\'' + co.id + '\')">Delete</button>' +
       '</div></td>' +
     '</tr>';
   }).join('');
+  applyAuthVisibility();
 }
 
 function openAddCompany() {
@@ -348,10 +350,11 @@ function renderDeals(filter) {
       '<td class="row-secondary">' + formatDate(d.createdAt) + '</td>' +
       '<td><div class="row-actions">' +
         '<button class="btn-row-action" onclick="openEditDeal(\'' + d.id + '\')">Edit</button>' +
-        '<button class="btn-row-action danger" onclick="deleteDeal(\'' + d.id + '\')">Delete</button>' +
+        '<button class="btn-row-action danger" data-auth-role="admin" onclick="deleteDeal(\'' + d.id + '\')">Delete</button>' +
       '</div></td>' +
     '</tr>';
   }).join('');
+  applyAuthVisibility();
 }
 
 function filterDeals(stage) {
@@ -477,10 +480,25 @@ function escapeHtml(str) {
 }
 
 // ============================================================
+// AUTH VISIBILITY - re-apply after dynamic renders
+// ============================================================
+
+function applyAuthVisibility() {
+  if (typeof CandidAuth !== 'undefined') {
+    CandidAuth.applyRoleVisibility();
+  }
+}
+
+// ============================================================
 // INITIALIZATION
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Require login — redirects to login.html if not authenticated
+  if (typeof CandidAuth !== 'undefined') {
+    CandidAuth.requireAuth();
+  }
+
   // Initialize overview stats
   renderOverview();
 

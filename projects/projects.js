@@ -203,10 +203,11 @@ function renderProjects(filter) {
       '<td class="row-secondary ' + pmDueClass(p.dueDate) + '">' + pmFormatDate(p.dueDate) + '</td>' +
       '<td><div class="row-actions">' +
         '<button class="btn-row-action" onclick="openEditProject(\'' + p.id + '\')">Edit</button>' +
-        '<button class="btn-row-action danger" onclick="deleteProject(\'' + p.id + '\')">Delete</button>' +
+        '<button class="btn-row-action danger" data-auth-role="admin" onclick="deleteProject(\'' + p.id + '\')">Delete</button>' +
       '</div></td>' +
     '</tr>';
   }).join('');
+  pmApplyAuthVisibility();
 }
 
 function openAddProject() {
@@ -331,7 +332,7 @@ function renderTasks(filter) {
       '<td class="row-secondary ' + pmDueClass(t.dueDate) + '">' + pmFormatDate(t.dueDate) + '</td>' +
       '<td><div class="row-actions">' +
         '<button class="btn-row-action" onclick="openEditTask(\'' + t.id + '\')">Edit</button>' +
-        '<button class="btn-row-action danger" onclick="deleteTask(\'' + t.id + '\')">Delete</button>' +
+        '<button class="btn-row-action danger" data-auth-role="admin" onclick="deleteTask(\'' + t.id + '\')">Delete</button>' +
       '</div></td>' +
     '</tr>';
   }).join('');
@@ -450,6 +451,11 @@ function pmEscapeHtml(str) {
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Require login — redirects to login.html if not authenticated
+  if (typeof CandidAuth !== 'undefined') {
+    CandidAuth.requireAuth();
+  }
+
   renderPMOverview();
 
   var projectsSearch = document.getElementById('projects-search');
