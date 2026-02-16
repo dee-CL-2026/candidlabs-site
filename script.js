@@ -231,11 +231,53 @@
   });
 
   // ===========================================
+  // Auth Integration & Role-Based Views
+  // ===========================================
+
+  /**
+   * Page-level auth gates and role-based content filtering.
+   * Relies on CandidAuth (auth.js) being loaded first.
+   *
+   * Pages that require authentication add data-auth-require="true" to <body>.
+   * Elements that require a specific role use data-auth-role="admin"|"team".
+   * Elements hidden by auth state use data-auth-hide="signed-in"|"signed-out".
+   *
+   * Auth is a UI visibility layer only. Real data access is controlled
+   * by Google Sheets/Looker permissions on the backend.
+   */
+  if (typeof CandidAuth !== 'undefined') {
+    // Gate: redirect to login if page requires auth and user is not signed in
+    if (document.body.getAttribute('data-auth-require') === 'true') {
+      CandidAuth.requireAuth();
+    }
+
+    // Show a welcome greeting on the homepage if signed in
+    var heroSubtitle = document.querySelector('.hero-subtitle');
+    if (heroSubtitle && CandidAuth.isSignedIn()) {
+      var user = CandidAuth.getUser();
+      var firstName = user.name ? user.name.split(' ')[0] : '';
+      if (firstName) {
+        heroSubtitle.textContent = 'Welcome back, ' + firstName;
+      }
+    }
+
+    // Display user role badge on dashboard pages
+    var dashboardHeader = document.querySelector('.dashboard-header');
+    if (dashboardHeader && CandidAuth.isSignedIn()) {
+      var role = CandidAuth.getRole();
+      var roleBadge = document.createElement('span');
+      roleBadge.className = 'badge ' + (role === 'admin' ? 'badge-info' : 'badge-success');
+      roleBadge.textContent = role.toUpperCase();
+      dashboardHeader.querySelector('div').appendChild(roleBadge);
+    }
+  }
+
+  // ===========================================
   // Console Welcome Message
   // ===========================================
 
   console.log(
-    '%c🧪 Candidlabs',
+    '%c Candidlabs',
     'font-size: 24px; font-weight: bold; color: #1b708b;'
   );
   console.log(
