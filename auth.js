@@ -36,7 +36,7 @@ var GOOGLE_CLIENT_ID = '718724938057-beqd28jucqeji847c8adq0h2lnd7dh3p.apps.googl
   // Emails with admin role. Everyone else on an allowed domain gets "team" role.
   
   var ADMIN_EMAILS = [
-    'dieterwerwath.com',
+    'dieterwerwath@gmail.com',
   // Add admin emails here, e.g.:
     // 'dieter@candidmixers.com',
   ];
