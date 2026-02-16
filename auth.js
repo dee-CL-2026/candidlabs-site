@@ -27,7 +27,7 @@ var CandidAuth = (function () {
 
   // Google OAuth Client ID — replace with actual value when deploying.
   // To obtain: Google Cloud Console > APIs & Services > Credentials > OAuth 2.0 Client ID (Web)
-  var GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+  'var GOOGLE_CLIENT_ID = '718724938057-beqd28jucqeji847c8adq0h2lnd7dh3p.apps.googleusercontent.com';'
 
   // Allowed email domain(s). Users outside these domains are rejected
   // unless explicitly listed in ADMIN_EMAILS.
