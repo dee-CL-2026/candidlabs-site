@@ -45,7 +45,7 @@
           </svg>
         </button>
 
-        <a href="#" class="btn btn-primary btn-login" aria-label="Login (coming soon)">Login</a>
+        <a href="login.html" class="btn btn-primary btn-login" aria-label="Login">Login</a>
 
         <button
           id="mobile-menu-toggle"
@@ -69,7 +69,7 @@
         <li><a href="tools.html" role="menuitem">Tools</a></li>
         <li><a href="reports.html" role="menuitem">Reports</a></li>
         <li><a href="about.html" role="menuitem">About</a></li>
-        <li><a href="#" role="menuitem">Login</a></li>
+        <li><a href="login.html" role="menuitem">Login</a></li>
       </ul>
     </div>
   </nav>
@@ -127,8 +127,8 @@
             <span class="btn btn-secondary btn-disabled">Coming Soon</span>
           </article>
 
-          <!-- Financial Overview -->
-          <article class="card">
+          <!-- Financial Overview (admin-only) -->
+          <article class="card" data-auth-role="admin">
             <div class="report-preview" aria-hidden="true">
               <div class="text-center">
                 <div class="report-preview-icon">💹</div>
@@ -140,8 +140,8 @@
             <span class="btn btn-secondary btn-disabled">Coming Soon</span>
           </article>
 
-          <!-- SKD Performance -->
-          <article class="card">
+          <!-- SKD Performance (admin-only) -->
+          <article class="card" data-auth-role="admin">
             <div class="report-preview" aria-hidden="true">
               <div class="text-center">
                 <div class="report-preview-icon">🏷️</div>
@@ -177,6 +177,7 @@
     </div>
   </footer>
 
+  <script src="auth.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

@@ -19,7 +19,7 @@
       width: 100%;
       height: calc(100vh - 180px);
       min-height: 600px;
-      border: 1px solid var(--color-border);
+      border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
       background: var(--bg-card);
     }
@@ -42,9 +42,64 @@
     .back-link:hover {
       color: var(--color-primary);
     }
+
+    /* KPI Scorecards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-md);
+      margin-bottom: var(--space-xl);
+    }
+    @media (min-width: 768px) {
+      .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      text-align: center;
+      transition: border-color var(--transition-fast);
+    }
+    .kpi-card:hover {
+      border-color: var(--color-primary);
+    }
+    .kpi-label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--space-xs);
+    }
+    .kpi-value {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      color: var(--color-primary);
+      line-height: 1.2;
+    }
+    .kpi-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: var(--space-xs);
+    }
+    .kpi-loading {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+    .kpi-error {
+      color: var(--color-error);
+      font-size: 0.8rem;
+    }
+    .dashboard-data-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: right;
+      margin-bottom: var(--space-sm);
+    }
   </style>
 </head>
-<body>
+<body data-auth-require="true">
   <!-- Navigation -->
   <nav class="navbar" role="navigation" aria-label="Main navigation">
     <div class="container navbar-container">
@@ -74,7 +129,7 @@
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
           </svg>
         </button>
-        <a href="#" class="btn btn-primary btn-login" aria-label="Login (coming soon)">Login</a>
+        <a href="login.html" class="btn btn-primary btn-login" aria-label="Login">Login</a>
         <button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu">
           <span></span><span></span><span></span>
         </button>
@@ -86,7 +141,7 @@
         <li><a href="tools.html" role="menuitem">Tools</a></li>
         <li><a href="reports.html" role="menuitem">Reports</a></li>
         <li><a href="about.html" role="menuitem">About</a></li>
-        <li><a href="#" role="menuitem">Login</a></li>
+        <li><a href="login.html" role="menuitem">Login</a></li>
       </ul>
     </div>
   </nav>
@@ -100,6 +155,56 @@
             <h1 style="margin-top: var(--space-sm);">Management Overview</h1>
           </div>
         </div>
+
+        <!-- Live KPI Scorecards — populated by dashboard-data.js -->
+        <div id="kpi-grid" class="kpi-grid">
+          <!-- Team-visible KPIs -->
+          <div class="kpi-card" data-kpi="cases_ytd">
+            <div class="kpi-label">Cases Sold YTD</div>
+            <div class="kpi-value kpi-loading">--</div>
+            <div class="kpi-subtitle">All SKUs combined</div>
+          </div>
+          <div class="kpi-card" data-kpi="revenue_ytd">
+            <div class="kpi-label">Revenue YTD</div>
+            <div class="kpi-value kpi-loading">--</div>
+            <div class="kpi-subtitle">IDR</div>
+          </div>
+          <div class="kpi-card" data-kpi="active_outlets">
+            <div class="kpi-label">Active Outlets</div>
+            <div class="kpi-value kpi-loading">--</div>
+            <div class="kpi-subtitle">Last 90 days</div>
+          </div>
+          <div class="kpi-card" data-kpi="markets_opened">
+            <div class="kpi-label">Markets</div>
+            <div class="kpi-value kpi-loading">--</div>
+            <div class="kpi-subtitle">Active markets</div>
+          </div>
+
+          <!-- Admin-only KPIs (financial) -->
+          <div class="kpi-card" data-kpi="gross_margin" data-auth-role="admin">
+            <div class="kpi-label">Gross Margin</div>
+            <div class="kpi-value kpi-loading">--</div>
+            <div class="kpi-subtitle">Current period</div>
+          </div>
+          <div class="kpi-card" data-kpi="cogs_ytd" data-auth-role="admin">
+            <div class="kpi-label">COGS YTD</div>
+            <div class="kpi-value kpi-loading">--</div>
+            <div class="kpi-subtitle">IDR</div>
+          </div>
+          <div class="kpi-card" data-kpi="production_ytd" data-auth-role="admin">
+            <div class="kpi-label">Cases Produced YTD</div>
+            <div class="kpi-value kpi-loading">--</div>
+            <div class="kpi-subtitle">All SKUs</div>
+          </div>
+          <div class="kpi-card" data-kpi="ar_outstanding" data-auth-role="admin">
+            <div class="kpi-label">AR Outstanding</div>
+            <div class="kpi-value kpi-loading">--</div>
+            <div class="kpi-subtitle">IDR</div>
+          </div>
+        </div>
+
+        <div class="dashboard-data-note" id="data-timestamp"></div>
+
         <iframe
           class="dashboard-embed"
           src="https://lookerstudio.google.com/embed/reporting/1fcf0f7b-2b25-4736-b078-edc2de8c467f/page/p_kh1245wayd"
@@ -111,6 +216,8 @@
     </section>
   </main>
 
+  <script src="auth.js"></script>
   <script src="script.js"></script>
+  <script src="dashboard-data.js"></script>
 </body>
 </html>

@@ -1,0 +1,528 @@
+/* ===========================================
+   CRM MODULE STYLES
+   Follows candidlabs design system conventions.
+   Uses CSS variables from styles.css for theming.
+   Layout pattern matches budget.html tool-layout.
+   =========================================== */
+
+/* Main Tool Layout - Sidebar + Content */
+.tool-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .tool-layout {
+    grid-template-columns: 1fr;
+  }
+  .tool-sidebar {
+    position: static !important;
+  }
+}
+
+.tool-sidebar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  height: fit-content;
+  position: sticky;
+  top: 100px;
+}
+
+.sidebar-section {
+  margin-bottom: 20px;
+}
+
+.sidebar-section:last-child {
+  margin-bottom: 0;
+}
+
+.sidebar-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(27, 112, 139, 0.08);
+  border-radius: 6px;
+  border-left: 3px solid var(--color-primary);
+}
+
+.tool-btn {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tool-btn:hover {
+  background: rgba(27, 112, 139, 0.05);
+  color: var(--text-primary);
+}
+
+.tool-btn.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* Tool Panel Show/Hide */
+.tool-content {
+  min-height: 500px;
+}
+
+.tool-panel {
+  display: none;
+}
+
+.tool-panel.active {
+  display: block;
+}
+
+.tool-panel-header {
+  margin-bottom: 20px;
+}
+
+.tool-panel-header h2 {
+  color: var(--text-primary);
+  font-size: 1.4rem;
+  margin-bottom: 4px;
+}
+
+.tool-panel-header p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* CRM Stats Row */
+.crm-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.crm-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+}
+
+.crm-stat-number {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 2px;
+}
+
+.crm-stat-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Action Bar (search + add button) */
+.crm-action-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.crm-search {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+}
+
+.crm-search:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.crm-search::placeholder {
+  color: var(--text-muted);
+}
+
+.btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.btn-add:hover {
+  background: var(--color-accent);
+}
+
+/* Data Table */
+.crm-table-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.crm-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.crm-table th,
+.crm-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.875rem;
+}
+
+.crm-table th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--bg-secondary);
+}
+
+.crm-table tbody tr {
+  transition: background 0.15s;
+}
+
+.crm-table tbody tr:hover {
+  background: rgba(27, 112, 139, 0.04);
+}
+
+.crm-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.crm-table .row-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.crm-table .row-secondary {
+  color: var(--text-secondary);
+}
+
+/* Row Actions */
+.row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-row-action {
+  padding: 4px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-row-action:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn-row-action.danger:hover {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+/* Status Badge (reuses site badge pattern) */
+.crm-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 4px;
+  text-transform: capitalize;
+}
+
+.crm-status.active {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+}
+
+.crm-status.dormant {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning);
+}
+
+.crm-status.lost {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
+}
+
+.crm-status.lead {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+/* Deal stage badges */
+.crm-stage {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+
+.crm-stage.prospecting {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.crm-stage.proposal {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+.crm-stage.negotiation {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning);
+}
+
+.crm-stage.closed-won {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+}
+
+.crm-stage.closed-lost {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
+}
+
+/* Modal */
+.crm-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+.crm-modal-overlay.active {
+  display: flex;
+}
+
+.crm-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 28px;
+  width: 90%;
+  max-width: 540px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.crm-modal h3 {
+  font-size: 1.25rem;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.crm-form-group {
+  margin-bottom: 16px;
+}
+
+.crm-form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.crm-form-group input,
+.crm-form-group select,
+.crm-form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+}
+
+.crm-form-group input:focus,
+.crm-form-group select:focus,
+.crm-form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.crm-form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.crm-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .crm-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.crm-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-modal {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modal.primary {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+}
+
+.btn-modal.primary:hover {
+  background: var(--color-accent);
+}
+
+.btn-modal.secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-modal.secondary:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+/* Empty State */
+.crm-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+}
+
+.crm-empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.crm-empty p {
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+/* Deal Value */
+.deal-value {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-weight: 500;
+}
+
+/* Responsive table scroll */
+@media (max-width: 768px) {
+  .crm-table-container {
+    overflow-x: auto;
+  }
+  .crm-table {
+    min-width: 600px;
+  }
+}
+
+/* Filter tabs for pipeline view */
+.crm-filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.crm-filter-tab {
+  padding: 6px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.crm-filter-tab:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.crm-filter-tab.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}

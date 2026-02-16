@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="candidCRM - Contact, company, and deal management for Candid Mixers.">
+  <title>candidCRM - Candidlabs</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="crm.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- Navigation - matches site-wide nav pattern from tools.html -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-container">
+      <a href="../index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
+
+      <ul class="nav-menu" role="menubar">
+        <li role="none"><a href="../index.html" class="nav-link" role="menuitem">Home</a></li>
+        <li role="none"><a href="../tools.html" class="nav-link" role="menuitem">Tools</a></li>
+        <li role="none"><a href="../reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none"><a href="../about.html" class="nav-link" role="menuitem">About</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button
+          id="theme-toggle"
+          class="theme-toggle"
+          type="button"
+          aria-label="Switch to dark mode"
+        >
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+
+        <a href="../login.html" class="btn btn-primary btn-login" aria-label="Login">Login</a>
+
+        <button
+          id="mobile-menu-toggle"
+          class="mobile-menu-toggle"
+          type="button"
+          aria-label="Toggle navigation menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu" role="menu" aria-label="Mobile navigation">
+      <ul>
+        <li><a href="../index.html" role="menuitem">Home</a></li>
+        <li><a href="../tools.html" role="menuitem">Tools</a></li>
+        <li><a href="../reports.html" role="menuitem">Reports</a></li>
+        <li><a href="../about.html" role="menuitem">About</a></li>
+        <li><a href="../login.html" role="menuitem">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="container">
+        <h1 class="page-title">candidCRM</h1>
+        <p class="page-description">Contacts, companies, and deal pipeline management</p>
+      </div>
+    </header>
+
+    <!-- Tool Layout: Sidebar + Content (matches budget.html pattern) -->
+    <section class="section" aria-label="CRM Tool">
+      <div class="container">
+        <div class="tool-layout">
+
+          <!-- Sidebar -->
+          <aside class="tool-sidebar" aria-label="CRM navigation">
+            <div class="sidebar-section">
+              <div class="sidebar-label">CRM Modules</div>
+              <button class="tool-btn active" data-tool="overview" onclick="switchTool('overview')">Overview</button>
+              <button class="tool-btn" data-tool="contacts" onclick="switchTool('contacts')">Contacts</button>
+              <button class="tool-btn" data-tool="companies" onclick="switchTool('companies')">Companies</button>
+              <button class="tool-btn" data-tool="deals" onclick="switchTool('deals')">Deals</button>
+            </div>
+          </aside>
+
+          <!-- Content Area -->
+          <div class="tool-content">
+
+            <!-- OVERVIEW PANEL -->
+            <div class="tool-panel active" id="tool-overview">
+              <div class="tool-panel-header">
+                <h2>CRM Overview</h2>
+                <p>Summary of contacts, companies, and pipeline</p>
+              </div>
+
+              <div class="crm-stats">
+                <div class="crm-stat-card">
+                  <div class="crm-stat-number" id="stat-contacts">0</div>
+                  <div class="crm-stat-label">Contacts</div>
+                </div>
+                <div class="crm-stat-card">
+                  <div class="crm-stat-number" id="stat-companies">0</div>
+                  <div class="crm-stat-label">Companies</div>
+                </div>
+                <div class="crm-stat-card">
+                  <div class="crm-stat-number" id="stat-deals">0</div>
+                  <div class="crm-stat-label">Active Deals</div>
+                </div>
+                <div class="crm-stat-card">
+                  <div class="crm-stat-number" id="stat-pipeline">IDR 0</div>
+                  <div class="crm-stat-label">Pipeline Value</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CONTACTS PANEL -->
+            <div class="tool-panel" id="tool-contacts">
+              <div class="tool-panel-header">
+                <h2>Contacts</h2>
+                <p>People associated with accounts and deals</p>
+              </div>
+
+              <div class="crm-action-bar">
+                <input type="text" class="crm-search" id="contacts-search" placeholder="Search contacts..." aria-label="Search contacts">
+                <button class="btn-add" onclick="openAddContact()">+ Add Contact</button>
+              </div>
+
+              <div class="crm-table-container">
+                <table class="crm-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Company</th>
+                      <th>Role</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="contacts-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- COMPANIES PANEL -->
+            <div class="tool-panel" id="tool-companies">
+              <div class="tool-panel-header">
+                <h2>Companies</h2>
+                <p>Distributors, venues, and accounts</p>
+              </div>
+
+              <div class="crm-action-bar">
+                <input type="text" class="crm-search" id="companies-search" placeholder="Search companies..." aria-label="Search companies">
+                <button class="btn-add" onclick="openAddCompany()">+ Add Company</button>
+              </div>
+
+              <div class="crm-table-container">
+                <table class="crm-table">
+                  <thead>
+                    <tr>
+                      <th>Company</th>
+                      <th>Market</th>
+                      <th>Channel</th>
+                      <th>Status</th>
+                      <th>Contacts</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="companies-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- DEALS PANEL -->
+            <div class="tool-panel" id="tool-deals">
+              <div class="tool-panel-header">
+                <h2>Deals</h2>
+                <p>Sales pipeline and opportunity tracking</p>
+              </div>
+
+              <div class="crm-filter-tabs">
+                <button class="crm-filter-tab active" data-stage="all" onclick="filterDeals('all')">All</button>
+                <button class="crm-filter-tab" data-stage="prospecting" onclick="filterDeals('prospecting')">Prospecting</button>
+                <button class="crm-filter-tab" data-stage="proposal" onclick="filterDeals('proposal')">Proposal</button>
+                <button class="crm-filter-tab" data-stage="negotiation" onclick="filterDeals('negotiation')">Negotiation</button>
+                <button class="crm-filter-tab" data-stage="closed-won" onclick="filterDeals('closed-won')">Won</button>
+                <button class="crm-filter-tab" data-stage="closed-lost" onclick="filterDeals('closed-lost')">Lost</button>
+              </div>
+
+              <div class="crm-action-bar">
+                <input type="text" class="crm-search" id="deals-search" placeholder="Search deals..." aria-label="Search deals">
+                <button class="btn-add" onclick="openAddDeal()">+ Add Deal</button>
+              </div>
+
+              <div class="crm-table-container">
+                <table class="crm-table">
+                  <thead>
+                    <tr>
+                      <th>Deal</th>
+                      <th>Company</th>
+                      <th>Value</th>
+                      <th>Stage</th>
+                      <th>Created</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="deals-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div><!-- /tool-content -->
+        </div><!-- /tool-layout -->
+      </div>
+    </section>
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- Contact Modal -->
+  <div class="crm-modal-overlay" id="contact-modal">
+    <div class="crm-modal" role="dialog" aria-labelledby="contact-modal-title">
+      <h3 id="contact-modal-title">Add Contact</h3>
+      <form id="contact-form" onsubmit="event.preventDefault(); saveContact();">
+        <input type="hidden" id="contact-edit-id">
+        <div class="crm-form-group">
+          <label for="contact-name">Name *</label>
+          <input type="text" id="contact-name" required>
+        </div>
+        <div class="crm-form-row">
+          <div class="crm-form-group">
+            <label for="contact-email">Email</label>
+            <input type="email" id="contact-email">
+          </div>
+          <div class="crm-form-group">
+            <label for="contact-phone">Phone</label>
+            <input type="text" id="contact-phone">
+          </div>
+        </div>
+        <div class="crm-form-row">
+          <div class="crm-form-group">
+            <label for="contact-role">Role</label>
+            <input type="text" id="contact-role" placeholder="e.g. Account Manager">
+          </div>
+          <div class="crm-form-group">
+            <label for="contact-company">Company</label>
+            <select id="contact-company">
+              <option value="">-- Select Company --</option>
+            </select>
+          </div>
+        </div>
+        <div class="crm-form-group">
+          <label for="contact-notes">Notes</label>
+          <textarea id="contact-notes" placeholder="Additional notes..."></textarea>
+        </div>
+        <div class="crm-modal-actions">
+          <button type="button" class="btn-modal secondary" onclick="closeModal('contact-modal')">Cancel</button>
+          <button type="submit" class="btn-modal primary">Save Contact</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Company Modal -->
+  <div class="crm-modal-overlay" id="company-modal">
+    <div class="crm-modal" role="dialog" aria-labelledby="company-modal-title">
+      <h3 id="company-modal-title">Add Company</h3>
+      <form id="company-form" onsubmit="event.preventDefault(); saveCompany();">
+        <input type="hidden" id="company-edit-id">
+        <div class="crm-form-group">
+          <label for="company-name">Company Name *</label>
+          <input type="text" id="company-name" required>
+        </div>
+        <div class="crm-form-row">
+          <div class="crm-form-group">
+            <label for="company-market">Market</label>
+            <input type="text" id="company-market" placeholder="e.g. Jakarta, Bali">
+          </div>
+          <div class="crm-form-group">
+            <label for="company-channel">Channel</label>
+            <select id="company-channel">
+              <option value="">-- Select --</option>
+              <option value="Distributor">Distributor</option>
+              <option value="Horeca">Horeca</option>
+              <option value="Modern Trade">Modern Trade</option>
+              <option value="E-commerce">E-commerce</option>
+              <option value="Direct">Direct</option>
+              <option value="Export">Export</option>
+            </select>
+          </div>
+        </div>
+        <div class="crm-form-group">
+          <label for="company-status">Status</label>
+          <select id="company-status">
+            <option value="active">Active</option>
+            <option value="lead">Lead</option>
+            <option value="dormant">Dormant</option>
+            <option value="lost">Lost</option>
+          </select>
+        </div>
+        <div class="crm-form-group">
+          <label for="company-notes">Notes</label>
+          <textarea id="company-notes" placeholder="Additional notes..."></textarea>
+        </div>
+        <div class="crm-modal-actions">
+          <button type="button" class="btn-modal secondary" onclick="closeModal('company-modal')">Cancel</button>
+          <button type="submit" class="btn-modal primary">Save Company</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Deal Modal -->
+  <div class="crm-modal-overlay" id="deal-modal">
+    <div class="crm-modal" role="dialog" aria-labelledby="deal-modal-title">
+      <h3 id="deal-modal-title">Add Deal</h3>
+      <form id="deal-form" onsubmit="event.preventDefault(); saveDeal();">
+        <input type="hidden" id="deal-edit-id">
+        <div class="crm-form-group">
+          <label for="deal-title">Deal Title *</label>
+          <input type="text" id="deal-title" required placeholder="e.g. Q1 2026 Bulk Order">
+        </div>
+        <div class="crm-form-row">
+          <div class="crm-form-group">
+            <label for="deal-company">Company</label>
+            <select id="deal-company">
+              <option value="">-- Select Company --</option>
+            </select>
+          </div>
+          <div class="crm-form-group">
+            <label for="deal-contact">Contact</label>
+            <select id="deal-contact">
+              <option value="">-- Select Contact --</option>
+            </select>
+          </div>
+        </div>
+        <div class="crm-form-row">
+          <div class="crm-form-group">
+            <label for="deal-value">Deal Value (IDR)</label>
+            <input type="number" id="deal-value" min="0" step="1000000" placeholder="e.g. 100000000">
+          </div>
+          <div class="crm-form-group">
+            <label for="deal-stage">Stage</label>
+            <select id="deal-stage">
+              <option value="prospecting">Prospecting</option>
+              <option value="proposal">Proposal</option>
+              <option value="negotiation">Negotiation</option>
+              <option value="closed-won">Closed Won</option>
+              <option value="closed-lost">Closed Lost</option>
+            </select>
+          </div>
+        </div>
+        <div class="crm-form-group">
+          <label for="deal-notes">Notes</label>
+          <textarea id="deal-notes" placeholder="Deal details..."></textarea>
+        </div>
+        <div class="crm-modal-actions">
+          <button type="button" class="btn-modal secondary" onclick="closeModal('deal-modal')">Cancel</button>
+          <button type="submit" class="btn-modal primary">Save Deal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-content">&copy; 2026 Candidlabs - Internal Use Only</p>
+    </div>
+  </footer>
+
+  <!-- script.js handles theme toggle + mobile menu (site-wide) -->
+  <script src="../script.js"></script>
+  <!-- Auth: auto-bootstraps updateNavbar() + applyRoleVisibility() on DOMContentLoaded -->
+  <script src="../auth.js"></script>
+  <script src="crm.js"></script>
+</body>
+</html>

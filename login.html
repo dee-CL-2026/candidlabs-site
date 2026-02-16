@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Candidlabs Login - Sign in to access the internal business platform">
+  <title>Login - Candidlabs</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- Navigation (minimal for login page) -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-container">
+      <a href="index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
+
+      <div class="nav-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <section class="login-section">
+      <div class="login-card">
+        <div class="login-header">
+          <h1 class="login-title">candidlabs</h1>
+          <p class="login-subtitle">Internal Business Platform</p>
+        </div>
+
+        <div class="login-body">
+          <p class="login-prompt">Sign in with your Candid Mixers Google account to continue.</p>
+
+          <!-- Google Sign-In button renders here -->
+          <div id="google-signin-button" class="google-signin-container"></div>
+
+          <!-- Auth error messages -->
+          <div id="auth-error" class="auth-error" style="display: none;" role="alert"></div>
+        </div>
+
+        <div class="login-footer">
+          <p class="login-footer-text">Access is restricted to authorized Candid Mixers team members.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Google Identity Services SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- Auth module (must load before script.js) -->
+  <script src="auth.js"></script>
+  <script src="script.js"></script>
+
+  <script>
+    // Initialize Google Sign-In when SDK is ready
+    // GIS SDK loads async, so we poll briefly for availability
+    (function() {
+      var attempts = 0;
+      var maxAttempts = 50; // 5 seconds max
+
+      function tryInit() {
+        if (typeof google !== 'undefined' && google.accounts) {
+          CandidAuth.init();
+          var btnContainer = document.getElementById('google-signin-button');
+          if (btnContainer) {
+            CandidAuth.renderGoogleButton(btnContainer);
+          }
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(tryInit, 100);
+        }
+      }
+
+      // If already signed in, redirect away from login page
+      if (CandidAuth.isSignedIn()) {
+        window.location.href = 'index.html';
+      } else {
+        tryInit();
+      }
+    })();
+  </script>
+</body>
+</html>
