@@ -210,7 +210,7 @@ var GOOGLE_CLIENT_ID = '718724938057-beqd28jucqeji847c8adq0h2lnd7dh3p.apps.googl
     }
 
     fireAuthChange();
-    window.location.href = 'login.html';
+    window.location.href = getLoginPath();
   }
 
   // ===========================================
@@ -230,6 +230,18 @@ var GOOGLE_CLIENT_ID = '718724938057-beqd28jucqeji847c8adq0h2lnd7dh3p.apps.googl
     onAuthChangeCallbacks.forEach(function (cb) {
       try { cb(currentUser); } catch (e) { console.error('Auth change callback error:', e); }
     });
+  }
+
+  /**
+   * Resolve login path for current page depth.
+   * Root pages use "login.html"; nested module pages use "../login.html".
+   */
+  function getLoginPath() {
+    var path = window.location.pathname || '';
+    if (path.indexOf('/crm/') !== -1 || path.indexOf('/projects/') !== -1) {
+      return '../login.html';
+    }
+    return 'login.html';
   }
 
   // ===========================================
@@ -261,7 +273,7 @@ var GOOGLE_CLIENT_ID = '718724938057-beqd28jucqeji847c8adq0h2lnd7dh3p.apps.googl
     // Desktop login button
     var loginBtns = document.querySelectorAll('.btn-login');
     // Mobile login link
-    var mobileLoginLinks = document.querySelectorAll('.mobile-menu a[href="login.html"]');
+    var mobileLoginLinks = document.querySelectorAll('.mobile-menu a[href$="login.html"]');
 
     if (isSignedIn()) {
       var user = getUser();
@@ -298,13 +310,13 @@ var GOOGLE_CLIENT_ID = '718724938057-beqd28jucqeji847c8adq0h2lnd7dh3p.apps.googl
       });
     } else {
       loginBtns.forEach(function (btn) {
-        btn.href = 'login.html';
+        btn.href = getLoginPath();
         btn.textContent = 'Login';
         btn.setAttribute('aria-label', 'Login');
       });
 
       mobileLoginLinks.forEach(function (link) {
-        link.href = 'login.html';
+        link.href = getLoginPath();
         link.textContent = 'Login';
       });
     }
@@ -316,7 +328,7 @@ var GOOGLE_CLIENT_ID = '718724938057-beqd28jucqeji847c8adq0h2lnd7dh3p.apps.googl
    */
   function requireAuth() {
     if (!isSignedIn()) {
-      window.location.href = 'login.html';
+      window.location.href = getLoginPath();
       return false;
     }
     return true;

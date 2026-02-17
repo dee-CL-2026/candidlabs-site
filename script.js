@@ -169,22 +169,38 @@
   // ===========================================
 
   /**
-   * Set active state on current page nav link
+   * Set active state on current page nav link.
+   * Handles root and subdirectory pages, plus sub-page mappings
+   * (e.g. dashboard.html → Reports, budget.html → Tools).
    */
   function setActiveNavLink() {
-    const currentPath = window.location.pathname;
-    const navLinks = document.querySelectorAll('.nav-link, .mobile-menu a');
+    const navLinks = document.querySelectorAll('.nav-link');
+    if (!navLinks.length) return;
 
-    navLinks.forEach(link => {
-      const href = link.getAttribute('href');
+    const path = (window.location.pathname || '').split('?')[0].split('#')[0];
+    const filename = path.substring(path.lastIndexOf('/') + 1);
+    const parentDir = path.split('/').filter(Boolean).slice(-2, -1)[0] || '';
 
-      // Check if this link matches the current page
-      if (href === currentPath ||
-          (href === 'index.html' && (currentPath === '/' || currentPath.endsWith('/'))) ||
-          currentPath.endsWith(href)) {
+    // Determine which nav target should be active
+    let activeTarget = '';
+    if (filename === 'tools.html' || filename === 'budget.html') {
+      activeTarget = 'tools.html';
+    } else if (filename === 'reports.html' || filename === 'dashboard.html') {
+      activeTarget = 'reports.html';
+    } else if (parentDir === 'crm' && filename === 'index.html') {
+      activeTarget = 'crm/index.html';
+    } else if (parentDir === 'projects' && filename === 'index.html') {
+      activeTarget = 'projects/index.html';
+    }
+
+    navLinks.forEach(function(link) {
+      link.classList.remove('active');
+      if (!activeTarget) return;
+
+      // Strip leading ../ for comparison
+      const href = (link.getAttribute('href') || '').replace(/^\.\.\//, '');
+      if (href === activeTarget) {
         link.classList.add('active');
-      } else {
-        link.classList.remove('active');
       }
     });
   }
