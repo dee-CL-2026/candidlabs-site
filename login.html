@@ -88,10 +88,8 @@
         }
       }
 
-      // If already signed in, redirect away from login page
-      if (CandidAuth.isSignedIn()) {
-        window.location.href = 'index.html';
-      } else {
+      // If already signed in, just continue (post-login redirect handled below)
+      if (!CandidAuth.isSignedIn()) {
         tryInit();
       }
     })();
