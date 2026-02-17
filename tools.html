@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Candidlabs Business Tools - Integrated modules for operations management at Candid Mixers.">
+  <meta name="description" content="Candidlabs Tools - Production-ready modules promoted from Testing/Dev.">
   <title>Tools - Candidlabs</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +19,8 @@
         <li role="none"><a href="crm/index.html" class="nav-link" role="menuitem">CRM</a></li>
         <li role="none"><a href="projects/index.html" class="nav-link" role="menuitem">Projects</a></li>
         <li role="none"><a href="reports.html" class="nav-link" role="menuitem">Reports</a></li>
-        <li role="none"><a href="tools.html" class="nav-link" role="menuitem">Tools</a></li>
+        <li role="none"><a href="tools.html" class="nav-link" role="menuitem" aria-current="page">Tools</a></li>
+        <li role="none"><a href="testing.html" class="nav-link" role="menuitem">Testing</a></li>
       </ul>
 
       <div class="nav-actions">
@@ -69,176 +70,47 @@
         <li><a href="projects/index.html" role="menuitem">Projects</a></li>
         <li><a href="reports.html" role="menuitem">Reports</a></li>
         <li><a href="tools.html" role="menuitem">Tools</a></li>
+        <li><a href="testing.html" role="menuitem">Testing</a></li>
         <li><a href="login.html" role="menuitem">Login</a></li>
       </ul>
     </div>
   </nav>
 
   <main>
-    <!-- Page Header -->
     <header class="page-header">
       <div class="container">
-        <h1 class="page-title">Business Tools</h1>
-        <p class="page-description">Integrated modules for operations management</p>
+        <h1 class="page-title">Tools</h1>
+        <p class="page-description">Production-ready modules promoted from Testing/Dev.</p>
       </div>
     </header>
 
-    <!-- Quick Actions — visible to all staff -->
-    <section class="section" aria-labelledby="quick-actions-title">
+    <section class="section" aria-labelledby="tools-note-title">
       <div class="container">
-        <h2 id="quick-actions-title">Quick Actions</h2>
+        <h2 id="tools-note-title">How this page works</h2>
+        <div class="card" style="padding: 20px;">
+          <p style="margin: 0 0 10px 0;">
+            This page is intentionally strict: only stable modules are shown here once they are promoted.
+          </p>
+          <p style="margin: 0;">
+            For work-in-progress modules and feedback testing, use <strong>Testing</strong>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="promoted-title">
+      <div class="container">
+        <h2 id="promoted-title">Promoted tools</h2>
         <div class="tools-grid">
-          <!-- KAA Generator -->
           <article class="card tool-card">
             <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">📝</div>
-              <span class="badge badge-success">Active</span>
+              <div class="card-icon" aria-hidden="true">✅</div>
+              <span class="badge badge-info">None yet</span>
             </div>
-            <h3 class="card-title">KAA Generator</h3>
-            <p class="card-description">Automated contract generation for key account agreements and partnerships.</p>
+            <h3 class="card-title">No promoted tools</h3>
+            <p class="card-description">Promote modules from Testing/Dev once they are stable and signed off.</p>
             <div class="tool-card-footer">
-              <a href="#" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
-
-          <!-- Submit Expenses -->
-          <article class="card tool-card">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">💳</div>
-              <span class="badge badge-success">Active</span>
-            </div>
-            <h3 class="card-title">Submit Expenses</h3>
-            <p class="card-description">Submit expense claims through Xero for reimbursement processing.</p>
-            <div class="tool-card-footer">
-              <a href="https://my.xero.com" target="_blank" rel="noopener" class="btn btn-primary">Open Xero</a>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- Operations — admin only -->
-    <section class="section" aria-labelledby="operations-title">
-      <div class="container">
-        <h2 id="operations-title">Operations</h2>
-        <div class="tools-grid">
-          <!-- CoreOS Hub -->
-          <article class="card tool-card" data-auth-role="admin">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">⚙️</div>
-              <span class="badge badge-success">Active</span>
-            </div>
-            <h3 class="card-title">CoreOS Hub</h3>
-            <p class="card-description">Central configuration and module management. Control all platform settings from a unified interface.</p>
-            <div class="tool-card-footer">
-              <a href="#" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
-
-          <!-- Production Master -->
-          <article class="card tool-card" data-auth-role="admin">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">🏭</div>
-              <span class="badge badge-success">Active</span>
-            </div>
-            <h3 class="card-title">Production Master</h3>
-            <p class="card-description">Manufacturing tracking, batch management, and SKU control for production operations.</p>
-            <div class="tool-card-footer">
-              <a href="#" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
-
-          <!-- Sales Master -->
-          <article class="card tool-card" data-auth-role="admin">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">📊</div>
-              <span class="badge badge-success">Active</span>
-            </div>
-            <h3 class="card-title">Sales Master</h3>
-            <p class="card-description">Order processing and channel analytics for comprehensive sales management.</p>
-            <div class="tool-card-footer">
-              <a href="#" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- Finance — admin only -->
-    <section class="section" aria-labelledby="finance-title">
-      <div class="container">
-        <h2 id="finance-title">Finance</h2>
-        <div class="tools-grid">
-          <!-- Financial Tracker -->
-          <article class="card tool-card" data-auth-role="admin">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">💰</div>
-              <span class="badge badge-success">Active</span>
-            </div>
-            <h3 class="card-title">Financial Tracker</h3>
-            <p class="card-description">COGS calculation and margin analysis for financial insights and reporting.</p>
-            <div class="tool-card-footer">
-              <a href="#" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
-
-          <!-- Loan Tracker -->
-          <article class="card tool-card" data-auth-role="admin">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">🏦</div>
-              <span class="badge badge-success">Active</span>
-            </div>
-            <h3 class="card-title">Loan Tracker</h3>
-            <p class="card-description">Debt management and payment schedules for tracking financial obligations.</p>
-            <div class="tool-card-footer">
-              <a href="#" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
-
-          <!-- Budget Planner -->
-          <article class="card tool-card" data-auth-role="admin">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">📈</div>
-              <span class="badge badge-info">In Development</span>
-            </div>
-            <h3 class="card-title">Budget Planner</h3>
-            <p class="card-description">2026 budget planning with historical actuals, assumptions modeling, and scenario analysis.</p>
-            <div class="tool-card-footer">
-              <a href="budget.html" class="btn btn-primary">Access Tool</a>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- Coming Soon — admin only -->
-    <section class="section" aria-labelledby="coming-soon-title">
-      <div class="container">
-        <h2 id="coming-soon-title">Coming Soon</h2>
-        <div class="tools-grid">
-          <!-- Inventory System -->
-          <article class="card tool-card" data-auth-role="admin">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">📦</div>
-              <span class="badge badge-warning">Coming Soon</span>
-            </div>
-            <h3 class="card-title">Inventory System</h3>
-            <p class="card-description">Stock levels and reorder management for inventory optimization.</p>
-            <div class="tool-card-footer">
-              <button class="btn btn-disabled" disabled aria-label="Inventory System - Coming Soon">Access Tool</button>
-            </div>
-          </article>
-
-          <!-- Vendor Portal -->
-          <article class="card tool-card" data-auth-role="admin">
-            <div class="tool-card-header">
-              <div class="card-icon" aria-hidden="true">🤝</div>
-              <span class="badge badge-warning">Coming Soon</span>
-            </div>
-            <h3 class="card-title">Vendor Portal</h3>
-            <p class="card-description">Supplier relationship management for vendor coordination and procurement.</p>
-            <div class="tool-card-footer">
-              <button class="btn btn-disabled" disabled aria-label="Vendor Portal - Coming Soon">Access Tool</button>
+              <a href="testing.html" class="btn btn-primary">Go to Testing</a>
             </div>
           </article>
         </div>
@@ -246,7 +118,6 @@
     </section>
   </main>
 
-  <!-- Footer -->
   <footer class="footer">
     <div class="container">
       <p class="footer-content">&copy; 2026 Candidlabs - Internal Use Only</p>
