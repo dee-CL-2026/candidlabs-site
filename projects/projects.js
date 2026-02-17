@@ -11,6 +11,8 @@ var PM_STORAGE_KEYS = {
   tasks: 'pm_tasks'
 };
 
+function pmApplyAuthVisibility() { return; }
+
 // Seed data reflecting real Candid Labs operational projects
 function getPMDefaultData() {
   return {
