@@ -157,10 +157,9 @@ var GOOGLE_CLIENT_ID = '718724938057-beqd28jucqeji847c8adq0h2lnd7dh3p.apps.googl
 
     // Redirect to home if on login page
     // (Defer navigation to avoid GIS callback timing quirks that can require a manual refresh)
-    if (window.location.pathname.endsWith('login.html')) {
-      setTimeout(function () { window.location.replace('index.html'); }, 0);
-      setTimeout(function () { window.location.replace('index.html'); }, 250);
-    }
+        // Navigation handled by login.html (auth.js must not redirect)
+    // (Post-login destination should be controlled via ?next= or stored intent.)
+
   }
 
   // ===========================================
