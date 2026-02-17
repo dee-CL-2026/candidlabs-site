@@ -12,6 +12,7 @@ const CRM_STORAGE_KEYS = {
   deals: 'crm_deals'
 };
 const crmParseWarnedKeys = {};
+const KAA_FORM_URL = 'https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform';
 
 // Seed data that mirrors real Candid Labs account structures
 // Channels/markets match CONFIG_MAPPING from Sales DB
@@ -62,6 +63,20 @@ function saveData(key, data) {
 function generateId(prefix) {
   const num = Date.now().toString(36).slice(-4).toUpperCase();
   return prefix + '-' + num;
+}
+
+function openKAAForm() {
+  window.open(KAA_FORM_URL, '_blank', 'noopener');
+}
+
+function openKAAForCompany(companyId) {
+  if (!companyId) return openKAAForm();
+  return openKAAForm();
+}
+
+function openKAAForDeal(dealId) {
+  if (!dealId) return openKAAForm();
+  return openKAAForm();
 }
 
 // ============================================================
@@ -259,6 +274,7 @@ function renderCompanies(filter) {
       '<td class="row-secondary">' + numContacts + '</td>' +
       '<td><div class="row-actions">' +
         '<button class="btn-row-action" onclick="openEditCompany(\'' + co.id + '\')">Edit</button>' +
+        '<button class="btn-row-action" onclick="openKAAForCompany(\'' + co.id + '\')">KAA</button>' +
         '<button class="btn-row-action danger" data-auth-role="admin" onclick="deleteCompany(\'' + co.id + '\')">Delete</button>' +
       '</div></td>' +
     '</tr>';
@@ -371,6 +387,7 @@ function renderDeals(filter) {
       '<td class="row-secondary">' + formatDate(d.createdAt) + '</td>' +
       '<td><div class="row-actions">' +
         '<button class="btn-row-action" onclick="openEditDeal(\'' + d.id + '\')">Edit</button>' +
+        '<button class="btn-row-action" onclick="openKAAForDeal(\'' + d.id + '\')">KAA</button>' +
         '<button class="btn-row-action danger" data-auth-role="admin" onclick="deleteDeal(\'' + d.id + '\')">Delete</button>' +
       '</div></td>' +
     '</tr>';
