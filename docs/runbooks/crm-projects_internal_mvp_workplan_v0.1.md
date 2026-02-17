@@ -84,3 +84,10 @@ COMMIT DISCIPLINE
   - "fix(projects): guard missing pmApplyAuthVisibility to prevent crash"
   - "fix(storage): add safe JSON parse fallback for pm_* keys"
   - "docs: add CRM/Projects audit report v0.1"
+
+============================================================
+DEFERRED (POST-MVP POLISH)
+[ ] Projects Overview: Replace single KPI with status buckets
+    - Show counts by status (e.g., active / planned / in-progress / blocked / done / archived)
+    - Counts derived from pm_projects (no hardcoded numbers)
+    - Must update on init + after create/edit/delete/status changes
