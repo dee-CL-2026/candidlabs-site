@@ -1,0 +1,12 @@
+{
+  "provider": "google",
+  "clientId": "460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googleusercontent.com",
+  "scopes": ["openid", "email", "profile"],
+  "allowedDomains": [],
+  "allowedEmails": [
+    "dieterwerwath@gmail.com"
+  ],
+  "redirectPaths": [
+    "/login.html"
+  ]
+}
