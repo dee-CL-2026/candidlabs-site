@@ -191,6 +191,8 @@
       activeTarget = 'crm/index.html';
     } else if (parentDir === 'projects' && filename === 'index.html') {
       activeTarget = 'projects/index.html';
+    } else if (filename === 'testing.html') {
+      activeTarget = 'testing.html';
     }
 
     navLinks.forEach(function(link) {
