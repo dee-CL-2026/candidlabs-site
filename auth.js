@@ -152,6 +152,13 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
     // Persist
     localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
 
+    // candidlabs-authchange-dispatch
+    // Signal to the page (login.html) that auth state is now persisted.
+    try {
+      window.dispatchEvent(new Event('candidauth:signed-in'));
+    } catch (e) {}
+
+
     // Notify listeners
     fireAuthChange();
 
