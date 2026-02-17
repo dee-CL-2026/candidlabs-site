@@ -451,10 +451,10 @@ function pmEscapeHtml(str) {
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-  // Require login — redirects to login.html if not authenticated
-  if (typeof CandidAuth !== 'undefined') {
-    CandidAuth.requireAuth();
-  }
+  // TODO: Re-enable when Google OAuth is configured
+  // if (typeof CandidAuth !== 'undefined') {
+  //   CandidAuth.requireAuth();
+  // }
 
   renderPMOverview();
 
