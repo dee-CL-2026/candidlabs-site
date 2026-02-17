@@ -96,5 +96,51 @@
       }
     })();
   </script>
+
+  <!-- candidlabs-post-login-redirect -->
+  <script>
+    (function () {
+      function getNext() {
+        // 1) explicit ?next=... takes precedence
+        try {
+          const u = new URL(window.location.href);
+          const next = u.searchParams.get('next');
+          if (next) return next;
+        } catch (e) {}
+
+        // 2) remembered intent (set by other pages before redirecting to login)
+        const stored = sessionStorage.getItem('candidlabs_post_login_next');
+        if (stored) return stored;
+
+        // 3) fallback
+        return 'index.html';
+      }
+
+      function isSignedIn() {
+        try {
+          return window.CandidAuth && typeof window.CandidAuth.isSignedIn === 'function'
+            ? window.CandidAuth.isSignedIn()
+            : false;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function goIfSignedIn() {
+        if (!isSignedIn()) return;
+        const next = getNext();
+        sessionStorage.removeItem('candidlabs_post_login_next');
+        // Use replace so login.html isn't left in back button history
+        window.location.replace(next);
+      }
+
+      // Run immediately and a few times shortly after (covers async token storage)
+      setTimeout(goIfSignedIn, 0);
+      setTimeout(goIfSignedIn, 150);
+      setTimeout(goIfSignedIn, 400);
+      setTimeout(goIfSignedIn, 900);
+    })();
+  </script>
+
 </body>
 </html>
