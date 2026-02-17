@@ -127,8 +127,8 @@
       // Run once now
       goIfSignedIn();
 
-      // Run again on authchange (deterministic)
-      window.addEventListener('candidlabs:authchange', goIfSignedIn);
+      // Run again when auth.js signals successful sign-in (deterministic)
+      window.addEventListener('candidauth:signed-in', goIfSignedIn);
 
       // Also run a few times shortly after load to cover async storage visibility
       setTimeout(goIfSignedIn, 50);
