@@ -89,88 +89,52 @@
       }
 
       // If already signed in, just continue (post-login redirect handled below)
-      if (!CandidAuth.isSignedIn()) {
-        tryInit();
-      }
+      // Always init the button; navigation is handled by the single controller below
+      tryInit();
     };
     // run once on load
     window.candidlabsGoPostLogin();
   </script>
 
   
-  <!-- candidlabs-authchange-redirect -->
+  
+  <!-- candidlabs-post-login-redirect -->
   <script>
     (function () {
-      function goIfSignedIn() {
-        try {
-          if (window.CandidAuth && CandidAuth.isSignedIn && CandidAuth.isSignedIn()) {
-            // Reuse the same next-resolution logic below by simulating a click-through:
-            // The controller script will read ?next= or sessionStorage and navigate.
-            // If none, it will default to index.html.
-            if (typeof window.candidlabsGoPostLogin === 'function') {
-              window.candidlabsGoPostLogin();
-            }
-          }
-        } catch (e) {}
-      }
-
-      // 1) If already signed in when page loads
-      setTimeout(goIfSignedIn, 0);
-
-      // 2) When auth.js signals persistence completed
-      window.addEventListener('candidauth:signed-in', function () {
-        setTimeout(goIfSignedIn, 0);
-      });
-    })();
-  </script>
-
-<!-- candidlabs-post-login-redirect -->
-  <script>
-    window.candidlabsGoPostLogin = function () {
       function getNext() {
-        // 1) explicit ?next=... takes precedence
         try {
           const u = new URL(window.location.href);
           const next = u.searchParams.get('next');
           if (next) return next;
         } catch (e) {}
 
-        // 2) remembered intent (set by other pages before redirecting to login)
         const stored = sessionStorage.getItem('candidlabs_post_login_next');
         if (stored) return stored;
 
-        // 3) fallback
         return 'index.html';
       }
 
-      function isSignedIn() {
-        try {
-          return window.CandidAuth && typeof window.CandidAuth.isSignedIn === 'function'
-            ? window.CandidAuth.isSignedIn()
-            : false;
-        } catch (e) {
-          return false;
-        }
-      }
-
       function goIfSignedIn() {
-        if (!isSignedIn()) return;
-        const next = getNext();
-        sessionStorage.removeItem('candidlabs_post_login_next');
-        // Use replace so login.html isn't left in back button history
-        window.location.replace(next);
+        try {
+          if (window.CandidAuth && CandidAuth.isSignedIn && CandidAuth.isSignedIn()) {
+            const next = getNext();
+            sessionStorage.removeItem('candidlabs_post_login_next');
+            window.location.replace(next);
+          }
+        } catch (e) {}
       }
 
-      // Run immediately and a few times shortly after (covers async token storage)
-      setTimeout(goIfSignedIn, 0);
+      // Run once now
+      goIfSignedIn();
+
+      // Run again on authchange (deterministic)
+      window.addEventListener('candidlabs:authchange', goIfSignedIn);
+
+      // Also run a few times shortly after load to cover async storage visibility
+      setTimeout(goIfSignedIn, 50);
       setTimeout(goIfSignedIn, 150);
       setTimeout(goIfSignedIn, 400);
       setTimeout(goIfSignedIn, 900);
-
-      // Also react to auth state changes directly to avoid timeout races.
-      if (window.CandidAuth && typeof window.CandidAuth.onAuthChange === 'function') {
-        window.CandidAuth.onAuthChange(goIfSignedIn);
-      }
     })();
   </script>
 
