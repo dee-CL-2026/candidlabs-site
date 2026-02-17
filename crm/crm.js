@@ -11,6 +11,7 @@ const CRM_STORAGE_KEYS = {
   companies: 'crm_companies',
   deals: 'crm_deals'
 };
+const crmParseWarnedKeys = {};
 
 // Seed data that mirrors real Candid Labs account structures
 // Channels/markets match CONFIG_MAPPING from Sales DB
@@ -37,7 +38,16 @@ function getDefaultData() {
 function loadData(key) {
   const raw = localStorage.getItem(CRM_STORAGE_KEYS[key]);
   if (raw) {
-    return JSON.parse(raw);
+    try {
+      return JSON.parse(raw);
+    } catch (err) {
+      const storageKey = CRM_STORAGE_KEYS[key] || key;
+      if (!crmParseWarnedKeys[storageKey]) {
+        console.warn('CRM: failed to parse localStorage key "' + storageKey + '". Using empty array fallback.');
+        crmParseWarnedKeys[storageKey] = true;
+      }
+      return [];
+    }
   }
   // First load: seed with defaults
   const defaults = getDefaultData();
@@ -204,6 +214,11 @@ function saveContact() {
 
 function deleteContact(id) {
   if (!confirm('Delete this contact?')) return;
+  var linkedDeals = loadData('deals').filter(function(d) { return d.contactId === id; }).length;
+  if (linkedDeals > 0) {
+    alert('Cannot delete: this contact is linked to ' + linkedDeals + ' deals.');
+    return;
+  }
   var contacts = loadData('contacts').filter(function(c) { return c.id !== id; });
   saveData('contacts', contacts);
   renderContacts();
@@ -303,6 +318,12 @@ function saveCompany() {
 
 function deleteCompany(id) {
   if (!confirm('Delete this company? Contacts linked to it will keep their association.')) return;
+  var linkedContacts = loadData('contacts').filter(function(c) { return c.companyId === id; }).length;
+  var linkedDeals = loadData('deals').filter(function(d) { return d.companyId === id; }).length;
+  if (linkedContacts > 0 || linkedDeals > 0) {
+    alert('Cannot delete: this company is linked to ' + linkedContacts + ' contacts and ' + linkedDeals + ' deals.');
+    return;
+  }
   var companies = loadData('companies').filter(function(c) { return c.id !== id; });
   saveData('companies', companies);
   renderCompanies();

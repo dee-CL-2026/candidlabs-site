@@ -10,6 +10,9 @@ var PM_STORAGE_KEYS = {
   projects: 'pm_projects',
   tasks: 'pm_tasks'
 };
+var pmParseWarnedKeys = {};
+
+function pmApplyAuthVisibility() { return; }
 
 // Seed data reflecting real Candid Labs operational projects
 function getPMDefaultData() {
@@ -64,7 +67,16 @@ function getPMDefaultData() {
 function pmLoadData(key) {
   var raw = localStorage.getItem(PM_STORAGE_KEYS[key]);
   if (raw) {
-    return JSON.parse(raw);
+    try {
+      return JSON.parse(raw);
+    } catch (err) {
+      var storageKey = PM_STORAGE_KEYS[key] || key;
+      if (!pmParseWarnedKeys[storageKey]) {
+        console.warn('Projects: failed to parse localStorage key "' + storageKey + '". Using empty array fallback.');
+        pmParseWarnedKeys[storageKey] = true;
+      }
+      return [];
+    }
   }
   var defaults = getPMDefaultData();
   localStorage.setItem(PM_STORAGE_KEYS[key], JSON.stringify(defaults[key]));
