@@ -11,6 +11,7 @@ const CRM_STORAGE_KEYS = {
   companies: 'crm_companies',
   deals: 'crm_deals'
 };
+const crmParseWarnedKeys = {};
 
 // Seed data that mirrors real Candid Labs account structures
 // Channels/markets match CONFIG_MAPPING from Sales DB
@@ -37,7 +38,16 @@ function getDefaultData() {
 function loadData(key) {
   const raw = localStorage.getItem(CRM_STORAGE_KEYS[key]);
   if (raw) {
-    return JSON.parse(raw);
+    try {
+      return JSON.parse(raw);
+    } catch (err) {
+      const storageKey = CRM_STORAGE_KEYS[key] || key;
+      if (!crmParseWarnedKeys[storageKey]) {
+        console.warn('CRM: failed to parse localStorage key "' + storageKey + '". Using empty array fallback.');
+        crmParseWarnedKeys[storageKey] = true;
+      }
+      return [];
+    }
   }
   // First load: seed with defaults
   const defaults = getDefaultData();
