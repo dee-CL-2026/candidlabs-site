@@ -92,12 +92,41 @@
       if (!CandidAuth.isSignedIn()) {
         tryInit();
       }
+    };
+    // run once on load
+    window.candidlabsGoPostLogin();
+  </script>
+
+  
+  <!-- candidlabs-authchange-redirect -->
+  <script>
+    (function () {
+      function goIfSignedIn() {
+        try {
+          if (window.CandidAuth && CandidAuth.isSignedIn && CandidAuth.isSignedIn()) {
+            // Reuse the same next-resolution logic below by simulating a click-through:
+            // The controller script will read ?next= or sessionStorage and navigate.
+            // If none, it will default to index.html.
+            if (typeof window.candidlabsGoPostLogin === 'function') {
+              window.candidlabsGoPostLogin();
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 1) If already signed in when page loads
+      setTimeout(goIfSignedIn, 0);
+
+      // 2) When auth.js signals persistence completed
+      window.addEventListener('candidauth:signed-in', function () {
+        setTimeout(goIfSignedIn, 0);
+      });
     })();
   </script>
 
-  <!-- candidlabs-post-login-redirect -->
+<!-- candidlabs-post-login-redirect -->
   <script>
-    (function () {
+    window.candidlabsGoPostLogin = function () {
       function getNext() {
         // 1) explicit ?next=... takes precedence
         try {
