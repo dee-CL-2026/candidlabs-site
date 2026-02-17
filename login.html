@@ -137,6 +137,11 @@
       setTimeout(goIfSignedIn, 150);
       setTimeout(goIfSignedIn, 400);
       setTimeout(goIfSignedIn, 900);
+
+      // Also react to auth state changes directly to avoid timeout races.
+      if (window.CandidAuth && typeof window.CandidAuth.onAuthChange === 'function') {
+        window.CandidAuth.onAuthChange(goIfSignedIn);
+      }
     })();
   </script>
 
