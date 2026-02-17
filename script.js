@@ -185,6 +185,8 @@
     let activeTarget = '';
     if (filename === 'tools.html' || filename === 'budget.html') {
       activeTarget = 'tools.html';
+    } else if (filename === 'testing.html') {
+      activeTarget = 'testing.html';
     } else if (filename === 'reports.html' || filename === 'dashboard.html') {
       activeTarget = 'reports.html';
     } else if (parentDir === 'crm' && filename === 'index.html') {
