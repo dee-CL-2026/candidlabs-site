@@ -156,8 +156,10 @@ var GOOGLE_CLIENT_ID = '718724938057-beqd28jucqeji847c8adq0h2lnd7dh3p.apps.googl
     fireAuthChange();
 
     // Redirect to home if on login page
+    // (Defer navigation to avoid GIS callback timing quirks that can require a manual refresh)
     if (window.location.pathname.endsWith('login.html')) {
-      window.location.href = 'index.html';
+      setTimeout(function () { window.location.replace('index.html'); }, 0);
+      setTimeout(function () { window.location.replace('index.html'); }, 250);
     }
   }
 
