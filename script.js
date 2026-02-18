@@ -276,6 +276,7 @@
     const isStaff = !!(CandidAuth.hasRole && CandidAuth.hasRole('team'));
     const actions = [
       { label: 'KAA Form', href: 'https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform', external: true },
+      { label: 'Quote Generator', href: 'https://docs.google.com/spreadsheets/d/19kDef25LdbvPssTkMusFGu8FmNbj2rWuF7NNF9SBSvs/edit', external: true },
       { label: 'Submit Expenses', href: 'https://xero.me', external: true },
       { label: 'Tools', href: root + 'tools.html' }
     ];
