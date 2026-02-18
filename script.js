@@ -261,7 +261,7 @@
   }
 
   function renderQuickActionsDock() {
-    if (document.getElementById('quick-actions-dock')) return;
+    if (document.getElementById('quick-actions-sidebar')) return;
     if (!document.body || document.body.getAttribute('data-disable-quick-actions') === 'true') return;
     if ((window.location.pathname || '').indexOf('login.html') !== -1) return;
     if (typeof CandidAuth === 'undefined' || !CandidAuth.isSignedIn || !CandidAuth.isSignedIn()) return;
@@ -283,20 +283,11 @@
     }
 
     const dock = document.createElement('aside');
-    dock.id = 'quick-actions-dock';
-    dock.className = 'quick-actions-dock';
-
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'quick-actions-toggle';
-    toggle.setAttribute('aria-expanded', 'false');
-    toggle.setAttribute('aria-controls', 'quick-actions-panel');
-    toggle.textContent = 'Quick Actions';
+    dock.id = 'quick-actions-sidebar';
+    dock.className = 'quick-actions-sidebar';
 
     const panel = document.createElement('div');
-    panel.id = 'quick-actions-panel';
-    panel.className = 'quick-actions-panel';
-    panel.setAttribute('aria-hidden', 'true');
+    panel.className = 'quick-actions-shell';
 
     const title = document.createElement('div');
     title.className = 'quick-actions-title';
@@ -320,55 +311,13 @@
     });
     panel.appendChild(list);
 
-    dock.appendChild(toggle);
     dock.appendChild(panel);
     document.body.appendChild(dock);
-
-    function closePanel() {
-      dock.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
-      panel.setAttribute('aria-hidden', 'true');
-    }
-
-    function openPanel() {
-      dock.classList.add('open');
-      toggle.setAttribute('aria-expanded', 'true');
-      panel.setAttribute('aria-hidden', 'false');
-    }
-
-    toggle.addEventListener('click', function () {
-      if (dock.classList.contains('open')) {
-        closePanel();
-      } else {
-        openPanel();
-      }
-    });
-
-    document.addEventListener('click', function (e) {
-      if (!dock.contains(e.target)) {
-        closePanel();
-      }
-    });
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        closePanel();
-      }
-    });
   }
 
-  /**
-   * Page-level auth gates and role-based content filtering.
-   * Relies on CandidAuth (auth.js) being loaded first.
-   *
-   * Pages that require authentication add data-auth-require="true" to <body>.
-   * Elements that require a specific role use data-auth-role="admin"|"team".
-   * Elements hidden by auth state use data-auth-hide="signed-in"|"signed-out".
-   *
-   * Auth is a UI visibility layer only. Real data access is controlled
-   * by Google Sheets/Looker permissions on the backend.
-   */
-  if (typeof CandidAuth !== 'undefined') {
+  function runAuthIntegration() {
+    if (typeof CandidAuth === 'undefined') return false;
+
     // Gate: redirect to login if page requires auth and user is not signed in
     if (document.body.getAttribute('data-auth-require') === 'true') {
       CandidAuth.requireAuth();
@@ -396,10 +345,32 @@
 
     renderQuickActionsDock();
     CandidAuth.onAuthChange(function () {
-      var existingDock = document.getElementById('quick-actions-dock');
+      var existingDock = document.getElementById('quick-actions-sidebar');
       if (existingDock) existingDock.remove();
       renderQuickActionsDock();
     });
+    return true;
+  }
+
+  /**
+   * Page-level auth gates and role-based content filtering.
+   * Relies on CandidAuth (auth.js) being loaded first.
+   *
+   * Pages that require authentication add data-auth-require="true" to <body>.
+   * Elements that require a specific role use data-auth-role="admin"|"team".
+   * Elements hidden by auth state use data-auth-hide="signed-in"|"signed-out".
+   *
+   * Auth is a UI visibility layer only. Real data access is controlled
+   * by Google Sheets/Looker permissions on the backend.
+   */
+  if (!runAuthIntegration()) {
+    var authInitAttempts = 0;
+    var authInitTimer = setInterval(function () {
+      authInitAttempts += 1;
+      if (runAuthIntegration() || authInitAttempts > 40) {
+        clearInterval(authInitTimer);
+      }
+    }, 50);
   }
 
   // ===========================================

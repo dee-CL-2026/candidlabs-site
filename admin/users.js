@@ -7,7 +7,8 @@
       return false;
     }
     if (!CandidAuth.hasRole || !CandidAuth.hasRole('admin')) {
-      window.location.href = '../index.html';
+      alert('Admin access required for User Roles.');
+      window.location.href = '../tools.html';
       return false;
     }
     return true;
