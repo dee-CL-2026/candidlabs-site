@@ -62,7 +62,20 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
     try {
       var stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        currentUser = JSON.parse(stored);
+        var parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === 'object' && typeof parsed.email === 'string') {
+          var fallbackName = parsed.email.split('@')[0];
+          currentUser = {
+            email: parsed.email,
+            name: parsed.name || fallbackName,
+            picture: parsed.picture || '',
+            role: parsed.role || 'team',
+            domain: parsed.domain || (parsed.email.split('@')[1] || ''),
+            signedInAt: parsed.signedInAt || ''
+          };
+        } else {
+          currentUser = null;
+        }
       }
     } catch (e) {
       // Corrupted storage — clear it
@@ -285,6 +298,9 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
 
     if (isSignedIn()) {
       var user = getUser();
+      var displayName = (user && user.name) ? user.name : ((user && user.email) ? user.email.split('@')[0] : 'User');
+      var displayInitial = displayName.charAt(0).toUpperCase();
+      var firstName = displayName.split(' ')[0];
 
       loginBtns.forEach(function (btn) {
         // Replace with user menu
@@ -294,8 +310,8 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
           '<div class="user-info">' +
             (user.picture
               ? '<img src="' + escapeHtml(user.picture) + '" alt="" class="user-avatar" referrerpolicy="no-referrer">'
-              : '<span class="user-avatar-placeholder">' + escapeHtml(user.name.charAt(0).toUpperCase()) + '</span>') +
-            '<span class="user-name">' + escapeHtml(user.name.split(' ')[0]) + '</span>' +
+              : '<span class="user-avatar-placeholder">' + escapeHtml(displayInitial) + '</span>') +
+            '<span class="user-name">' + escapeHtml(firstName) + '</span>' +
           '</div>';
 
         var signOutBtn = document.createElement('button');
