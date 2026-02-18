@@ -252,6 +252,110 @@
   // Auth Integration & Role-Based Views
   // ===========================================
 
+  function getRootPathPrefix() {
+    const path = window.location.pathname || '';
+    if (path.indexOf('/crm/') !== -1 || path.indexOf('/projects/') !== -1) {
+      return '../';
+    }
+    return '';
+  }
+
+  function renderQuickActionsDock() {
+    if (document.getElementById('quick-actions-dock')) return;
+    if (!document.body || document.body.getAttribute('data-disable-quick-actions') === 'true') return;
+    if ((window.location.pathname || '').indexOf('login.html') !== -1) return;
+    if (typeof CandidAuth === 'undefined' || !CandidAuth.isSignedIn || !CandidAuth.isSignedIn()) return;
+
+    const root = getRootPathPrefix();
+    const isAdmin = !!(CandidAuth.hasRole && CandidAuth.hasRole('admin'));
+    const actions = [
+      { label: 'KAA Form', href: 'https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform', external: true },
+      { label: 'Submit Expenses', href: 'https://my.xero.com', external: true },
+      { label: 'CRM', href: root + 'crm/index.html' },
+      { label: 'Projects', href: root + 'projects/index.html' },
+      { label: 'Tools', href: root + 'tools.html' }
+    ];
+
+    if (isAdmin) {
+      actions.push({ label: 'Testing', href: root + 'testing.html' });
+      actions.push({ label: 'Budget', href: root + 'budget.html' });
+    }
+
+    const dock = document.createElement('aside');
+    dock.id = 'quick-actions-dock';
+    dock.className = 'quick-actions-dock';
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'quick-actions-toggle';
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-controls', 'quick-actions-panel');
+    toggle.textContent = 'Quick Actions';
+
+    const panel = document.createElement('div');
+    panel.id = 'quick-actions-panel';
+    panel.className = 'quick-actions-panel';
+    panel.setAttribute('aria-hidden', 'true');
+
+    const title = document.createElement('div');
+    title.className = 'quick-actions-title';
+    title.textContent = 'Quick Actions';
+    panel.appendChild(title);
+
+    const list = document.createElement('ul');
+    list.className = 'quick-actions-list';
+    actions.forEach(function (action) {
+      const li = document.createElement('li');
+      const link = document.createElement('a');
+      link.className = 'quick-actions-link';
+      link.href = action.href;
+      link.textContent = action.label;
+      if (action.external) {
+        link.target = '_blank';
+        link.rel = 'noopener';
+      }
+      li.appendChild(link);
+      list.appendChild(li);
+    });
+    panel.appendChild(list);
+
+    dock.appendChild(toggle);
+    dock.appendChild(panel);
+    document.body.appendChild(dock);
+
+    function closePanel() {
+      dock.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      panel.setAttribute('aria-hidden', 'true');
+    }
+
+    function openPanel() {
+      dock.classList.add('open');
+      toggle.setAttribute('aria-expanded', 'true');
+      panel.setAttribute('aria-hidden', 'false');
+    }
+
+    toggle.addEventListener('click', function () {
+      if (dock.classList.contains('open')) {
+        closePanel();
+      } else {
+        openPanel();
+      }
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!dock.contains(e.target)) {
+        closePanel();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        closePanel();
+      }
+    });
+  }
+
   /**
    * Page-level auth gates and role-based content filtering.
    * Relies on CandidAuth (auth.js) being loaded first.
@@ -288,6 +392,13 @@
       roleBadge.textContent = role.toUpperCase();
       dashboardHeader.querySelector('div').appendChild(roleBadge);
     }
+
+    renderQuickActionsDock();
+    CandidAuth.onAuthChange(function () {
+      var existingDock = document.getElementById('quick-actions-dock');
+      if (existingDock) existingDock.remove();
+      renderQuickActionsDock();
+    });
   }
 
   // ===========================================
