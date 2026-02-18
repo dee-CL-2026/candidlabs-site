@@ -274,8 +274,6 @@
     const actions = [
       { label: 'KAA Form', href: 'https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform', external: true },
       { label: 'Submit Expenses', href: 'https://xero.me', external: true },
-      { label: 'CRM', href: root + 'crm/index.html' },
-      { label: 'Projects', href: root + 'projects/index.html' },
       { label: 'Tools', href: root + 'tools.html' }
     ];
 
@@ -365,6 +363,40 @@
     mobileMenuList.appendChild(mobileGroup);
   }
 
+  function renderAdminNavLink() {
+    if (typeof CandidAuth === 'undefined' || !CandidAuth.isSignedIn || !CandidAuth.isSignedIn()) return;
+    if (!CandidAuth.hasRole || !CandidAuth.hasRole('admin')) return;
+
+    const root = getRootPathPrefix();
+    const navMenu = document.querySelector('.nav-menu');
+    const mobileMenuList = document.querySelector('#mobile-menu ul');
+    if (!navMenu || !mobileMenuList) return;
+
+    if (!navMenu.querySelector('a[href$="admin/users.html"]')) {
+      const item = document.createElement('li');
+      item.id = 'admin-nav-item';
+      item.setAttribute('role', 'none');
+      const link = document.createElement('a');
+      link.href = root + 'admin/users.html';
+      link.className = 'nav-link';
+      link.setAttribute('role', 'menuitem');
+      link.textContent = 'Admin';
+      item.appendChild(link);
+      navMenu.appendChild(item);
+    }
+
+    if (!mobileMenuList.querySelector('a[href$="admin/users.html"]')) {
+      const mobileItem = document.createElement('li');
+      mobileItem.id = 'admin-mobile-item';
+      const link = document.createElement('a');
+      link.href = root + 'admin/users.html';
+      link.setAttribute('role', 'menuitem');
+      link.textContent = 'Admin';
+      mobileItem.appendChild(link);
+      mobileMenuList.appendChild(mobileItem);
+    }
+  }
+
   function runAuthIntegration() {
     if (typeof CandidAuth === 'undefined') return false;
 
@@ -394,12 +426,18 @@
     }
 
     renderQuickActionsDock();
+    renderAdminNavLink();
     CandidAuth.onAuthChange(function () {
       var existingDesktop = document.getElementById('quick-actions-nav-item');
       var existingMobile = document.getElementById('quick-actions-mobile-item');
+      var existingAdminDesktop = document.getElementById('admin-nav-item');
+      var existingAdminMobile = document.getElementById('admin-mobile-item');
       if (existingDesktop) existingDesktop.remove();
       if (existingMobile) existingMobile.remove();
+      if (existingAdminDesktop) existingAdminDesktop.remove();
+      if (existingAdminMobile) existingAdminMobile.remove();
       renderQuickActionsDock();
+      renderAdminNavLink();
     });
     return true;
   }
