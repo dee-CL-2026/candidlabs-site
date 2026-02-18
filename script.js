@@ -185,6 +185,8 @@
     let activeTarget = '';
     if (filename === 'tools.html' || filename === 'budget.html') {
       activeTarget = 'tools.html';
+    } else if (filename === 'roadmap.html') {
+      activeTarget = 'roadmap.html';
     } else if (filename === 'testing.html') {
       activeTarget = 'testing.html';
     } else if (filename === 'reports.html' || filename === 'dashboard.html') {
@@ -271,11 +273,16 @@
     const mobileMenuList = document.querySelector('#mobile-menu ul');
     if (!navMenu || !mobileMenuList) return;
     const isAdmin = !!(CandidAuth.hasRole && CandidAuth.hasRole('admin'));
+    const isStaff = !!(CandidAuth.hasRole && CandidAuth.hasRole('team'));
     const actions = [
       { label: 'KAA Form', href: 'https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform', external: true },
       { label: 'Submit Expenses', href: 'https://xero.me', external: true },
       { label: 'Tools', href: root + 'tools.html' }
     ];
+
+    if (isStaff) {
+      actions.push({ label: 'Roadmap', href: root + 'roadmap.html' });
+    }
 
     if (isAdmin) {
       actions.push({ label: 'Testing', href: root + 'testing.html' });

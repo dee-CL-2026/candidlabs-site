@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Candidlabs Tool Roadmap - internal launch and migration status.">
+  <title>Roadmap - Candidlabs</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body data-auth-require="true">
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-container">
+      <a href="index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
+
+      <ul class="nav-menu" role="menubar">
+        <li role="none"><a href="crm/index.html" class="nav-link" role="menuitem">CRM</a></li>
+        <li role="none"><a href="projects/index.html" class="nav-link" role="menuitem">Projects</a></li>
+        <li role="none"><a href="reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none"><a href="tools.html" class="nav-link" role="menuitem">Tools</a></li>
+        <li role="none"><a href="testing.html" class="nav-link" role="menuitem">Testing</a></li>
+        <li role="none" data-auth-role="team"><a href="roadmap.html" class="nav-link" role="menuitem" aria-current="page">Roadmap</a></li>
+        <li role="none" data-auth-role="admin"><a href="admin/users.html" class="nav-link" role="menuitem">Admin</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+
+        <a href="login.html" class="btn btn-primary btn-login" aria-label="Login">Login</a>
+
+        <button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+
+    <div id="mobile-menu" class="mobile-menu" role="menu" aria-label="Mobile navigation">
+      <ul>
+        <li><a href="crm/index.html" role="menuitem">CRM</a></li>
+        <li><a href="projects/index.html" role="menuitem">Projects</a></li>
+        <li><a href="reports.html" role="menuitem">Reports</a></li>
+        <li><a href="tools.html" role="menuitem">Tools</a></li>
+        <li><a href="testing.html" role="menuitem">Testing</a></li>
+        <li data-auth-role="team"><a href="roadmap.html" role="menuitem">Roadmap</a></li>
+        <li data-auth-role="admin"><a href="admin/users.html" role="menuitem">Admin</a></li>
+        <li><a href="login.html" role="menuitem">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main data-auth-role="team">
+    <header class="page-header">
+      <div class="container">
+        <h1 class="page-title">Tool Roadmap</h1>
+        <p class="page-description">Current launch status, improvement needs, and GAS migration priority.</p>
+      </div>
+    </header>
+
+    <section class="section" aria-labelledby="status-matrix-title">
+      <div class="container">
+        <h2 id="status-matrix-title">Status Matrix</h2>
+        <div class="card" style="overflow:auto;">
+          <table style="width:100%; border-collapse: collapse; min-width: 880px;">
+            <thead>
+              <tr>
+                <th style="text-align:left; padding:10px; border-bottom:1px solid var(--border-color);">Tool</th>
+                <th style="text-align:left; padding:10px; border-bottom:1px solid var(--border-color);">Current</th>
+                <th style="text-align:left; padding:10px; border-bottom:1px solid var(--border-color);">Tag</th>
+                <th style="text-align:left; padding:10px; border-bottom:1px solid var(--border-color);">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">KAA Generator</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Promoted in Tools, links to Google Form</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);"><span class="badge badge-success">Sufficient for launch</span></td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Legacy GAS implementation exists; candidate for later in-app rebuild.</td>
+              </tr>
+              <tr>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Submit Expenses</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">External link to xero.me</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);"><span class="badge badge-success">Sufficient for launch</span></td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">No platform integration yet.</td>
+              </tr>
+              <tr>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">CRM</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">LocalStorage MVP, guarded deletes, role-gated actions</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);"><span class="badge badge-info">Improvements suggested</span></td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Solid internal MVP; next step is durable backend store.</td>
+              </tr>
+              <tr>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Projects</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">LocalStorage MVP with projects/tasks CRUD</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);"><span class="badge badge-info">Improvements suggested</span></td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Good internal baseline; needs data integration path.</td>
+              </tr>
+              <tr>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Budget Planner</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Working but still in-development scope</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);"><span class="badge badge-info">Improvements suggested</span></td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Keep in Testing until feature scope closes.</td>
+              </tr>
+              <tr>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">CoreOS Hub</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Placeholder in web app; GAS CoreOS exists</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);"><span class="badge badge-warning">Migrate from GAS</span></td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Depends on Workers/D1 rollout decision.</td>
+              </tr>
+              <tr>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Production Master</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Tiered GAS work in candid-labs-tiered</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);"><span class="badge badge-warning">Migrate from GAS</span></td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Phase 1 parity docs exist; keep as migration candidate.</td>
+              </tr>
+              <tr>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Sales Master</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Tiered GAS reference spoke implemented</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);"><span class="badge badge-warning">Migrate from GAS</span></td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Most mature migration candidate.</td>
+              </tr>
+              <tr>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Loan Tracker</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">GAS manifests exist, web app placeholder</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);"><span class="badge badge-warning">Migrate from GAS</span></td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Define scope before UI promotion.</td>
+              </tr>
+              <tr>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Financial Tracker</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Web placeholder</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);"><span class="badge badge-info">Improvements suggested</span></td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Needs concrete data/API contract before launch tag.</td>
+              </tr>
+              <tr>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Inventory System / Vendor Portal</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">Coming soon placeholders</td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);"><span class="badge badge-warning">Planned</span></td>
+                <td style="padding:10px; border-bottom:1px solid var(--border-color);">No launch path yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+  <script>
+    (function () {
+      if (window.CandidAuth && CandidAuth.isSignedIn && CandidAuth.isSignedIn() && CandidAuth.hasRole && !CandidAuth.hasRole('team')) {
+        window.location.replace('tools.html');
+      }
+    })();
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>
