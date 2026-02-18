@@ -53,6 +53,8 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
   // Storage key
   var STORAGE_KEY = 'candidlabs_auth';
   var ROLE_OVERRIDES_KEY = 'candidlabs_role_overrides';
+  var ALLOWED_EMAILS_KEY = 'candidlabs_allowed_emails';
+  var BLOCKED_EMAILS_KEY = 'candidlabs_blocked_emails';
 
   // ===========================================
   // State
@@ -78,17 +80,54 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
     });
   }
 
+  function uniqueEmails(list) {
+    var seen = {};
+    var out = [];
+    (list || []).forEach(function (email) {
+      var normalized = normalizeEmail(email);
+      if (normalized && !seen[normalized]) {
+        seen[normalized] = true;
+        out.push(normalized);
+      }
+    });
+    return out;
+  }
+
+  function loadEmailList(key, fallback) {
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return uniqueEmails(fallback);
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return uniqueEmails(fallback);
+      return uniqueEmails(parsed);
+    } catch (e) {
+      return uniqueEmails(fallback);
+    }
+  }
+
+  function saveEmailList(key, emails) {
+    localStorage.setItem(key, JSON.stringify(uniqueEmails(emails)));
+  }
+
+  function getAllowedEmailList() {
+    return loadEmailList(ALLOWED_EMAILS_KEY, ALLOWED_EMAILS);
+  }
+
+  function getBlockedEmailList() {
+    return loadEmailList(BLOCKED_EMAILS_KEY, BLOCKED_EMAILS);
+  }
+
   function isAllowedEmail(email) {
     var normalized = normalizeEmail(email);
-    return ALLOWED_EMAILS.some(function (e) {
-      return normalized === normalizeEmail(e);
+    return getAllowedEmailList().some(function (e) {
+      return normalized === e;
     });
   }
 
   function isBlockedEmail(email) {
     var normalized = normalizeEmail(email);
-    return BLOCKED_EMAILS.some(function (e) {
-      return normalized === normalizeEmail(e);
+    return getBlockedEmailList().some(function (e) {
+      return normalized === e;
     });
   }
 
@@ -349,6 +388,60 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
     return loadRoleOverrides();
   }
 
+  function refreshCurrentUserRole() {
+    if (!currentUser || !currentUser.email) return;
+    var normalized = normalizeEmail(currentUser.email);
+    var resolvedRole = resolveRole(normalized, currentUser.domain || (normalized.split('@')[1] || ''));
+    if (!resolvedRole) {
+      currentUser = null;
+      localStorage.removeItem(STORAGE_KEY);
+      fireAuthChange();
+      return;
+    }
+    currentUser.role = resolvedRole;
+    currentUser.email = normalized;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
+    fireAuthChange();
+  }
+
+  function addAllowedEmail(email) {
+    var normalized = normalizeEmail(email);
+    if (!normalized) return false;
+    var list = getAllowedEmailList();
+    if (list.indexOf(normalized) === -1) list.push(normalized);
+    saveEmailList(ALLOWED_EMAILS_KEY, list);
+    refreshCurrentUserRole();
+    return true;
+  }
+
+  function removeAllowedEmail(email) {
+    var normalized = normalizeEmail(email);
+    if (!normalized) return false;
+    var list = getAllowedEmailList().filter(function (e) { return e !== normalized; });
+    saveEmailList(ALLOWED_EMAILS_KEY, list);
+    refreshCurrentUserRole();
+    return true;
+  }
+
+  function addBlockedEmail(email) {
+    var normalized = normalizeEmail(email);
+    if (!normalized) return false;
+    var list = getBlockedEmailList();
+    if (list.indexOf(normalized) === -1) list.push(normalized);
+    saveEmailList(BLOCKED_EMAILS_KEY, list);
+    refreshCurrentUserRole();
+    return true;
+  }
+
+  function removeBlockedEmail(email) {
+    var normalized = normalizeEmail(email);
+    if (!normalized) return false;
+    var list = getBlockedEmailList().filter(function (e) { return e !== normalized; });
+    saveEmailList(BLOCKED_EMAILS_KEY, list);
+    refreshCurrentUserRole();
+    return true;
+  }
+
   // ===========================================
   // Auth Change Listeners
   // ===========================================
@@ -565,7 +658,13 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
     renderGoogleButton: renderGoogleButton,
     getRoleOverrides: getRoleOverrides,
     setRoleOverride: setRoleOverride,
-    removeRoleOverride: removeRoleOverride
+    removeRoleOverride: removeRoleOverride,
+    getAllowedEmails: getAllowedEmailList,
+    getBlockedEmails: getBlockedEmailList,
+    addAllowedEmail: addAllowedEmail,
+    removeAllowedEmail: removeAllowedEmail,
+    addBlockedEmail: addBlockedEmail,
+    removeBlockedEmail: removeBlockedEmail
   };
 
 })();

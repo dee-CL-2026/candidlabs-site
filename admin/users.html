@@ -79,6 +79,48 @@
         </article>
       </div>
     </section>
+
+    <section class="section">
+      <div class="container">
+        <article class="card" data-auth-role="admin">
+          <h2 class="card-title">Allowed Email Exceptions</h2>
+          <p class="card-description mb-2">Explicitly allow emails outside allowed domains.</p>
+          <form id="allow-form">
+            <div style="display:grid;gap:12px;grid-template-columns:2fr auto;align-items:end;">
+              <div>
+                <label for="allow-email">Email</label>
+                <input id="allow-email" type="email" required placeholder="name@external.com" style="width:100%;margin-top:6px;">
+              </div>
+              <button type="submit" class="btn btn-primary">Add</button>
+            </div>
+          </form>
+          <p id="allow-msg" class="mb-0" style="margin-top:12px;color:var(--text-secondary);"></p>
+          <div id="allow-empty" class="card-description" style="margin-top:12px;">No allow exceptions set.</div>
+          <ul id="allow-list" style="list-style:none;padding:0;margin:12px 0 0 0;display:grid;gap:8px;"></ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <article class="card" data-auth-role="admin">
+          <h2 class="card-title">Blocked Email Exceptions</h2>
+          <p class="card-description mb-2">Explicitly block accounts even if domain/admin/override would allow them.</p>
+          <form id="block-form">
+            <div style="display:grid;gap:12px;grid-template-columns:2fr auto;align-items:end;">
+              <div>
+                <label for="block-email">Email</label>
+                <input id="block-email" type="email" required placeholder="name@company.com" style="width:100%;margin-top:6px;">
+              </div>
+              <button type="submit" class="btn btn-primary">Block</button>
+            </div>
+          </form>
+          <p id="block-msg" class="mb-0" style="margin-top:12px;color:var(--text-secondary);"></p>
+          <div id="block-empty" class="card-description" style="margin-top:12px;">No blocked exceptions set.</div>
+          <ul id="block-list" style="list-style:none;padding:0;margin:12px 0 0 0;display:grid;gap:8px;"></ul>
+        </article>
+      </div>
+    </section>
   </main>
 
   <script src="../auth.js"></script>
