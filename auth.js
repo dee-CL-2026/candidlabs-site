@@ -159,9 +159,9 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
   function resolveRole(email, domain) {
     var normalized = normalizeEmail(email);
     if (isBlockedEmail(normalized)) return null;
+    if (isAdminEmail(normalized)) return 'admin';
     var roleOverride = getRoleOverrideForEmail(normalized);
     if (roleOverride) return roleOverride;
-    if (isAdminEmail(normalized)) return 'admin';
     if (isAllowedDomain(domain)) return 'team';
     if (isAllowedEmail(normalized)) return 'team';
     return null;
@@ -350,6 +350,7 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
     var normalized = normalizeEmail(email);
     if (!normalized) return false;
     if (role !== 'admin' && role !== 'team' && role !== 'viewer') return false;
+    if (isAdminEmail(normalized) && role !== 'admin') return false;
     var overrides = loadRoleOverrides();
     overrides[normalized] = role;
     saveRoleOverrides(overrides);
