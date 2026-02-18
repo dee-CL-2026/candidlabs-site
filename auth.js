@@ -37,6 +37,7 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
   
   var ADMIN_EMAILS = [
     'dieterwerwath@gmail.com',
+    'dee@candidmixers.com',
   // Add admin emails here, e.g.:
     // 'dieter@candidmixers.com',
   ];
