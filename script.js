@@ -254,7 +254,7 @@
 
   function getRootPathPrefix() {
     const path = window.location.pathname || '';
-    if (path.indexOf('/crm/') !== -1 || path.indexOf('/projects/') !== -1) {
+    if (path.indexOf('/crm/') !== -1 || path.indexOf('/projects/') !== -1 || path.indexOf('/admin/') !== -1) {
       return '../';
     }
     return '';
@@ -279,6 +279,7 @@
     if (isAdmin) {
       actions.push({ label: 'Testing', href: root + 'testing.html' });
       actions.push({ label: 'Budget', href: root + 'budget.html' });
+      actions.push({ label: 'User Roles', href: root + 'admin/users.html' });
     }
 
     const dock = document.createElement('aside');

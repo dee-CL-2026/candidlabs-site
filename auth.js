@@ -43,6 +43,7 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
 
   // Storage key
   var STORAGE_KEY = 'candidlabs_auth';
+  var ROLE_OVERRIDES_KEY = 'candidlabs_role_overrides';
 
   // ===========================================
   // State
@@ -50,6 +51,57 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
 
   var currentUser = null;
   var onAuthChangeCallbacks = [];
+
+  function normalizeEmail(email) {
+    return String(email || '').trim().toLowerCase();
+  }
+
+  function isAdminEmail(email) {
+    var normalized = normalizeEmail(email);
+    return ADMIN_EMAILS.some(function (e) {
+      return normalized === normalizeEmail(e);
+    });
+  }
+
+  function isAllowedDomain(domain) {
+    return ALLOWED_DOMAINS.some(function (d) {
+      return domain === d;
+    });
+  }
+
+  function loadRoleOverrides() {
+    try {
+      var raw = localStorage.getItem(ROLE_OVERRIDES_KEY);
+      if (!raw) return {};
+      var parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveRoleOverrides(overrides) {
+    localStorage.setItem(ROLE_OVERRIDES_KEY, JSON.stringify(overrides || {}));
+  }
+
+  function getRoleOverrideForEmail(email) {
+    var normalized = normalizeEmail(email);
+    var overrides = loadRoleOverrides();
+    var role = overrides[normalized];
+    if (role === 'admin' || role === 'team' || role === 'viewer') {
+      return role;
+    }
+    return null;
+  }
+
+  function resolveRole(email, domain) {
+    var normalized = normalizeEmail(email);
+    var roleOverride = getRoleOverrideForEmail(normalized);
+    if (roleOverride) return roleOverride;
+    if (isAdminEmail(normalized)) return 'admin';
+    if (isAllowedDomain(domain)) return 'team';
+    return null;
+  }
 
   // ===========================================
   // Initialization
@@ -65,12 +117,18 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
         var parsed = JSON.parse(stored);
         if (parsed && typeof parsed === 'object' && typeof parsed.email === 'string') {
           var fallbackName = parsed.email.split('@')[0];
+          var normalizedEmail = normalizeEmail(parsed.email);
+          var resolvedRole = resolveRole(normalizedEmail, parsed.domain || (normalizedEmail.split('@')[1] || ''));
+          if (!resolvedRole) {
+            currentUser = null;
+            return;
+          }
           currentUser = {
-            email: parsed.email,
+            email: normalizedEmail,
             name: parsed.name || fallbackName,
             picture: parsed.picture || '',
-            role: parsed.role || 'team',
-            domain: parsed.domain || (parsed.email.split('@')[1] || ''),
+            role: resolvedRole,
+            domain: parsed.domain || (normalizedEmail.split('@')[1] || ''),
             signedInAt: parsed.signedInAt || ''
           };
         } else {
@@ -134,24 +192,14 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
       return;
     }
 
-    var email = payload.email.toLowerCase();
+    var email = normalizeEmail(payload.email);
     var domain = email.split('@')[1];
 
-    // Check if user is allowed
-    var isAllowedDomain = ALLOWED_DOMAINS.some(function (d) {
-      return domain === d;
-    });
-    var isAdminEmail = ADMIN_EMAILS.some(function (e) {
-      return email === e.toLowerCase();
-    });
-
-    if (!isAllowedDomain && !isAdminEmail) {
+    var role = resolveRole(email, domain);
+    if (!role) {
       showAuthError('Access denied. Your account (' + email + ') is not authorized for Candidlabs.');
       return;
     }
-
-    // Determine role
-    var role = isAdminEmail ? 'admin' : 'team';
 
     currentUser = {
       email: email,
@@ -234,6 +282,48 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
     window.location.href = getLoginPath();
   }
 
+  function setRoleOverride(email, role) {
+    var normalized = normalizeEmail(email);
+    if (!normalized) return false;
+    if (role !== 'admin' && role !== 'team' && role !== 'viewer') return false;
+    var overrides = loadRoleOverrides();
+    overrides[normalized] = role;
+    saveRoleOverrides(overrides);
+
+    if (currentUser && currentUser.email === normalized) {
+      currentUser.role = role;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
+      fireAuthChange();
+    }
+    return true;
+  }
+
+  function removeRoleOverride(email) {
+    var normalized = normalizeEmail(email);
+    if (!normalized) return false;
+    var overrides = loadRoleOverrides();
+    if (!Object.prototype.hasOwnProperty.call(overrides, normalized)) return false;
+    delete overrides[normalized];
+    saveRoleOverrides(overrides);
+
+    if (currentUser && currentUser.email === normalized) {
+      var fallbackRole = resolveRole(normalized, currentUser.domain || (normalized.split('@')[1] || ''));
+      if (fallbackRole) {
+        currentUser.role = fallbackRole;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
+      } else {
+        currentUser = null;
+        localStorage.removeItem(STORAGE_KEY);
+      }
+      fireAuthChange();
+    }
+    return true;
+  }
+
+  function getRoleOverrides() {
+    return loadRoleOverrides();
+  }
+
   // ===========================================
   // Auth Change Listeners
   // ===========================================
@@ -259,7 +349,7 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
    */
   function getLoginPath() {
     var path = window.location.pathname || '';
-    if (path.indexOf('/crm/') !== -1 || path.indexOf('/projects/') !== -1) {
+    if (path.indexOf('/crm/') !== -1 || path.indexOf('/projects/') !== -1 || path.indexOf('/admin/') !== -1) {
       return '../login.html';
     }
     return 'login.html';
@@ -447,7 +537,10 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
     onAuthChange: onAuthChange,
     updateNavbar: updateNavbar,
     applyRoleVisibility: applyRoleVisibility,
-    renderGoogleButton: renderGoogleButton
+    renderGoogleButton: renderGoogleButton,
+    getRoleOverrides: getRoleOverrides,
+    setRoleOverride: setRoleOverride,
+    removeRoleOverride: removeRoleOverride
   };
 
 })();

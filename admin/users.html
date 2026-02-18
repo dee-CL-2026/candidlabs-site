@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Candidlabs Admin - Manage UI role overrides for users.">
+  <title>Admin - User Roles</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body data-auth-require="true">
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-container">
+      <a href="../index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
+      <ul class="nav-menu" role="menubar">
+        <li role="none"><a href="../crm/index.html" class="nav-link" role="menuitem">CRM</a></li>
+        <li role="none"><a href="../projects/index.html" class="nav-link" role="menuitem">Projects</a></li>
+        <li role="none"><a href="../reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none"><a href="../tools.html" class="nav-link" role="menuitem">Tools</a></li>
+        <li role="none" data-auth-role="admin"><a href="users.html" class="nav-link active" role="menuitem">Admin</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="../login.html" class="btn btn-primary btn-login" aria-label="Login">Login</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <header class="page-header">
+      <div class="container">
+        <h1 class="page-title">User Role Overrides</h1>
+        <p class="page-description">Client-side role mapping for the current browser only.</p>
+      </div>
+    </header>
+
+    <section class="section">
+      <div class="container">
+        <article class="card" data-auth-role="admin">
+          <h2 class="card-title">Set Override</h2>
+          <p class="card-description mb-2">Use this to set a user as <code>admin</code>, <code>team</code>, or <code>viewer</code>.</p>
+          <form id="role-form">
+            <div style="display:grid;gap:12px;grid-template-columns:2fr 1fr auto;align-items:end;">
+              <div>
+                <label for="role-email">Email</label>
+                <input id="role-email" type="email" required placeholder="name@company.com" style="width:100%;margin-top:6px;">
+              </div>
+              <div>
+                <label for="role-value">Role</label>
+                <select id="role-value" style="width:100%;margin-top:6px;">
+                  <option value="team">team</option>
+                  <option value="admin">admin</option>
+                  <option value="viewer">viewer</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+          <p id="role-msg" class="mb-0" style="margin-top:12px;color:var(--text-secondary);"></p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <article class="card" data-auth-role="admin">
+          <h2 class="card-title">Current Overrides</h2>
+          <div id="role-empty" class="card-description">No overrides set.</div>
+          <div id="role-table-wrap" style="display:none;overflow:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr>
+                  <th style="text-align:left;padding:8px;border-bottom:1px solid var(--border-color);">Email</th>
+                  <th style="text-align:left;padding:8px;border-bottom:1px solid var(--border-color);">Role</th>
+                  <th style="text-align:right;padding:8px;border-bottom:1px solid var(--border-color);">Action</th>
+                </tr>
+              </thead>
+              <tbody id="role-table-body"></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script src="../auth.js"></script>
+  <script src="../script.js"></script>
+  <script src="users.js"></script>
+</body>
+</html>
