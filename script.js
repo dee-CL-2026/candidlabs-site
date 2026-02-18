@@ -261,16 +261,19 @@
   }
 
   function renderQuickActionsDock() {
-    if (document.getElementById('quick-actions-sidebar')) return;
+    if (document.getElementById('quick-actions-nav-item')) return;
     if (!document.body || document.body.getAttribute('data-disable-quick-actions') === 'true') return;
     if ((window.location.pathname || '').indexOf('login.html') !== -1) return;
     if (typeof CandidAuth === 'undefined' || !CandidAuth.isSignedIn || !CandidAuth.isSignedIn()) return;
 
     const root = getRootPathPrefix();
+    const navMenu = document.querySelector('.nav-menu');
+    const mobileMenuList = document.querySelector('#mobile-menu ul');
+    if (!navMenu || !mobileMenuList) return;
     const isAdmin = !!(CandidAuth.hasRole && CandidAuth.hasRole('admin'));
     const actions = [
       { label: 'KAA Form', href: 'https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform', external: true },
-      { label: 'Submit Expenses', href: 'https://my.xero.com', external: true },
+      { label: 'Submit Expenses', href: 'https://xero.me', external: true },
       { label: 'CRM', href: root + 'crm/index.html' },
       { label: 'Projects', href: root + 'projects/index.html' },
       { label: 'Tools', href: root + 'tools.html' }
@@ -282,24 +285,26 @@
       actions.push({ label: 'User Roles', href: root + 'admin/users.html' });
     }
 
-    const dock = document.createElement('aside');
-    dock.id = 'quick-actions-sidebar';
-    dock.className = 'quick-actions-sidebar';
+    const navItem = document.createElement('li');
+    navItem.id = 'quick-actions-nav-item';
+    navItem.className = 'quick-actions-nav-item';
+    navItem.setAttribute('role', 'none');
 
-    const panel = document.createElement('div');
-    panel.className = 'quick-actions-shell';
-
-    const title = document.createElement('div');
-    title.className = 'quick-actions-title';
-    title.textContent = 'Quick Actions';
-    panel.appendChild(title);
+    const navButton = document.createElement('button');
+    navButton.type = 'button';
+    navButton.className = 'nav-link quick-actions-nav-button';
+    navButton.setAttribute('aria-expanded', 'false');
+    navButton.textContent = 'Quick Actions';
 
     const list = document.createElement('ul');
-    list.className = 'quick-actions-list';
+    list.className = 'quick-actions-submenu';
+    list.setAttribute('role', 'menu');
     actions.forEach(function (action) {
       const li = document.createElement('li');
+      li.setAttribute('role', 'none');
       const link = document.createElement('a');
-      link.className = 'quick-actions-link';
+      link.className = 'quick-actions-submenu-link';
+      link.setAttribute('role', 'menuitem');
       link.href = action.href;
       link.textContent = action.label;
       if (action.external) {
@@ -309,10 +314,55 @@
       li.appendChild(link);
       list.appendChild(li);
     });
-    panel.appendChild(list);
 
-    dock.appendChild(panel);
-    document.body.appendChild(dock);
+    navItem.appendChild(navButton);
+    navItem.appendChild(list);
+    navMenu.appendChild(navItem);
+
+    navButton.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const open = navItem.classList.toggle('open');
+      navButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    document.addEventListener('click', function () {
+      navItem.classList.remove('open');
+      navButton.setAttribute('aria-expanded', 'false');
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        navItem.classList.remove('open');
+        navButton.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    const mobileGroup = document.createElement('li');
+    mobileGroup.id = 'quick-actions-mobile-item';
+    mobileGroup.className = 'quick-actions-mobile-item';
+
+    const mobileLabel = document.createElement('div');
+    mobileLabel.className = 'quick-actions-mobile-label';
+    mobileLabel.textContent = 'Quick Actions';
+
+    const mobileList = document.createElement('ul');
+    mobileList.className = 'quick-actions-mobile-list';
+    actions.forEach(function (action) {
+      const li = document.createElement('li');
+      const link = document.createElement('a');
+      link.href = action.href;
+      link.textContent = action.label;
+      if (action.external) {
+        link.target = '_blank';
+        link.rel = 'noopener';
+      }
+      li.appendChild(link);
+      mobileList.appendChild(li);
+    });
+
+    mobileGroup.appendChild(mobileLabel);
+    mobileGroup.appendChild(mobileList);
+    mobileMenuList.appendChild(mobileGroup);
   }
 
   function runAuthIntegration() {
@@ -345,8 +395,10 @@
 
     renderQuickActionsDock();
     CandidAuth.onAuthChange(function () {
-      var existingDock = document.getElementById('quick-actions-sidebar');
-      if (existingDock) existingDock.remove();
+      var existingDesktop = document.getElementById('quick-actions-nav-item');
+      var existingMobile = document.getElementById('quick-actions-mobile-item');
+      if (existingDesktop) existingDesktop.remove();
+      if (existingMobile) existingMobile.remove();
       renderQuickActionsDock();
     });
     return true;
