@@ -41,6 +41,15 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
     // 'dieter@candidmixers.com',
   ];
 
+  // Explicit allow-list for emails outside ALLOWED_DOMAINS.
+  // Allowed emails default to "team" unless they are also in ADMIN_EMAILS.
+  var ALLOWED_EMAILS = [
+    'dieterwerwath@gmail.com'
+  ];
+
+  // Explicit deny-list (always blocked), regardless of domain/admin/overrides.
+  var BLOCKED_EMAILS = [];
+
   // Storage key
   var STORAGE_KEY = 'candidlabs_auth';
   var ROLE_OVERRIDES_KEY = 'candidlabs_role_overrides';
@@ -66,6 +75,20 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
   function isAllowedDomain(domain) {
     return ALLOWED_DOMAINS.some(function (d) {
       return domain === d;
+    });
+  }
+
+  function isAllowedEmail(email) {
+    var normalized = normalizeEmail(email);
+    return ALLOWED_EMAILS.some(function (e) {
+      return normalized === normalizeEmail(e);
+    });
+  }
+
+  function isBlockedEmail(email) {
+    var normalized = normalizeEmail(email);
+    return BLOCKED_EMAILS.some(function (e) {
+      return normalized === normalizeEmail(e);
     });
   }
 
@@ -96,10 +119,12 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
 
   function resolveRole(email, domain) {
     var normalized = normalizeEmail(email);
+    if (isBlockedEmail(normalized)) return null;
     var roleOverride = getRoleOverrideForEmail(normalized);
     if (roleOverride) return roleOverride;
     if (isAdminEmail(normalized)) return 'admin';
     if (isAllowedDomain(domain)) return 'team';
+    if (isAllowedEmail(normalized)) return 'team';
     return null;
   }
 
