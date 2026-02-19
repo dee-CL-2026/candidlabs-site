@@ -1,5 +1,5 @@
 CANDIDLABS — CRM + PROJECTS INTERNAL MVP (THIS WEEK) — WORK PLAN v0.1
-Repo: /Users/dieterwerwath/experiments/repos/candidlabs-site
+Repo: this repository
 Canonical context:
 - docs/specs/candidlabs-crm-projects_mvp-and-seams_v0.1.md
 - CANDIDLABS_AGENT_GUIDE.md

@@ -1,5 +1,5 @@
 CANDIDLABS CRM + PROJECTS — INTERNAL MVP THIS WEEK (FUTURE-PROOF SEAMS) — v0.1
-Repo: /Users/dieterwerwath/experiments/repos/candidlabs-site
+Repo: this repository
 Modules:
 - CRM:      /crm/index.html + /crm/crm.js
 - Projects: /projects/index.html + /projects/projects.js
