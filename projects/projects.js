@@ -12,7 +12,11 @@ var PM_STORAGE_KEYS = {
 };
 var pmParseWarnedKeys = {};
 
-function pmApplyAuthVisibility() { return; }
+function pmApplyAuthVisibility() {
+  if (typeof CandidAuth !== 'undefined') {
+    CandidAuth.applyRoleVisibility();
+  }
+}
 
 // Seed data reflecting real Candid Labs operational projects
 function getPMDefaultData() {
@@ -348,6 +352,7 @@ function renderTasks(filter) {
       '</div></td>' +
     '</tr>';
   }).join('');
+  pmApplyAuthVisibility();
 }
 
 function filterTasks(status) {
