@@ -6,16 +6,14 @@
 // DATA LAYER - localStorage backed
 // ============================================================
 
-const CRM_STORAGE_KEYS = {
+var CRM_STORAGE_KEYS = {
   contacts: 'crm_contacts',
   companies: 'crm_companies',
   deals: 'crm_deals'
 };
-const crmParseWarnedKeys = {};
-const KAA_FORM_URL = 'https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform';
+var KAA_FORM_URL = 'https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform';
 
 // Seed data that mirrors real Candid Labs account structures
-// Channels/markets match CONFIG_MAPPING from Sales DB
 function getDefaultData() {
   return {
     contacts: [
@@ -36,28 +34,24 @@ function getDefaultData() {
   };
 }
 
+// Data access via CandidStore adapter (localStorage fallback built in)
 function loadData(key) {
-  const raw = localStorage.getItem(CRM_STORAGE_KEYS[key]);
+  var raw = localStorage.getItem(CRM_STORAGE_KEYS[key]);
   if (raw) {
-    try {
-      return JSON.parse(raw);
-    } catch (err) {
-      const storageKey = CRM_STORAGE_KEYS[key] || key;
-      if (!crmParseWarnedKeys[storageKey]) {
-        console.warn('CRM: failed to parse localStorage key "' + storageKey + '". Using empty array fallback.');
-        crmParseWarnedKeys[storageKey] = true;
-      }
-      return [];
-    }
+    try { return JSON.parse(raw); }
+    catch (e) { return []; }
   }
-  // First load: seed with defaults
-  const defaults = getDefaultData();
+  var defaults = getDefaultData();
   localStorage.setItem(CRM_STORAGE_KEYS[key], JSON.stringify(defaults[key]));
   return defaults[key];
 }
 
 function saveData(key, data) {
   localStorage.setItem(CRM_STORAGE_KEYS[key], JSON.stringify(data));
+  // Mirror to CandidStore if available (async, fire-and-forget)
+  if (typeof CandidStore !== 'undefined') {
+    CandidStore.save(key, data);
+  }
 }
 
 function generateId(prefix) {
