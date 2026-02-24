@@ -190,8 +190,11 @@
 
                 <div class="pm-action-bar">
                   <input type="text" class="pm-search" id="tasks-search" placeholder="Search tasks..." aria-label="Search tasks">
-                  <select class="pm-search" id="task-project-filter" aria-label="Filter by project" style="flex:0 0 auto; min-width:180px;">
+                  <select class="pm-search" id="task-project-filter" aria-label="Filter by project" style="flex:0 0 auto; min-width:180px;" onchange="filterTasksByProject()">
                     <option value="all">All Projects</option>
+                  </select>
+                  <select class="pm-search" id="tasks-assignee-filter" aria-label="Filter by assignee" style="flex:0 0 auto; min-width:150px;" onchange="filterTasksByAssignee()">
+                    <option value="all">All Assignees</option>
                   </select>
                   <button class="btn-add" onclick="openAddTask()">+ Add Task</button>
                 </div>
@@ -200,12 +203,12 @@
                   <table class="pm-table">
                     <thead>
                       <tr>
-                        <th>Task</th>
+                        <th><button class="pm-sort-btn pm-tasks-sort-btn" data-col="title" onclick="sortTasks('title')">Task<span class="sort-arrow"></span></button></th>
                         <th>Project</th>
-                        <th>Assignee</th>
-                        <th>Status</th>
-                        <th>Priority</th>
-                        <th>Due Date</th>
+                        <th><button class="pm-sort-btn pm-tasks-sort-btn" data-col="assignee" onclick="sortTasks('assignee')">Assignee<span class="sort-arrow"></span></button></th>
+                        <th><button class="pm-sort-btn pm-tasks-sort-btn" data-col="status" onclick="sortTasks('status')">Status<span class="sort-arrow"></span></button></th>
+                        <th><button class="pm-sort-btn pm-tasks-sort-btn" data-col="priority" onclick="sortTasks('priority')">Priority<span class="sort-arrow"></span></button></th>
+                        <th><button class="pm-sort-btn pm-tasks-sort-btn" data-col="dueDate" onclick="sortTasks('dueDate')">Due Date<span class="sort-arrow"></span></button></th>
                         <th>Actions</th>
                       </tr>
                     </thead>

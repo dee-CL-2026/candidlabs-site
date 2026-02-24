@@ -288,6 +288,63 @@ function deleteProject(id) {
 
 var currentTaskFilter = 'all';
 var currentProjectFilter = 'all';
+var currentAssigneeFilter = 'all';
+
+var _taskSort = { col: null, dir: 1 };
+
+function sortTasks(col) {
+  if (_taskSort.col === col) { _taskSort.dir *= -1; } else { _taskSort.col = col; _taskSort.dir = 1; }
+  _updateTaskSortArrows();
+  renderTasks(document.getElementById('tasks-search') ? document.getElementById('tasks-search').value : '');
+}
+
+function _updateTaskSortArrows() {
+  document.querySelectorAll('.pm-tasks-sort-btn').forEach(function(btn) {
+    var arrow = btn.querySelector('.sort-arrow');
+    if (!arrow) return;
+    if (btn.dataset.col === _taskSort.col) {
+      arrow.textContent = _taskSort.dir === 1 ? ' ↑' : ' ↓';
+    } else {
+      arrow.textContent = '';
+    }
+  });
+}
+
+function _applyTaskSort(arr) {
+  var s = _taskSort;
+  if (!s.col) return arr.slice();
+  var PRIORITY_ORDER = { high: 1, medium: 2, low: 3 };
+  var STATUS_ORDER = { 'to-do': 1, 'in-progress': 2, 'blocked': 3, 'done': 4 };
+  return arr.slice().sort(function(a, b) {
+    var av, bv;
+    if (s.col === 'dueDate') {
+      av = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+      bv = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+      return (av - bv) * s.dir;
+    }
+    if (s.col === 'priority') {
+      av = PRIORITY_ORDER[a.priority] || 9;
+      bv = PRIORITY_ORDER[b.priority] || 9;
+      return (av - bv) * s.dir;
+    }
+    if (s.col === 'status') {
+      av = STATUS_ORDER[a.status] || 9;
+      bv = STATUS_ORDER[b.status] || 9;
+      return (av - bv) * s.dir;
+    }
+    av = String(a[s.col] || '').toLowerCase();
+    bv = String(b[s.col] || '').toLowerCase();
+    if (av < bv) return -s.dir;
+    if (av > bv) return s.dir;
+    return 0;
+  });
+}
+
+function filterTasksByAssignee() {
+  var select = document.getElementById('tasks-assignee-filter');
+  currentAssigneeFilter = select ? select.value : 'all';
+  renderTasks(document.getElementById('tasks-search') ? document.getElementById('tasks-search').value : '');
+}
 
 function renderTasks(filter) {
   var tasks = pmLoadData('tasks');
@@ -309,6 +366,12 @@ function renderTasks(filter) {
     tasks = tasks.filter(function(t) { return t.projectId === currentProjectFilter; });
   }
 
+  if (currentAssigneeFilter !== 'all') {
+    tasks = tasks.filter(function(t) { return (t.assignee || '') === currentAssigneeFilter; });
+  }
+
+  tasks = _applyTaskSort(tasks);
+
   // Populate project filter dropdown
   var projectSelect = document.getElementById('task-project-filter');
   if (projectSelect) {
@@ -318,6 +381,23 @@ function renderTasks(filter) {
         return '<option value="' + p.id + '">' + pmEscapeHtml(p.name) + '</option>';
       }).join('');
     projectSelect.value = currentVal || 'all';
+  }
+
+  // Populate assignee filter dropdown from all tasks (not filtered)
+  var assigneeSelect = document.getElementById('tasks-assignee-filter');
+  if (assigneeSelect) {
+    var allTasks = pmLoadData('tasks');
+    var assignees = [];
+    allTasks.forEach(function(t) {
+      if (t.assignee && assignees.indexOf(t.assignee) === -1) assignees.push(t.assignee);
+    });
+    assignees.sort();
+    var savedAssignee = assigneeSelect.value;
+    assigneeSelect.innerHTML = '<option value="all">All Assignees</option>' +
+      assignees.map(function(a) {
+        return '<option value="' + pmEscapeHtml(a) + '">' + pmEscapeHtml(a) + '</option>';
+      }).join('');
+    assigneeSelect.value = (savedAssignee && assignees.indexOf(savedAssignee) !== -1) ? savedAssignee : (currentAssigneeFilter !== 'all' ? currentAssigneeFilter : 'all');
   }
 
   var tbody = document.getElementById('tasks-tbody');
@@ -587,6 +667,12 @@ document.addEventListener('DOMContentLoaded', function() {
   var taskProjectFilter = document.getElementById('task-project-filter');
   if (taskProjectFilter) {
     taskProjectFilter.addEventListener('change', filterTasksByProject);
+  }
+
+  // Assignee filter for tasks
+  var taskAssigneeFilter = document.getElementById('tasks-assignee-filter');
+  if (taskAssigneeFilter) {
+    taskAssigneeFilter.addEventListener('change', filterTasksByAssignee);
   }
 
   switchTool('overview');
