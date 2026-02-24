@@ -159,7 +159,7 @@ function renderPMOverview() {
     var total = projectTasks.length;
     var pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-    return '<div class="pm-project-card" onclick="switchTool(\'tasks\')">' +
+    return '<div class="pm-project-card" onclick="openProjectDrawer(\'' + p.id + '\')" style="cursor:pointer;">' +
       '<div class="pm-project-card-header">' +
         '<h4>' + pmEscapeHtml(p.name) + '</h4>' +
         '<span class="pm-status ' + p.status + '">' + pmEscapeHtml(p.status) + '</span>' +
@@ -203,7 +203,7 @@ function renderProjects(filter) {
     var statusClass = (p.status || 'active').replace(/\s+/g, '-').toLowerCase();
 
     return '<tr>' +
-      '<td class="row-name">' + pmEscapeHtml(p.name) + '</td>' +
+      '<td class="row-name"><button class="pm-project-name-link" onclick="openProjectDrawer(\'' + p.id + '\')">' + pmEscapeHtml(p.name) + '</button></td>' +
       '<td class="row-secondary">' + pmEscapeHtml(p.owner || '-') + '</td>' +
       '<td><span class="pm-status ' + statusClass + '">' + pmEscapeHtml(p.status) + '</span></td>' +
       '<td class="row-secondary">' +
@@ -270,6 +270,7 @@ function saveProject() {
   pmCloseModal('project-modal');
   renderProjects();
   renderPMOverview();
+  refreshProjectDrawer();
 }
 
 function deleteProject(id) {
@@ -532,6 +533,7 @@ function saveTask() {
   pmCloseModal('task-modal');
   renderTasks();
   renderPMOverview();
+  refreshProjectDrawer();
 }
 
 // ============================================================
@@ -575,6 +577,7 @@ function saveReassign() {
   pmSaveData('tasks', tasks);
   pmCloseModal('reassign-modal');
   renderTasks();
+  refreshProjectDrawer();
 }
 
 function deleteTask(id) {
@@ -583,6 +586,7 @@ function deleteTask(id) {
   pmSaveData('tasks', tasks);
   renderTasks();
   renderPMOverview();
+  refreshProjectDrawer();
 }
 
 // ============================================================
@@ -710,6 +714,236 @@ function pmEscapeHtml(str) {
 }
 
 // ============================================================
+// PROJECT DRAWER
+// ============================================================
+
+var _drawerProjectId = null;
+
+/** Shared populate — updates all drawer content from data */
+function _populateProjectDrawer(project, allTasks) {
+  var projectTasks = allTasks.filter(function(t) { return t.projectId === project.id; });
+  var done    = projectTasks.filter(function(t) { return t.status === 'done'; }).length;
+  var total   = projectTasks.length;
+  var open    = projectTasks.filter(function(t) { return t.status !== 'done'; }).length;
+  var overdue = projectTasks.filter(function(t) {
+    return t.status !== 'done' && t.dueDate && new Date(t.dueDate) < new Date();
+  }).length;
+  var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  // Header
+  document.getElementById('drawer-project-name').textContent = project.name;
+  var statusEl = document.getElementById('drawer-project-status');
+  statusEl.textContent = project.status;
+  statusEl.className = 'pm-status ' + (project.status || 'active').replace(/\s+/g, '-');
+
+  // Description
+  var descEl = document.getElementById('drawer-description');
+  if (descEl) {
+    descEl.textContent = project.description || '';
+    descEl.style.display = project.description ? '' : 'none';
+  }
+
+  // Metrics
+  document.getElementById('drawer-pct').textContent = pct + '%';
+  document.getElementById('drawer-open-tasks').textContent = open;
+  document.getElementById('drawer-done-tasks').textContent = done;
+  document.getElementById('drawer-overdue-tasks').textContent = overdue;
+  document.getElementById('drawer-progress-fill').style.width = pct + '%';
+
+  // Meta row
+  document.getElementById('drawer-owner').textContent = project.owner ? '\uD83D\uDC64 ' + project.owner : '';
+  var dates = '';
+  if (project.startDate || project.dueDate) {
+    dates = (project.startDate ? pmFormatDate(project.startDate) : '?') +
+            ' \u2192 ' +
+            (project.dueDate ? pmFormatDate(project.dueDate) : '?');
+  }
+  document.getElementById('drawer-dates').textContent = dates;
+
+  // Task list and notes
+  renderDrawerTasks(project.id, projectTasks);
+  renderDrawerNotes(project.id);
+}
+
+function openProjectDrawer(projectId) {
+  var projects = pmLoadData('projects');
+  var tasks    = pmLoadData('tasks');
+  var project  = projects.find(function(p) { return p.id === projectId; });
+  if (!project) return;
+
+  _drawerProjectId = projectId;
+  _populateProjectDrawer(project, tasks);
+
+  document.getElementById('pm-drawer').classList.add('pm-drawer--open');
+  document.getElementById('pm-drawer-overlay').classList.add('pm-drawer-overlay--visible');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeProjectDrawer() {
+  document.getElementById('pm-drawer').classList.remove('pm-drawer--open');
+  document.getElementById('pm-drawer-overlay').classList.remove('pm-drawer-overlay--visible');
+  document.body.style.overflow = '';
+  _drawerProjectId = null;
+}
+
+/** Call after any save/delete to keep the open drawer in sync */
+function refreshProjectDrawer() {
+  if (!_drawerProjectId) return;
+  var projects = pmLoadData('projects');
+  var tasks    = pmLoadData('tasks');
+  var project  = projects.find(function(p) { return p.id === _drawerProjectId; });
+  if (!project) { closeProjectDrawer(); return; }
+  _populateProjectDrawer(project, tasks);
+}
+
+function renderDrawerTasks(projectId, projectTasks) {
+  var container = document.getElementById('drawer-tasks-list');
+  if (!container) return;
+  var countEl = document.getElementById('drawer-tasks-count');
+  if (countEl) countEl.textContent = projectTasks.length;
+
+  if (!projectTasks.length) {
+    container.innerHTML = '<div class="pm-drawer-empty">No tasks yet \u2014 add one below.</div>';
+    return;
+  }
+
+  container.innerHTML = projectTasks.map(function(t) {
+    var sc  = (t.status || 'to-do').toLowerCase();
+    var pri = (t.priority || 'medium').toLowerCase();
+    var dueHtml = t.dueDate
+      ? '<span class="drawer-task-due ' + pmDueClass(t.dueDate) + '">' + pmFormatDate(t.dueDate) + '</span>'
+      : '';
+    return '<div class="drawer-task-card">' +
+      '<div class="drawer-task-top">' +
+        '<select class="drawer-task-status-select ' + sc + '" ' +
+                'aria-label="Task status" ' +
+                'onchange="quickEditTaskStatus(\'' + t.id + '\', this.value, this)">' +
+          '<option value="to-do"'      + (t.status === 'to-do'       ? ' selected' : '') + '>To Do</option>' +
+          '<option value="in-progress"' + (t.status === 'in-progress' ? ' selected' : '') + '>In Progress</option>' +
+          '<option value="done"'        + (t.status === 'done'        ? ' selected' : '') + '>Done</option>' +
+          '<option value="blocked"'     + (t.status === 'blocked'     ? ' selected' : '') + '>Blocked</option>' +
+        '</select>' +
+        '<span class="task-priority ' + pri + '">' + pmEscapeHtml(t.priority || 'medium') + '</span>' +
+      '</div>' +
+      '<div class="drawer-task-title">' + pmEscapeHtml(t.title) + '</div>' +
+      '<div class="drawer-task-footer">' +
+        (t.assignee ? '<span class="drawer-task-assignee">\uD83D\uDC64 ' + pmEscapeHtml(t.assignee) + '</span>' : '<span></span>') +
+        dueHtml +
+        '<button class="drawer-task-edit-btn" onclick="openEditTask(\'' + t.id + '\')">Edit</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function quickEditTaskStatus(taskId, newStatus, selectEl) {
+  var tasks = pmLoadData('tasks');
+  tasks = tasks.map(function(t) {
+    if (t.id !== taskId) return t;
+    var upd = {};
+    for (var k in t) { if (t.hasOwnProperty(k)) upd[k] = t[k]; }
+    upd.status = newStatus;
+    return upd;
+  });
+  pmSaveData('tasks', tasks);
+
+  // Update select colour class
+  if (selectEl) selectEl.className = 'drawer-task-status-select ' + newStatus.toLowerCase();
+
+  // Refresh metrics in drawer header without re-rendering task list (avoids focus loss)
+  if (_drawerProjectId) {
+    var projectTasks = tasks.filter(function(t) { return t.projectId === _drawerProjectId; });
+    var done    = projectTasks.filter(function(t) { return t.status === 'done'; }).length;
+    var total   = projectTasks.length;
+    var open    = projectTasks.filter(function(t) { return t.status !== 'done'; }).length;
+    var overdue = projectTasks.filter(function(t) {
+      return t.status !== 'done' && t.dueDate && new Date(t.dueDate) < new Date();
+    }).length;
+    var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    document.getElementById('drawer-pct').textContent = pct + '%';
+    document.getElementById('drawer-open-tasks').textContent = open;
+    document.getElementById('drawer-done-tasks').textContent = done;
+    document.getElementById('drawer-overdue-tasks').textContent = overdue;
+    document.getElementById('drawer-progress-fill').style.width = pct + '%';
+  }
+
+  renderProjects();
+  renderPMOverview();
+}
+
+function openAddTaskForProject() {
+  openAddTask();
+  if (_drawerProjectId) {
+    var sel = document.getElementById('task-project');
+    if (sel) sel.value = _drawerProjectId;
+  }
+}
+
+function openEditProjectFromDrawer() {
+  if (_drawerProjectId) openEditProject(_drawerProjectId);
+}
+
+// Notes
+var PM_NOTES_KEY = 'pm_notes';
+
+function pmLoadNotes() {
+  try { var r = localStorage.getItem(PM_NOTES_KEY); return r ? JSON.parse(r) : []; }
+  catch (e) { return []; }
+}
+
+function pmSaveNotes(notes) {
+  localStorage.setItem(PM_NOTES_KEY, JSON.stringify(notes));
+}
+
+function renderDrawerNotes(projectId) {
+  var notes = pmLoadNotes()
+    .filter(function(n) { return n.projectId === projectId; })
+    .sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+
+  var countEl = document.getElementById('drawer-notes-count');
+  if (countEl) countEl.textContent = notes.length;
+
+  var container = document.getElementById('drawer-notes-list');
+  if (!container) return;
+
+  if (!notes.length) {
+    container.innerHTML = '<div class="pm-drawer-empty">No notes yet.</div>';
+    return;
+  }
+
+  container.innerHTML = notes.map(function(n) {
+    return '<div class="drawer-note-item">' +
+      '<div class="drawer-note-text">' + pmEscapeHtml(n.text) + '</div>' +
+      '<div class="drawer-note-meta">' + _formatNoteDate(n.createdAt) + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function saveDrawerNote() {
+  if (!_drawerProjectId) return;
+  var input = document.getElementById('drawer-note-input');
+  var text  = (input ? input.value : '').trim();
+  if (!text) return;
+
+  var notes = pmLoadNotes();
+  notes.push({
+    id: pmGenerateId('NOTE'),
+    projectId: _drawerProjectId,
+    text: text,
+    createdAt: new Date().toISOString()
+  });
+  pmSaveNotes(notes);
+  if (input) input.value = '';
+  renderDrawerNotes(_drawerProjectId);
+}
+
+function _formatNoteDate(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) +
+    ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ============================================================
 // INITIALIZATION
 // ============================================================
 
@@ -779,6 +1013,11 @@ document.addEventListener('DOMContentLoaded', function() {
       if (e.target === reassignModal) reassignModal.classList.remove('active');
     });
   }
+
+  // Escape closes drawer (or open modal)
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && _drawerProjectId) closeProjectDrawer();
+  });
 
   switchTool('overview');
 });

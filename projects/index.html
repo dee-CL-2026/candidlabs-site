@@ -240,6 +240,76 @@
     </section>
   </main>
 
+  <!-- PROJECT DRAWER -->
+  <div class="pm-drawer-overlay" id="pm-drawer-overlay" onclick="closeProjectDrawer()"></div>
+  <aside class="pm-drawer" id="pm-drawer" role="complementary" aria-label="Project details">
+    <div class="pm-drawer-header">
+      <div class="pm-drawer-header-left">
+        <h3 id="drawer-project-name">Project</h3>
+        <span class="pm-status" id="drawer-project-status"></span>
+      </div>
+      <div class="pm-drawer-header-right">
+        <button class="btn-row-action" onclick="openEditProjectFromDrawer()">Edit</button>
+        <button class="pm-drawer-close-btn" onclick="closeProjectDrawer()" aria-label="Close drawer">&#x2715;</button>
+      </div>
+    </div>
+
+    <div class="pm-drawer-body">
+      <!-- Description -->
+      <p class="pm-drawer-description" id="drawer-description" style="display:none;"></p>
+
+      <!-- Metrics -->
+      <div class="pm-drawer-metrics">
+        <div class="pm-drawer-metric">
+          <div class="pm-drawer-metric-value" id="drawer-pct">—</div>
+          <div class="pm-drawer-metric-label">Complete</div>
+        </div>
+        <div class="pm-drawer-metric">
+          <div class="pm-drawer-metric-value" id="drawer-open-tasks">—</div>
+          <div class="pm-drawer-metric-label">Open</div>
+        </div>
+        <div class="pm-drawer-metric">
+          <div class="pm-drawer-metric-value" id="drawer-done-tasks">—</div>
+          <div class="pm-drawer-metric-label">Done</div>
+        </div>
+        <div class="pm-drawer-metric">
+          <div class="pm-drawer-metric-value" id="drawer-overdue-tasks">—</div>
+          <div class="pm-drawer-metric-label">Overdue</div>
+        </div>
+      </div>
+      <div class="pm-progress-bar" style="margin: 8px 0;">
+        <div class="pm-progress-fill" id="drawer-progress-fill" style="width:0%"></div>
+      </div>
+      <div class="pm-drawer-meta">
+        <span id="drawer-owner"></span>
+        <span id="drawer-dates"></span>
+      </div>
+
+      <!-- Tasks section -->
+      <div class="pm-drawer-section">
+        <div class="pm-drawer-section-header">
+          <span class="pm-drawer-section-title">TASKS</span>
+          <span class="pm-drawer-section-count" id="drawer-tasks-count">0</span>
+          <button class="pm-drawer-add-btn" onclick="openAddTaskForProject()">+ Add</button>
+        </div>
+        <div id="drawer-tasks-list"></div>
+      </div>
+
+      <!-- Notes section -->
+      <div class="pm-drawer-section">
+        <div class="pm-drawer-section-header">
+          <span class="pm-drawer-section-title">NOTES</span>
+          <span class="pm-drawer-section-count" id="drawer-notes-count">0</span>
+        </div>
+        <div id="drawer-notes-list"></div>
+        <div class="pm-drawer-note-form">
+          <textarea id="drawer-note-input" placeholder="Add a note or progress update..." rows="2"></textarea>
+          <button class="btn-modal primary" style="width:100%;margin-top:6px;" onclick="saveDrawerNote()">Add Note</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
   <!-- MODALS -->
 
   <!-- Project Modal -->
