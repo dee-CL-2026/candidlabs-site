@@ -1,519 +1,210 @@
 /**
  * Candidlabs Authentication Module
  *
- * Lightweight auth using Google Identity Services (GIS).
- * Designed for a static site hosted on GitHub Pages / similar.
+ * Auth via Cloudflare Access (Google Workspace).
+ * The site is gated by CF Access, which injects the authenticated user's
+ * email into requests. A Pages Function at /api/me reads that header and
+ * returns { email, displayName, role }.
  *
- * Architecture decisions:
- * - Google Sign-In chosen because the team already uses Google Workspace.
- * - Auth state stored in localStorage (user profile + role).
- * - Role mapping is client-side: a config maps emails -> roles.
- *   This is NOT a security boundary -- the real data lives behind
- *   Google Sheets / Looker permissions. This layer controls UI visibility.
- * - Any Google account not in the allowed domain or explicit list is rejected.
+ * This module:
+ *   1. Fetches /api/me on load to identify the current user
+ *   2. Caches the result in localStorage for fast subsequent page loads
+ *   3. Exposes the same public API as before (getUser, hasRole, etc.)
  *
- * Roles:
- *   "admin"  — full access to all tools, reports, and data
- *   "team"   — access to own data, limited tool visibility
- *   "viewer" — read-only access to shared dashboards
+ * Roles: 'admin' | 'team' | 'viewer'
+ *
+ * Sign-out: redirects to CF Access logout which clears the Access cookie.
  */
 
 var CandidAuth = (function () {
   'use strict';
 
-  // ===========================================
-  // Configuration
-  // ===========================================
+  // ─── Constants ────────────────────────────────────────────────────────────
 
-  // Google OAuth Client ID — replace with actual value when deploying.
-  // To obtain: Google Cloud Console > APIs & Services > Credentials > OAuth 2.0 Client ID (Web)
-var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googleusercontent.com';
-
-  // Allowed email domain(s). Users outside these domains are rejected
-  // unless explicitly listed in ADMIN_EMAILS.
-  var ALLOWED_DOMAINS = ['candidmixers.com', 'candidlabs.com'];
-
-  // Emails with admin role. Everyone else on an allowed domain gets "team" role.
-  
-  var ADMIN_EMAILS = [
-    'dieterwerwath@gmail.com',
-    'dee@candidmixers.com',
-  // Add admin emails here, e.g.:
-    // 'dieter@candidmixers.com',
-  ];
-
-  // Explicit allow-list for emails outside ALLOWED_DOMAINS.
-  // Allowed emails default to "team" unless they are also in ADMIN_EMAILS.
-  var ALLOWED_EMAILS = [
-    'dieterwerwath@gmail.com'
-  ];
-
-  // Explicit deny-list (always blocked), regardless of domain/admin/overrides.
-  var BLOCKED_EMAILS = [];
-
-  // Storage key
   var STORAGE_KEY = 'candidlabs_auth';
-  var ROLE_OVERRIDES_KEY = 'candidlabs_role_overrides';
-  var ALLOWED_EMAILS_KEY = 'candidlabs_allowed_emails';
-  var BLOCKED_EMAILS_KEY = 'candidlabs_blocked_emails';
+  var API_ME = '/api/me';
+  var CF_LOGOUT_URL = 'https://torque-mac.cloudflareaccess.com/cdn-cgi/access/logout';
 
-  // ===========================================
-  // State
-  // ===========================================
+  // ─── State ────────────────────────────────────────────────────────────────
 
-  var currentUser = null;
+  var currentUser = null;        // Resolved user object (or null)
+  var fetchDone = false;         // True once /api/me has responded
   var onAuthChangeCallbacks = [];
 
-  function normalizeEmail(email) {
-    return String(email || '').trim().toLowerCase();
-  }
+  // ─── Helpers ──────────────────────────────────────────────────────────────
 
-  function isAdminEmail(email) {
-    var normalized = normalizeEmail(email);
-    return ADMIN_EMAILS.some(function (e) {
-      return normalized === normalizeEmail(e);
+  function fireAuthChange() {
+    onAuthChangeCallbacks.forEach(function (cb) {
+      try { cb(currentUser); } catch (e) { console.error('CandidAuth callback error:', e); }
     });
   }
 
-  function isAllowedDomain(domain) {
-    return ALLOWED_DOMAINS.some(function (d) {
-      return domain === d;
-    });
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(String(str || '')));
+    return div.innerHTML;
   }
 
-  function uniqueEmails(list) {
-    var seen = {};
-    var out = [];
-    (list || []).forEach(function (email) {
-      var normalized = normalizeEmail(email);
-      if (normalized && !seen[normalized]) {
-        seen[normalized] = true;
-        out.push(normalized);
-      }
-    });
-    return out;
+  function getLoginPath() {
+    var path = window.location.pathname || '';
+    if (path.indexOf('/crm/') !== -1 ||
+        path.indexOf('/projects/') !== -1 ||
+        path.indexOf('/admin/') !== -1) {
+      return '../login.html';
+    }
+    return 'login.html';
   }
 
-  function loadEmailList(key, fallback) {
+  // ─── Cache ────────────────────────────────────────────────────────────────
+
+  function loadCachedUser() {
     try {
-      var raw = localStorage.getItem(key);
-      if (!raw) return uniqueEmails(fallback);
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
       var parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return uniqueEmails(fallback);
-      return uniqueEmails(parsed);
-    } catch (e) {
-      return uniqueEmails(fallback);
-    }
-  }
-
-  function saveEmailList(key, emails) {
-    localStorage.setItem(key, JSON.stringify(uniqueEmails(emails)));
-  }
-
-  function getAllowedEmailList() {
-    return loadEmailList(ALLOWED_EMAILS_KEY, ALLOWED_EMAILS);
-  }
-
-  function getBlockedEmailList() {
-    return loadEmailList(BLOCKED_EMAILS_KEY, BLOCKED_EMAILS);
-  }
-
-  function isAllowedEmail(email) {
-    var normalized = normalizeEmail(email);
-    return getAllowedEmailList().some(function (e) {
-      return normalized === e;
-    });
-  }
-
-  function isBlockedEmail(email) {
-    var normalized = normalizeEmail(email);
-    return getBlockedEmailList().some(function (e) {
-      return normalized === e;
-    });
-  }
-
-  function loadRoleOverrides() {
-    try {
-      var raw = localStorage.getItem(ROLE_OVERRIDES_KEY);
-      if (!raw) return {};
-      var parsed = JSON.parse(raw);
-      return parsed && typeof parsed === 'object' ? parsed : {};
-    } catch (e) {
-      return {};
-    }
-  }
-
-  function saveRoleOverrides(overrides) {
-    localStorage.setItem(ROLE_OVERRIDES_KEY, JSON.stringify(overrides || {}));
-  }
-
-  function getRoleOverrideForEmail(email) {
-    var normalized = normalizeEmail(email);
-    var overrides = loadRoleOverrides();
-    var role = overrides[normalized];
-    if (role === 'admin' || role === 'team' || role === 'viewer') {
-      return role;
-    }
-    return null;
-  }
-
-  function resolveRole(email, domain) {
-    var normalized = normalizeEmail(email);
-    if (isBlockedEmail(normalized)) return null;
-    if (isAdminEmail(normalized)) return 'admin';
-    var roleOverride = getRoleOverrideForEmail(normalized);
-    if (roleOverride) return roleOverride;
-    if (isAllowedDomain(domain)) return 'team';
-    if (isAllowedEmail(normalized)) return 'team';
-    return null;
-  }
-
-  // ===========================================
-  // Initialization
-  // ===========================================
-
-  /**
-   * Load persisted auth state from localStorage on module init.
-   */
-  function loadPersistedUser() {
-    try {
-      var stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        var parsed = JSON.parse(stored);
-        if (parsed && typeof parsed === 'object' && typeof parsed.email === 'string') {
-          var fallbackName = parsed.email.split('@')[0];
-          var normalizedEmail = normalizeEmail(parsed.email);
-          var resolvedRole = resolveRole(normalizedEmail, parsed.domain || (normalizedEmail.split('@')[1] || ''));
-          if (!resolvedRole) {
-            currentUser = null;
-            return;
-          }
-          currentUser = {
-            email: normalizedEmail,
-            name: parsed.name || fallbackName,
-            picture: parsed.picture || '',
-            role: resolvedRole,
-            domain: parsed.domain || (normalizedEmail.split('@')[1] || ''),
-            signedInAt: parsed.signedInAt || ''
-          };
-        } else {
-          currentUser = null;
-        }
+      if (parsed && typeof parsed.email === 'string' && parsed.role) {
+        return parsed;
       }
-    } catch (e) {
-      // Corrupted storage — clear it
-      localStorage.removeItem(STORAGE_KEY);
-      currentUser = null;
-    }
-  }
-
-  /**
-   * Initialize Google Identity Services.
-   * Call this once from pages that include the GIS script.
-   */
-  function initGoogleSignIn() {
-    if (typeof google === 'undefined' || !google.accounts) {
-      console.warn('CandidAuth: Google Identity Services SDK not loaded.');
-      return;
-    }
-
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: handleGoogleCredentialResponse,
-      auto_select: false,
-      cancel_on_tap_outside: true
-    });
-  }
-
-  // ===========================================
-  // Google Sign-In Callback
-  // ===========================================
-
-  /**
-   * Decode a JWT payload (Google credential response).
-   * This is a lightweight base64url decode — no signature verification
-   * because we trust the Google JS SDK delivered the token.
-   */
-  function decodeJwtPayload(token) {
-    var parts = token.split('.');
-    if (parts.length !== 3) return null;
-    var payload = parts[1];
-    // base64url -> base64
-    payload = payload.replace(/-/g, '+').replace(/_/g, '/');
-    try {
-      return JSON.parse(atob(payload));
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /**
-   * Handle the credential response from Google Sign-In.
-   */
-  function handleGoogleCredentialResponse(response) {
-    var payload = decodeJwtPayload(response.credential);
-    if (!payload || !payload.email) {
-      showAuthError('Sign-in failed. Could not read account information.');
-      return;
-    }
-
-    var email = normalizeEmail(payload.email);
-    var domain = email.split('@')[1];
-
-    var role = resolveRole(email, domain);
-    if (!role) {
-      showAuthError('Access denied. Your account (' + email + ') is not authorized for Candidlabs.');
-      return;
-    }
-
-    currentUser = {
-      email: email,
-      name: payload.name || email.split('@')[0],
-      picture: payload.picture || '',
-      role: role,
-      domain: domain,
-      signedInAt: new Date().toISOString()
-    };
-
-    // Persist
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
-
-    // candidlabs-authchange-dispatch
-    // Signal to the page (login.html) that auth state is now persisted.
-    try {
-      window.dispatchEvent(new Event('candidauth:signed-in'));
     } catch (e) {}
-
-
-    // Notify listeners
-    fireAuthChange();
-
-    // Redirect to home if on login page
-    // (Defer navigation to avoid GIS callback timing quirks that can require a manual refresh)
-        // Navigation handled by login.html (auth.js must not redirect)
-    // (Post-login destination should be controlled via ?next= or stored intent.)
-
+    return null;
   }
 
-  // ===========================================
-  // Auth State API
-  // ===========================================
+  function saveCachedUser(user) {
+    try {
+      if (user) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch (e) {}
+  }
+
+  // ─── Identity Fetch ───────────────────────────────────────────────────────
 
   /**
-   * Returns the current user object, or null if not signed in.
+   * Fetch /api/me (Pages Function) to get the CF Access identity.
+   * Updates currentUser and fires auth change callbacks on completion.
    */
+  function fetchIdentity() {
+    return fetch(API_ME, { credentials: 'same-origin' })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        fetchDone = true;
+        if (data.ok && data.data && data.data.email) {
+          var user = {
+            email: data.data.email,
+            name: data.data.displayName || data.data.email.split('@')[0],
+            role: data.data.role || 'team',
+            picture: '',
+            domain: data.data.email.split('@')[1] || ''
+          };
+          var changed = !currentUser || currentUser.email !== user.email || currentUser.role !== user.role;
+          currentUser = user;
+          saveCachedUser(user);
+          if (changed) fireAuthChange();
+        } else {
+          // /api/me returned error — user not authenticated or not allowed
+          var hadUser = !!currentUser;
+          currentUser = null;
+          saveCachedUser(null);
+          if (hadUser) fireAuthChange();
+        }
+      })
+      .catch(function (err) {
+        // Network error or local dev — keep cached user, log warning
+        fetchDone = true;
+        console.warn('CandidAuth: /api/me fetch failed (local dev?)', err);
+        // fireAuthChange in case page is waiting
+        fireAuthChange();
+      });
+  }
+
+  // ─── Public API ───────────────────────────────────────────────────────────
+
+  /** Returns the current user object, or null. */
   function getUser() {
     return currentUser;
   }
 
-  /**
-   * Returns true if a user is signed in.
-   */
+  /** Returns true if a user is resolved. */
   function isSignedIn() {
     return currentUser !== null;
   }
 
-  /**
-   * Returns the current user's role, or null.
-   */
+  /** Returns the current user's role, or null. */
   function getRole() {
     return currentUser ? currentUser.role : null;
   }
 
-  /**
-   * Returns true if the current user has the given role.
-   */
+  /** Returns true if the current user has at least the given role. */
   function hasRole(role) {
     if (!currentUser) return false;
     if (role === 'admin') return currentUser.role === 'admin';
     if (role === 'team') return currentUser.role === 'admin' || currentUser.role === 'team';
-    if (role === 'viewer') return true; // all authenticated users can view
+    if (role === 'viewer') return true; // any authenticated user
     return false;
   }
 
   /**
-   * Sign out: clear state and redirect to login.
+   * Sign out: clear cached identity, redirect to CF Access logout.
+   * Access will then redirect back to the site login page.
    */
   function signOut() {
     currentUser = null;
-    localStorage.removeItem(STORAGE_KEY);
-
-    // Revoke Google session if GIS is loaded
-    if (typeof google !== 'undefined' && google.accounts) {
-      google.accounts.id.disableAutoSelect();
-    }
-
+    saveCachedUser(null);
     fireAuthChange();
-    window.location.href = getLoginPath();
+    window.location.href = CF_LOGOUT_URL;
   }
-
-  function setRoleOverride(email, role) {
-    var normalized = normalizeEmail(email);
-    if (!normalized) return false;
-    if (role !== 'admin' && role !== 'team' && role !== 'viewer') return false;
-    if (isAdminEmail(normalized) && role !== 'admin') return false;
-    var overrides = loadRoleOverrides();
-    overrides[normalized] = role;
-    saveRoleOverrides(overrides);
-
-    if (currentUser && currentUser.email === normalized) {
-      currentUser.role = role;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
-      fireAuthChange();
-    }
-    return true;
-  }
-
-  function removeRoleOverride(email) {
-    var normalized = normalizeEmail(email);
-    if (!normalized) return false;
-    var overrides = loadRoleOverrides();
-    if (!Object.prototype.hasOwnProperty.call(overrides, normalized)) return false;
-    delete overrides[normalized];
-    saveRoleOverrides(overrides);
-
-    if (currentUser && currentUser.email === normalized) {
-      var fallbackRole = resolveRole(normalized, currentUser.domain || (normalized.split('@')[1] || ''));
-      if (fallbackRole) {
-        currentUser.role = fallbackRole;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
-      } else {
-        currentUser = null;
-        localStorage.removeItem(STORAGE_KEY);
-      }
-      fireAuthChange();
-    }
-    return true;
-  }
-
-  function getRoleOverrides() {
-    return loadRoleOverrides();
-  }
-
-  function refreshCurrentUserRole() {
-    if (!currentUser || !currentUser.email) return;
-    var normalized = normalizeEmail(currentUser.email);
-    var resolvedRole = resolveRole(normalized, currentUser.domain || (normalized.split('@')[1] || ''));
-    if (!resolvedRole) {
-      currentUser = null;
-      localStorage.removeItem(STORAGE_KEY);
-      fireAuthChange();
-      return;
-    }
-    currentUser.role = resolvedRole;
-    currentUser.email = normalized;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
-    fireAuthChange();
-  }
-
-  function addAllowedEmail(email) {
-    var normalized = normalizeEmail(email);
-    if (!normalized) return false;
-    var list = getAllowedEmailList();
-    if (list.indexOf(normalized) === -1) list.push(normalized);
-    saveEmailList(ALLOWED_EMAILS_KEY, list);
-    refreshCurrentUserRole();
-    return true;
-  }
-
-  function removeAllowedEmail(email) {
-    var normalized = normalizeEmail(email);
-    if (!normalized) return false;
-    var list = getAllowedEmailList().filter(function (e) { return e !== normalized; });
-    saveEmailList(ALLOWED_EMAILS_KEY, list);
-    refreshCurrentUserRole();
-    return true;
-  }
-
-  function addBlockedEmail(email) {
-    var normalized = normalizeEmail(email);
-    if (!normalized) return false;
-    var list = getBlockedEmailList();
-    if (list.indexOf(normalized) === -1) list.push(normalized);
-    saveEmailList(BLOCKED_EMAILS_KEY, list);
-    refreshCurrentUserRole();
-    return true;
-  }
-
-  function removeBlockedEmail(email) {
-    var normalized = normalizeEmail(email);
-    if (!normalized) return false;
-    var list = getBlockedEmailList().filter(function (e) { return e !== normalized; });
-    saveEmailList(BLOCKED_EMAILS_KEY, list);
-    refreshCurrentUserRole();
-    return true;
-  }
-
-  // ===========================================
-  // Auth Change Listeners
-  // ===========================================
 
   /**
-   * Register a callback for auth state changes.
+   * Require auth on the current page.
+   * - If user is known → returns true.
+   * - If fetch is still pending → returns true (CF Access guarantees auth).
+   * - If fetch is done and no user → redirects to login and returns false.
    */
+  function requireAuth() {
+    if (currentUser) return true;
+    if (!fetchDone) {
+      // Fetch still in flight — trust CF Access (user is authenticated).
+      // onAuthChange will fire when fetch completes; page should react there.
+      return true;
+    }
+    // Fetch returned no user (local dev or genuine unauth)
+    window.location.href = getLoginPath();
+    return false;
+  }
+
+  /** Register a callback for auth state changes. */
   function onAuthChange(callback) {
     if (typeof callback === 'function') {
       onAuthChangeCallbacks.push(callback);
     }
   }
 
-  function fireAuthChange() {
-    onAuthChangeCallbacks.forEach(function (cb) {
-      try { cb(currentUser); } catch (e) { console.error('Auth change callback error:', e); }
-    });
+  /**
+   * init() — no-op in CF Access mode.
+   * Kept for backward compatibility with pages that call CandidAuth.init().
+   * Identity fetch has already started on module load.
+   */
+  function init() {
+    // No-op. /api/me is fetched on module load.
+    // Previously initialized Google Identity Services SDK.
   }
 
-  /**
-   * Resolve login path for current page depth.
-   * Root pages use "login.html"; nested module pages use "../login.html".
-   */
-  function getLoginPath() {
-    var path = window.location.pathname || '';
-    if (path.indexOf('/crm/') !== -1 || path.indexOf('/projects/') !== -1 || path.indexOf('/admin/') !== -1) {
-      return '../login.html';
-    }
-    return 'login.html';
-  }
+  // ─── UI Helpers ───────────────────────────────────────────────────────────
 
-  // ===========================================
-  // UI Helpers
-  // ===========================================
-
-  /**
-   * Show a Google Sign-In button inside the given container element.
-   */
-  function renderGoogleButton(containerElement) {
-    if (typeof google === 'undefined' || !google.accounts) {
-      console.warn('CandidAuth: Cannot render button — GIS SDK not loaded.');
-      return;
-    }
-    google.accounts.id.renderButton(containerElement, {
-      theme: 'outline',
-      size: 'large',
-      text: 'signin_with',
-      shape: 'rectangular',
-      width: 300
-    });
-  }
-
-  /**
-   * Update the navbar to reflect auth state.
-   * Replaces the Login button with user info + sign-out, or shows Login link.
-   */
+  /** Update navbar to show user info or login link. */
   function updateNavbar() {
-    // Desktop login button
     var loginBtns = document.querySelectorAll('.btn-login');
-    // Mobile login link
     var mobileLoginLinks = document.querySelectorAll('.mobile-menu a[href$="login.html"]');
 
     if (isSignedIn()) {
       var user = getUser();
-      var displayName = (user && user.name) ? user.name : ((user && user.email) ? user.email.split('@')[0] : 'User');
-      var displayInitial = displayName.charAt(0).toUpperCase();
+      var displayName = user.name || user.email.split('@')[0];
       var firstName = displayName.split(' ')[0];
+      var displayInitial = firstName.charAt(0).toUpperCase();
 
       loginBtns.forEach(function (btn) {
-        // Replace with user menu
         var userMenu = document.createElement('div');
         userMenu.className = 'user-menu';
         userMenu.innerHTML =
@@ -548,7 +239,6 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
         btn.textContent = 'Login';
         btn.setAttribute('aria-label', 'Login');
       });
-
       mobileLoginLinks.forEach(function (link) {
         link.href = getLoginPath();
         link.textContent = 'Login';
@@ -557,43 +247,19 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
   }
 
   /**
-   * Require authentication on the current page.
-   * If not signed in, redirects to login.html.
-   */
-  function requireAuth() {
-    if (!isSignedIn()) {
-      window.location.href = getLoginPath();
-      return false;
-    }
-    return true;
-  }
-
-  /**
-   * Show/hide elements based on role.
-   * Elements with data-auth-role="admin" are only visible to admins.
-   * Elements with data-auth-role="team" are visible to admin and team.
-   * Elements with data-auth-hide="signed-in" are hidden when signed in.
-   * Elements with data-auth-hide="signed-out" are hidden when signed out.
+   * Show/hide elements based on role:
+   *   data-auth-role="admin"     → only admins
+   *   data-auth-role="team"      → admin + team
+   *   data-auth-hide="signed-in" → hidden when signed in
+   *   data-auth-hide="signed-out"→ hidden when signed out
    */
   function applyRoleVisibility() {
-    // Role-based visibility
-    var roleElements = document.querySelectorAll('[data-auth-role]');
-    roleElements.forEach(function (el) {
-      var requiredRole = el.getAttribute('data-auth-role');
-      if (hasRole(requiredRole)) {
-        el.style.display = '';
-      } else {
-        el.style.display = 'none';
-      }
+    document.querySelectorAll('[data-auth-role]').forEach(function (el) {
+      el.style.display = hasRole(el.getAttribute('data-auth-role')) ? '' : 'none';
     });
-
-    // Auth-state visibility
-    var hideElements = document.querySelectorAll('[data-auth-hide]');
-    hideElements.forEach(function (el) {
-      var hideWhen = el.getAttribute('data-auth-hide');
-      if (hideWhen === 'signed-in' && isSignedIn()) {
-        el.style.display = 'none';
-      } else if (hideWhen === 'signed-out' && !isSignedIn()) {
+    document.querySelectorAll('[data-auth-hide]').forEach(function (el) {
+      var when = el.getAttribute('data-auth-hide');
+      if ((when === 'signed-in' && isSignedIn()) || (when === 'signed-out' && !isSignedIn())) {
         el.style.display = 'none';
       } else {
         el.style.display = '';
@@ -602,52 +268,43 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
   }
 
   /**
-   * Show an auth error message. Used on the login page.
+   * renderGoogleButton — no-op in CF Access mode.
+   * Authentication is handled by CF Access (Google Workspace).
    */
-  function showAuthError(message) {
-    var errorEl = document.getElementById('auth-error');
-    if (errorEl) {
-      errorEl.textContent = message;
-      errorEl.style.display = 'block';
-    } else {
-      alert(message);
-    }
+  function renderGoogleButton() {
+    // No-op. CF Access handles Google authentication automatically.
   }
 
-  /**
-   * Escape HTML to prevent XSS when inserting user data into the DOM.
-   */
-  function escapeHtml(str) {
-    var div = document.createElement('div');
-    div.appendChild(document.createTextNode(str));
-    return div.innerHTML;
-  }
+  // ─── Bootstrap ────────────────────────────────────────────────────────────
 
-  // ===========================================
-  // Bootstrap
-  // ===========================================
+  // 1. Restore cached user synchronously (fast path for returning visitors)
+  currentUser = loadCachedUser();
 
-  // Load persisted user on script load
-  loadPersistedUser();
+  // 2. Start identity fetch immediately (validates/refreshes the cached user)
+  fetchIdentity();
 
-  // When DOM is ready, update nav and apply role visibility
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () {
+  // 3. Wire up DOM-ready UI updates
+  function onDomReady() {
+    updateNavbar();
+    applyRoleVisibility();
+    // Re-apply when fetch completes (in case cached user was stale)
+    onAuthChange(function () {
       updateNavbar();
       applyRoleVisibility();
     });
-  } else {
-    // DOM already ready
-    updateNavbar();
-    applyRoleVisibility();
   }
 
-  // ===========================================
-  // Public API
-  // ===========================================
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', onDomReady);
+  } else {
+    onDomReady();
+  }
+
+  // ─── Public API ───────────────────────────────────────────────────────────
 
   return {
-    init: initGoogleSignIn,
+    // Core
+    init: init,
     getUser: getUser,
     isSignedIn: isSignedIn,
     getRole: getRole,
@@ -655,18 +312,20 @@ var GOOGLE_CLIENT_ID = '460821247412-ve9k707rjvfq7djag6jjcqsuuaivoh1f.apps.googl
     signOut: signOut,
     requireAuth: requireAuth,
     onAuthChange: onAuthChange,
+    // UI
     updateNavbar: updateNavbar,
     applyRoleVisibility: applyRoleVisibility,
     renderGoogleButton: renderGoogleButton,
-    getRoleOverrides: getRoleOverrides,
-    setRoleOverride: setRoleOverride,
-    removeRoleOverride: removeRoleOverride,
-    getAllowedEmails: getAllowedEmailList,
-    getBlockedEmails: getBlockedEmailList,
-    addAllowedEmail: addAllowedEmail,
-    removeAllowedEmail: removeAllowedEmail,
-    addBlockedEmail: addBlockedEmail,
-    removeBlockedEmail: removeBlockedEmail
+    // Stubs for backward compatibility (role overrides were client-side before)
+    getRoleOverrides: function () { return {}; },
+    setRoleOverride: function () { return false; },
+    removeRoleOverride: function () { return false; },
+    getAllowedEmails: function () { return []; },
+    getBlockedEmails: function () { return []; },
+    addAllowedEmail: function () { return false; },
+    removeAllowedEmail: function () { return false; },
+    addBlockedEmail: function () { return false; },
+    removeBlockedEmail: function () { return false; }
   };
 
 })();
