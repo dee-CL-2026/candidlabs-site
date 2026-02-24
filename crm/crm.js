@@ -1,57 +1,37 @@
 // CRM Module - Data & Logic Engine
-// Storage: localStorage with JSON. Structure mirrors CRM_CONTACTS sheet in Sales DB.
+// Storage: CandidStore (Worker API + D1) with localStorage fallback.
 // Pattern: matches budget.js switchTool() sidebar navigation.
 
 // ============================================================
-// DATA LAYER - localStorage backed
+// DATA LAYER - CandidStore backed (API/D1, localStorage fallback)
 // ============================================================
 
-var CRM_STORAGE_KEYS = {
-  contacts: 'crm_contacts',
-  companies: 'crm_companies',
-  deals: 'crm_deals'
-};
 var KAA_FORM_URL = 'https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform';
 
-// Seed data that mirrors real Candid Labs account structures
-function getDefaultData() {
-  return {
-    contacts: [
-      { id: 'CON-001', name: 'Sarah Chen', email: 'sarah@skdistribution.com', phone: '+62 812 3456 7890', role: 'Account Manager', companyId: 'CMP-001', notes: 'Primary contact for all Jakarta orders', createdAt: '2025-09-15' },
-      { id: 'CON-002', name: 'Budi Santoso', email: 'budi@ptmandiri.co.id', phone: '+62 813 9876 5432', role: 'Procurement Lead', companyId: 'CMP-002', notes: 'Handles Bali distribution contracts', createdAt: '2025-11-02' },
-      { id: 'CON-003', name: 'Lisa Wong', email: 'lisa@grandhotels.com', phone: '+62 821 5555 1234', role: 'F&B Director', companyId: 'CMP-003', notes: 'Decision maker for hotel group', createdAt: '2026-01-10' }
-    ],
-    companies: [
-      { id: 'CMP-001', name: 'SK Distribution', market: 'Jakarta', channel: 'Distributor', status: 'active', contactCount: 1, notes: 'Primary Jakarta distributor', createdAt: '2025-09-01' },
-      { id: 'CMP-002', name: 'PT Mandiri Beverages', market: 'Bali', channel: 'Distributor', status: 'active', contactCount: 1, notes: 'Bali & NTB coverage', createdAt: '2025-10-15' },
-      { id: 'CMP-003', name: 'Grand Hotel Group', market: 'Jakarta', channel: 'Horeca', status: 'lead', contactCount: 1, notes: '12 properties across Java', createdAt: '2026-01-08' }
-    ],
-    deals: [
-      { id: 'DL-001', title: 'SK Distribution Q1 2026 Order', companyId: 'CMP-001', contactId: 'CON-001', value: 450000000, stage: 'negotiation', notes: 'Quarterly bulk order for Jakarta region', createdAt: '2026-01-20' },
-      { id: 'DL-002', title: 'Grand Hotel Trial Program', companyId: 'CMP-003', contactId: 'CON-003', value: 85000000, stage: 'proposal', notes: 'Trial across 3 flagship properties', createdAt: '2026-02-01' },
-      { id: 'DL-003', title: 'Mandiri Bali Expansion', companyId: 'CMP-002', contactId: 'CON-002', value: 275000000, stage: 'prospecting', notes: 'Expand coverage to Lombok & Flores', createdAt: '2026-02-10' }
-    ]
-  };
-}
+// In-memory cache — populated by initData() on page load
+var _contacts = [];
+var _companies = [];
+var _deals = [];
 
-// Data access via CandidStore adapter (localStorage fallback built in)
+// Synchronous read from in-memory cache (always up-to-date after initData)
 function loadData(key) {
-  var raw = localStorage.getItem(CRM_STORAGE_KEYS[key]);
-  if (raw) {
-    try { return JSON.parse(raw); }
-    catch (e) { return []; }
-  }
-  var defaults = getDefaultData();
-  localStorage.setItem(CRM_STORAGE_KEYS[key], JSON.stringify(defaults[key]));
-  return defaults[key];
+  if (key === 'contacts') return _contacts.slice();
+  if (key === 'companies') return _companies.slice();
+  if (key === 'deals') return _deals.slice();
+  return [];
 }
 
-function saveData(key, data) {
-  localStorage.setItem(CRM_STORAGE_KEYS[key], JSON.stringify(data));
-  // Mirror to CandidStore if available (async, fire-and-forget)
-  if (typeof CandidStore !== 'undefined') {
-    CandidStore.save(key, data);
-  }
+// Load all collections from CandidStore (API/D1) into cache, then render
+function initData() {
+  return Promise.all([
+    CandidStore.load('contacts'),
+    CandidStore.load('companies'),
+    CandidStore.load('deals')
+  ]).then(function(results) {
+    _contacts = results[0] || [];
+    _companies = results[1] || [];
+    _deals = results[2] || [];
+  });
 }
 
 function generateId(prefix) {
@@ -195,8 +175,35 @@ function openEditContact(id) {
 
 function saveContact() {
   var editId = document.getElementById('contact-edit-id').value;
-  var contacts = loadData('contacts');
   var companySelectVal = document.getElementById('contact-company').value;
+
+  function doSave(resolvedCompanyId) {
+    var record = {
+      name: document.getElementById('contact-name').value.trim(),
+      email: document.getElementById('contact-email').value.trim(),
+      phone: document.getElementById('contact-phone').value.trim(),
+      role: document.getElementById('contact-role').value.trim(),
+      companyId: resolvedCompanyId || '',
+      notes: document.getElementById('contact-notes').value.trim()
+    };
+    if (!record.name) return;
+
+    var promise = editId
+      ? CandidStore.update('contacts', editId, record)
+      : CandidStore.create('contacts', record);
+
+    promise.then(function() {
+      return CandidStore.load('contacts');
+    }).then(function(contacts) {
+      _contacts = contacts;
+      closeModal('contact-modal');
+      renderContacts();
+      renderCompanies();
+      renderOverview();
+    }).catch(function() {
+      alert('Could not save contact. Please try again.');
+    });
+  }
 
   // Handle inline new company creation
   if (companySelectVal === '__new__') {
@@ -207,61 +214,41 @@ function saveContact() {
       document.getElementById('inline-company-name').style.borderColor = 'var(--color-error)';
       return;
     }
-    // Create the company first
-    var newCompany = {
-      id: generateId('CMP'),
+    var newCompanyData = {
       name: newCompanyName,
       market: (document.getElementById('inline-company-market') || {}).value || '',
       channel: (document.getElementById('inline-company-channel') || {}).value || '',
       status: 'lead',
-      notes: '',
-      createdAt: new Date().toISOString().split('T')[0]
+      notes: ''
     };
-    var companies = loadData('companies');
-    companies.push(newCompany);
-    saveData('companies', companies);
-    companySelectVal = newCompany.id;
-    // Reset inline form
-    document.getElementById('inline-new-company').style.display = 'none';
-  }
-
-  var record = {
-    id: editId || generateId('CON'),
-    name: document.getElementById('contact-name').value.trim(),
-    email: document.getElementById('contact-email').value.trim(),
-    phone: document.getElementById('contact-phone').value.trim(),
-    role: document.getElementById('contact-role').value.trim(),
-    companyId: companySelectVal || '',
-    notes: document.getElementById('contact-notes').value.trim(),
-    createdAt: editId ? (contacts.find(function(c) { return c.id === editId; }) || {}).createdAt : new Date().toISOString().split('T')[0]
-  };
-
-  if (!record.name) return;
-
-  if (editId) {
-    contacts = contacts.map(function(c) { return c.id === editId ? record : c; });
+    CandidStore.create('companies', newCompanyData).then(function(created) {
+      return CandidStore.load('companies').then(function(companies) {
+        _companies = companies;
+        document.getElementById('inline-new-company').style.display = 'none';
+        doSave(created.id);
+      });
+    }).catch(function() {
+      alert('Could not create company. Please try again.');
+    });
   } else {
-    contacts.push(record);
+    doSave(companySelectVal);
   }
-
-  saveData('contacts', contacts);
-  closeModal('contact-modal');
-  renderContacts();
-  renderCompanies();
-  renderOverview();
 }
 
 function deleteContact(id) {
   if (!confirm('Delete this contact?')) return;
-  var linkedDeals = loadData('deals').filter(function(d) { return d.contactId === id; }).length;
+  var linkedDeals = _deals.filter(function(d) { return d.contactId === id; }).length;
   if (linkedDeals > 0) {
     alert('Cannot delete: this contact is linked to ' + linkedDeals + ' deals.');
     return;
   }
-  var contacts = loadData('contacts').filter(function(c) { return c.id !== id; });
-  saveData('contacts', contacts);
-  renderContacts();
-  renderOverview();
+  CandidStore.remove('contacts', id).then(function() {
+    _contacts = _contacts.filter(function(c) { return c.id !== id; });
+    renderContacts();
+    renderOverview();
+  }).catch(function() {
+    alert('Could not delete contact. Please try again.');
+  });
 }
 
 // ============================================================
@@ -330,44 +317,46 @@ function openEditCompany(id) {
 
 function saveCompany() {
   var editId = document.getElementById('company-edit-id').value;
-  var companies = loadData('companies');
-
   var record = {
-    id: editId || generateId('CMP'),
     name: document.getElementById('company-name').value.trim(),
     market: document.getElementById('company-market').value.trim(),
     channel: document.getElementById('company-channel').value,
     status: document.getElementById('company-status').value,
-    notes: document.getElementById('company-notes').value.trim(),
-    createdAt: editId ? (companies.find(function(c) { return c.id === editId; }) || {}).createdAt : new Date().toISOString().split('T')[0]
+    notes: document.getElementById('company-notes').value.trim()
   };
-
   if (!record.name) return;
 
-  if (editId) {
-    companies = companies.map(function(c) { return c.id === editId ? record : c; });
-  } else {
-    companies.push(record);
-  }
+  var promise = editId
+    ? CandidStore.update('companies', editId, record)
+    : CandidStore.create('companies', record);
 
-  saveData('companies', companies);
-  closeModal('company-modal');
-  renderCompanies();
-  renderOverview();
+  promise.then(function() {
+    return CandidStore.load('companies');
+  }).then(function(companies) {
+    _companies = companies;
+    closeModal('company-modal');
+    renderCompanies();
+    renderOverview();
+  }).catch(function() {
+    alert('Could not save company. Please try again.');
+  });
 }
 
 function deleteCompany(id) {
-  if (!confirm('Delete this company? Contacts linked to it will keep their association.')) return;
-  var linkedContacts = loadData('contacts').filter(function(c) { return c.companyId === id; }).length;
-  var linkedDeals = loadData('deals').filter(function(d) { return d.companyId === id; }).length;
+  if (!confirm('Delete this company?')) return;
+  var linkedContacts = _contacts.filter(function(c) { return c.companyId === id; }).length;
+  var linkedDeals = _deals.filter(function(d) { return d.companyId === id; }).length;
   if (linkedContacts > 0 || linkedDeals > 0) {
     alert('Cannot delete: this company is linked to ' + linkedContacts + ' contacts and ' + linkedDeals + ' deals.');
     return;
   }
-  var companies = loadData('companies').filter(function(c) { return c.id !== id; });
-  saveData('companies', companies);
-  renderCompanies();
-  renderOverview();
+  CandidStore.remove('companies', id).then(function() {
+    _companies = _companies.filter(function(c) { return c.id !== id; });
+    renderCompanies();
+    renderOverview();
+  }).catch(function() {
+    alert('Could not delete company. Please try again.');
+  });
 }
 
 // ============================================================
@@ -456,39 +445,41 @@ function openEditDeal(id) {
 
 function saveDeal() {
   var editId = document.getElementById('deal-edit-id').value;
-  var deals = loadData('deals');
-
   var record = {
-    id: editId || generateId('DL'),
     title: document.getElementById('deal-title').value.trim(),
     companyId: document.getElementById('deal-company').value,
     contactId: document.getElementById('deal-contact').value,
     value: parseInt(document.getElementById('deal-value').value, 10) || 0,
     stage: document.getElementById('deal-stage').value,
-    notes: document.getElementById('deal-notes').value.trim(),
-    createdAt: editId ? (deals.find(function(d) { return d.id === editId; }) || {}).createdAt : new Date().toISOString().split('T')[0]
+    notes: document.getElementById('deal-notes').value.trim()
   };
-
   if (!record.title) return;
 
-  if (editId) {
-    deals = deals.map(function(d) { return d.id === editId ? record : d; });
-  } else {
-    deals.push(record);
-  }
+  var promise = editId
+    ? CandidStore.update('deals', editId, record)
+    : CandidStore.create('deals', record);
 
-  saveData('deals', deals);
-  closeModal('deal-modal');
-  renderDeals();
-  renderOverview();
+  promise.then(function() {
+    return CandidStore.load('deals');
+  }).then(function(deals) {
+    _deals = deals;
+    closeModal('deal-modal');
+    renderDeals();
+    renderOverview();
+  }).catch(function() {
+    alert('Could not save deal. Please try again.');
+  });
 }
 
 function deleteDeal(id) {
   if (!confirm('Delete this deal?')) return;
-  var deals = loadData('deals').filter(function(d) { return d.id !== id; });
-  saveData('deals', deals);
-  renderDeals();
-  renderOverview();
+  CandidStore.remove('deals', id).then(function() {
+    _deals = _deals.filter(function(d) { return d.id !== id; });
+    renderDeals();
+    renderOverview();
+  }).catch(function() {
+    alert('Could not delete deal. Please try again.');
+  });
 }
 
 // ============================================================
@@ -748,8 +739,10 @@ document.addEventListener('DOMContentLoaded', function() {
     CandidAuth.requireAuth();
   }
 
-  // Initialize overview stats
-  renderOverview();
+  // Load all data from API/D1, then render
+  initData().then(function() {
+    switchTool('overview');
+  });
 
   // Set up search handlers
   var contactsSearch = document.getElementById('contacts-search');
@@ -787,7 +780,4 @@ document.addEventListener('DOMContentLoaded', function() {
   if (dealCompanySelect) {
     dealCompanySelect.addEventListener('change', onDealCompanyChange);
   }
-
-  // Start on overview panel
-  switchTool('overview');
 });
