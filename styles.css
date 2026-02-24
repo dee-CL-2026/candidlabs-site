@@ -995,15 +995,27 @@ a:focus-visible {
    USER MENU (Navbar Auth State)
    =========================================== */
 .user-menu {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
 }
 
+/* Trigger button: avatar + name */
 .user-info {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-md, 6px);
+  transition: background-color 0.15s;
+  color: inherit;
+}
+
+.user-info:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .user-avatar {
@@ -1011,6 +1023,7 @@ a:focus-visible {
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 .user-avatar-placeholder {
@@ -1024,6 +1037,7 @@ a:focus-visible {
   justify-content: center;
   font-weight: 600;
   font-size: 0.85rem;
+  flex-shrink: 0;
 }
 
 .user-name {
@@ -1037,6 +1051,55 @@ a:focus-visible {
   .user-name {
     display: inline;
   }
+}
+
+/* Dropdown panel */
+.user-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: var(--color-surface, #1e293b);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  border-radius: var(--radius-md, 6px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.user-dropdown--open {
+  display: block;
+}
+
+.user-dropdown-email {
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  color: var(--text-secondary, rgba(255,255,255,0.6));
+  word-break: break-all;
+}
+
+.user-dropdown-divider {
+  height: 1px;
+  background: var(--border-color, rgba(255,255,255,0.1));
+  margin: 0;
+}
+
+.user-dropdown-signout {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 0.875rem;
+  color: var(--text-primary, #fff);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.user-dropdown-signout:hover {
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 .btn-sm {

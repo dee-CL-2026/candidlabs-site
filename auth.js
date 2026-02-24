@@ -207,21 +207,48 @@ var CandidAuth = (function () {
       loginBtns.forEach(function (btn) {
         var userMenu = document.createElement('div');
         userMenu.className = 'user-menu';
-        userMenu.innerHTML =
-          '<div class="user-info">' +
-            (user.picture
-              ? '<img src="' + escapeHtml(user.picture) + '" alt="" class="user-avatar" referrerpolicy="no-referrer">'
-              : '<span class="user-avatar-placeholder">' + escapeHtml(displayInitial) + '</span>') +
-            '<span class="user-name">' + escapeHtml(firstName) + '</span>' +
-          '</div>';
+
+        // Clickable trigger: avatar + name
+        var trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'user-info';
+        trigger.setAttribute('aria-expanded', 'false');
+        trigger.innerHTML =
+          (user.picture
+            ? '<img src="' + escapeHtml(user.picture) + '" alt="" class="user-avatar" referrerpolicy="no-referrer">'
+            : '<span class="user-avatar-placeholder">' + escapeHtml(displayInitial) + '</span>') +
+          '<span class="user-name">' + escapeHtml(firstName) + '</span>';
+
+        // Dropdown panel
+        var dropdown = document.createElement('div');
+        dropdown.className = 'user-dropdown';
+        dropdown.innerHTML =
+          '<div class="user-dropdown-email">' + escapeHtml(user.email) + '</div>' +
+          '<div class="user-dropdown-divider"></div>';
 
         var signOutBtn = document.createElement('button');
         signOutBtn.type = 'button';
-        signOutBtn.className = 'btn btn-secondary btn-sm btn-signout';
+        signOutBtn.className = 'user-dropdown-signout';
         signOutBtn.textContent = 'Sign Out';
         signOutBtn.addEventListener('click', signOut);
-        userMenu.appendChild(signOutBtn);
+        dropdown.appendChild(signOutBtn);
 
+        // Toggle dropdown on trigger click
+        trigger.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var isOpen = dropdown.classList.contains('user-dropdown--open');
+          dropdown.classList.toggle('user-dropdown--open', !isOpen);
+          trigger.setAttribute('aria-expanded', String(!isOpen));
+        });
+
+        // Close on outside click
+        document.addEventListener('click', function () {
+          dropdown.classList.remove('user-dropdown--open');
+          trigger.setAttribute('aria-expanded', 'false');
+        });
+
+        userMenu.appendChild(trigger);
+        userMenu.appendChild(dropdown);
         btn.parentNode.replaceChild(userMenu, btn);
       });
 
