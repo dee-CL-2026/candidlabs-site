@@ -644,6 +644,51 @@
 }
 
 /* ============================================================
+   REASSIGN + BLOCKER
+   ============================================================ */
+
+.pm-assignee-link {
+  cursor: pointer;
+  transition: color 0.15s;
+  border-radius: 4px;
+  padding: 1px 3px;
+}
+.pm-assignee-link:hover {
+  color: var(--color-primary);
+}
+.pm-assignee-link:hover .pm-assignee-dot {
+  background: var(--color-accent);
+}
+
+.blocker-indicator {
+  font-size: 0.8rem;
+  color: var(--color-warning);
+  cursor: help;
+  margin-left: 4px;
+}
+
+.pm-blocker-note-group {
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.pm-modal-sm {
+  max-width: 380px;
+}
+
+.pm-modal-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: -12px 0 18px;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================
    SORT BUTTONS
    ============================================================ */
 

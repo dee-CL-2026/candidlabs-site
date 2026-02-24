@@ -330,11 +330,41 @@
           <label for="task-due-date">Due Date</label>
           <input type="date" id="task-due-date">
         </div>
+        <div class="pm-form-group pm-blocker-note-group" id="task-blocker-note-group" style="display:none;">
+          <label for="task-blocker-note">⚠ Blocker reason <span style="font-weight:400;color:var(--text-muted);font-size:0.8rem;">— what's stopping progress?</span></label>
+          <textarea id="task-blocker-note" placeholder="e.g. Waiting on client sign-off / dependency on TSK-012..." style="min-height:70px;"></textarea>
+          <div class="pm-blocker-actions" id="task-blocker-actions" style="display:none;margin-top:10px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer;">
+              <input type="checkbox" id="task-blocker-create-followup"> Create a follow-up task for this blocker
+            </label>
+            <div id="task-blocker-followup-group" style="display:none;margin-top:8px;">
+              <input type="text" id="task-blocker-followup-title" placeholder="Follow-up task title..." style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-primary);color:var(--text-primary);font-family:var(--font-body);font-size:0.875rem;">
+            </div>
+          </div>
+        </div>
         <div class="pm-modal-actions">
           <button type="button" class="btn-modal secondary" onclick="pmCloseModal('task-modal')">Cancel</button>
           <button type="submit" class="btn-modal primary">Save Task</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Reassign Modal -->
+  <div class="pm-modal-overlay" id="reassign-modal">
+    <div class="pm-modal pm-modal-sm" role="dialog" aria-label="Reassign task">
+      <h3>Reassign Task</h3>
+      <input type="hidden" id="reassign-task-id">
+      <p id="reassign-task-title" class="pm-modal-subtitle"></p>
+      <div class="pm-form-group">
+        <label for="reassign-assignee">Assign to</label>
+        <input type="text" id="reassign-assignee" list="reassign-assignee-list" placeholder="Type or select a name..." autocomplete="off">
+        <datalist id="reassign-assignee-list"></datalist>
+      </div>
+      <div class="pm-modal-actions">
+        <button type="button" class="btn-modal secondary" onclick="pmCloseModal('reassign-modal')">Cancel</button>
+        <button type="button" class="btn-modal primary" onclick="saveReassign()">Reassign</button>
+      </div>
     </div>
   </div>
 

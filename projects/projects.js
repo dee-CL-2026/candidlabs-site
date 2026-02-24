@@ -410,14 +410,17 @@ function renderTasks(filter) {
     var project = projects.find(function(p) { return p.id === t.projectId; });
     var projectName = project ? project.name : '-';
     var statusClass = (t.status || 'to-do').toLowerCase();
-    var statusLabel = t.status ? t.status.replace('-', ' ') : 'to do';
+    var statusLabel = t.status ? t.status.replace(/-/g, ' ') : 'to do';
     var priorityClass = (t.priority || 'medium').toLowerCase();
+    var blockerHtml = (t.status === 'blocked' && t.blockerNote)
+      ? ' <span class="blocker-indicator" title="' + pmEscapeHtml(t.blockerNote) + '">⚠</span>'
+      : '';
 
     return '<tr>' +
       '<td class="row-name">' + pmEscapeHtml(t.title) + '</td>' +
       '<td class="row-secondary">' + pmEscapeHtml(projectName) + '</td>' +
-      '<td><span class="pm-assignee"><span class="pm-assignee-dot"></span> ' + pmEscapeHtml(t.assignee || 'Unassigned') + '</span></td>' +
-      '<td><span class="task-status ' + statusClass + '">' + pmEscapeHtml(statusLabel) + '</span></td>' +
+      '<td><span class="pm-assignee pm-assignee-link" onclick="openReassignModal(\'' + t.id + '\')" title="Click to reassign"><span class="pm-assignee-dot"></span> ' + pmEscapeHtml(t.assignee || 'Unassigned') + '</span></td>' +
+      '<td><span class="task-status ' + statusClass + '">' + pmEscapeHtml(statusLabel) + '</span>' + blockerHtml + '</td>' +
       '<td><span class="task-priority ' + priorityClass + '">' + pmEscapeHtml(t.priority || 'medium') + '</span></td>' +
       '<td class="row-secondary ' + pmDueClass(t.dueDate) + '">' + pmFormatDate(t.dueDate) + '</td>' +
       '<td><div class="row-actions">' +
@@ -443,10 +446,18 @@ function filterTasksByProject() {
   renderTasks(document.getElementById('tasks-search') ? document.getElementById('tasks-search').value : '');
 }
 
+function _pmShowBlockerNote(show) {
+  var group = document.getElementById('task-blocker-note-group');
+  var actions = document.getElementById('task-blocker-actions');
+  if (group) group.style.display = show ? 'block' : 'none';
+  if (actions) actions.style.display = show ? 'block' : 'none';
+}
+
 function openAddTask() {
   document.getElementById('task-modal-title').textContent = 'Add Task';
   document.getElementById('task-form').reset();
   document.getElementById('task-edit-id').value = '';
+  _pmShowBlockerNote(false);
   populateProjectSelect('task-project');
   document.getElementById('task-modal').classList.add('active');
 }
@@ -465,6 +476,8 @@ function openEditTask(id) {
   document.getElementById('task-task-status').value = task.status || 'to-do';
   document.getElementById('task-priority').value = task.priority || 'medium';
   document.getElementById('task-due-date').value = task.dueDate || '';
+  document.getElementById('task-blocker-note').value = task.blockerNote || '';
+  _pmShowBlockerNote(task.status === 'blocked');
   document.getElementById('task-modal').classList.add('active');
 }
 
@@ -472,14 +485,16 @@ function saveTask() {
   var editId = document.getElementById('task-edit-id').value;
   var tasks = pmLoadData('tasks');
 
+  var newStatus = document.getElementById('task-task-status').value;
   var record = {
     id: editId || pmGenerateId('TSK'),
     projectId: document.getElementById('task-project').value,
     title: document.getElementById('task-title').value.trim(),
     assignee: document.getElementById('task-assignee').value.trim(),
-    status: document.getElementById('task-task-status').value,
+    status: newStatus,
     priority: document.getElementById('task-priority').value,
     dueDate: document.getElementById('task-due-date').value,
+    blockerNote: newStatus === 'blocked' ? (document.getElementById('task-blocker-note').value.trim()) : '',
     createdAt: editId ? (tasks.find(function(t) { return t.id === editId; }) || {}).createdAt : new Date().toISOString().split('T')[0]
   };
 
@@ -492,9 +507,74 @@ function saveTask() {
   }
 
   pmSaveData('tasks', tasks);
+
+  // If blocked + follow-up task requested, create it now
+  var createFollowup = document.getElementById('task-blocker-create-followup');
+  if (newStatus === 'blocked' && createFollowup && createFollowup.checked) {
+    var followupTitle = (document.getElementById('task-blocker-followup-title').value || '').trim();
+    if (followupTitle) {
+      var followupTasks = pmLoadData('tasks');
+      followupTasks.push({
+        id: pmGenerateId('TSK'),
+        projectId: record.projectId,
+        title: followupTitle,
+        assignee: record.assignee,
+        status: 'to-do',
+        priority: record.priority,
+        dueDate: '',
+        blockerNote: '',
+        createdAt: new Date().toISOString().split('T')[0]
+      });
+      pmSaveData('tasks', followupTasks);
+    }
+  }
+
   pmCloseModal('task-modal');
   renderTasks();
   renderPMOverview();
+}
+
+// ============================================================
+// REASSIGN
+// ============================================================
+
+function openReassignModal(taskId) {
+  var tasks = pmLoadData('tasks');
+  var task = tasks.find(function(t) { return t.id === taskId; });
+  if (!task) return;
+
+  document.getElementById('reassign-task-id').value = taskId;
+  document.getElementById('reassign-task-title').textContent = task.title;
+  document.getElementById('reassign-assignee').value = task.assignee || '';
+
+  // Populate datalist from all known assignees
+  var assignees = [];
+  tasks.forEach(function(t) {
+    if (t.assignee && assignees.indexOf(t.assignee) === -1) assignees.push(t.assignee);
+  });
+  assignees.sort();
+  document.getElementById('reassign-assignee-list').innerHTML =
+    assignees.map(function(a) { return '<option value="' + pmEscapeHtml(a) + '">'; }).join('');
+
+  document.getElementById('reassign-modal').classList.add('active');
+}
+
+function saveReassign() {
+  var id = document.getElementById('reassign-task-id').value;
+  var newAssignee = document.getElementById('reassign-assignee').value.trim();
+  if (!id || !newAssignee) return;
+
+  var tasks = pmLoadData('tasks');
+  tasks = tasks.map(function(t) {
+    if (t.id !== id) return t;
+    var updated = {};
+    for (var k in t) { if (t.hasOwnProperty(k)) updated[k] = t[k]; }
+    updated.assignee = newAssignee;
+    return updated;
+  });
+  pmSaveData('tasks', tasks);
+  pmCloseModal('reassign-modal');
+  renderTasks();
 }
 
 function deleteTask(id) {
@@ -673,6 +753,31 @@ document.addEventListener('DOMContentLoaded', function() {
   var taskAssigneeFilter = document.getElementById('tasks-assignee-filter');
   if (taskAssigneeFilter) {
     taskAssigneeFilter.addEventListener('change', filterTasksByAssignee);
+  }
+
+  // Show/hide blocker note field when status changes to/from blocked
+  var taskStatusSelect = document.getElementById('task-task-status');
+  if (taskStatusSelect) {
+    taskStatusSelect.addEventListener('change', function() {
+      _pmShowBlockerNote(this.value === 'blocked');
+    });
+  }
+
+  // Toggle follow-up task input when checkbox is checked
+  var blockerFollowupCb = document.getElementById('task-blocker-create-followup');
+  if (blockerFollowupCb) {
+    blockerFollowupCb.addEventListener('change', function() {
+      var fg = document.getElementById('task-blocker-followup-group');
+      if (fg) fg.style.display = this.checked ? 'block' : 'none';
+    });
+  }
+
+  // Close reassign modal on overlay click
+  var reassignModal = document.getElementById('reassign-modal');
+  if (reassignModal) {
+    reassignModal.addEventListener('click', function(e) {
+      if (e.target === reassignModal) reassignModal.classList.remove('active');
+    });
   }
 
   switchTool('overview');
