@@ -143,6 +143,9 @@
 
               <div class="crm-action-bar">
                 <input type="text" class="crm-search" id="contacts-search" placeholder="Search contacts..." aria-label="Search contacts">
+                <select class="crm-filter-select" id="contacts-company-filter" onchange="renderContacts(document.getElementById('contacts-search').value)">
+                  <option value="">All Companies</option>
+                </select>
                 <button class="btn-add" onclick="openAddContact()">+ Add Contact</button>
               </div>
 
@@ -150,9 +153,9 @@
                 <table class="crm-table">
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Company</th>
-                      <th>Role</th>
+                      <th><button class="crm-sort-btn" onclick="sortTable('contacts','name')">Name<span class="sort-arrow" id="sort-contacts-name"></span></button></th>
+                      <th><button class="crm-sort-btn" onclick="sortTable('contacts','companyName')">Company<span class="sort-arrow" id="sort-contacts-companyName"></span></button></th>
+                      <th><button class="crm-sort-btn" onclick="sortTable('contacts','role')">Role<span class="sort-arrow" id="sort-contacts-role"></span></button></th>
                       <th>Email</th>
                       <th>Phone</th>
                       <th>Actions</th>
@@ -172,6 +175,15 @@
 
               <div class="crm-action-bar">
                 <input type="text" class="crm-search" id="companies-search" placeholder="Search companies..." aria-label="Search companies">
+                <select class="crm-filter-select" id="companies-type-filter" onchange="renderCompanies(document.getElementById('companies-search').value)">
+                  <option value="">All Types</option>
+                  <option value="distributor">Distributor</option>
+                  <option value="branch">Branch</option>
+                  <option value="group">Group</option>
+                  <option value="venue">Venue</option>
+                  <option value="individual">Individual</option>
+                  <option value="partner">Partner</option>
+                </select>
                 <button class="btn-add" onclick="openAddCompany()">+ Add Company</button>
                 <button class="btn-add" onclick="openKAAForm()">KAA Form</button>
               </div>
@@ -180,10 +192,10 @@
                 <table class="crm-table">
                   <thead>
                     <tr>
-                      <th>Company</th>
-                      <th>Market</th>
-                      <th>Channel</th>
-                      <th>Status</th>
+                      <th><button class="crm-sort-btn" onclick="sortTable('companies','name')">Company<span class="sort-arrow" id="sort-companies-name"></span></button></th>
+                      <th><button class="crm-sort-btn" onclick="sortTable('companies','market')">Market<span class="sort-arrow" id="sort-companies-market"></span></button></th>
+                      <th><button class="crm-sort-btn" onclick="sortTable('companies','channel')">Channel<span class="sort-arrow" id="sort-companies-channel"></span></button></th>
+                      <th><button class="crm-sort-btn" onclick="sortTable('companies','status')">Status<span class="sort-arrow" id="sort-companies-status"></span></button></th>
                       <th>Contacts</th>
                       <th>Actions</th>
                     </tr>
@@ -200,13 +212,19 @@
                 <p>Sales pipeline and opportunity tracking</p>
               </div>
 
-              <div class="crm-filter-tabs">
-                <button class="crm-filter-tab active" data-stage="all" onclick="filterDeals('all')">All</button>
-                <button class="crm-filter-tab" data-stage="prospecting" onclick="filterDeals('prospecting')">Prospecting</button>
-                <button class="crm-filter-tab" data-stage="proposal" onclick="filterDeals('proposal')">Proposal</button>
-                <button class="crm-filter-tab" data-stage="negotiation" onclick="filterDeals('negotiation')">Negotiation</button>
-                <button class="crm-filter-tab" data-stage="closed-won" onclick="filterDeals('closed-won')">Won</button>
-                <button class="crm-filter-tab" data-stage="closed-lost" onclick="filterDeals('closed-lost')">Lost</button>
+              <div class="crm-deals-toolbar">
+                <div class="crm-filter-tabs" id="deals-filter-tabs">
+                  <button class="crm-filter-tab active" data-stage="all" onclick="filterDeals('all')">All</button>
+                  <button class="crm-filter-tab" data-stage="prospecting" onclick="filterDeals('prospecting')">Prospecting</button>
+                  <button class="crm-filter-tab" data-stage="proposal" onclick="filterDeals('proposal')">Proposal</button>
+                  <button class="crm-filter-tab" data-stage="negotiation" onclick="filterDeals('negotiation')">Negotiation</button>
+                  <button class="crm-filter-tab" data-stage="closed-won" onclick="filterDeals('closed-won')">Won</button>
+                  <button class="crm-filter-tab" data-stage="closed-lost" onclick="filterDeals('closed-lost')">Lost</button>
+                </div>
+                <div class="crm-view-toggle">
+                  <button class="crm-view-btn active" id="deals-list-btn" onclick="setDealView('list')">☰ List</button>
+                  <button class="crm-view-btn" id="deals-board-btn" onclick="setDealView('board')">⊞ Board</button>
+                </div>
               </div>
 
               <div class="crm-action-bar">
@@ -215,20 +233,26 @@
                 <button class="btn-add" onclick="openKAAForm()">KAA Form</button>
               </div>
 
-              <div class="crm-table-container">
-                <table class="crm-table">
-                  <thead>
-                    <tr>
-                      <th>Deal</th>
-                      <th>Company</th>
-                      <th>Value</th>
-                      <th>Stage</th>
-                      <th>Created</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="deals-tbody"></tbody>
-                </table>
+              <div id="deals-list-view">
+                <div class="crm-table-container">
+                  <table class="crm-table">
+                    <thead>
+                      <tr>
+                        <th><button class="crm-sort-btn" onclick="sortTable('deals','title')">Deal<span class="sort-arrow" id="sort-deals-title"></span></button></th>
+                        <th><button class="crm-sort-btn" onclick="sortTable('deals','companyName')">Company<span class="sort-arrow" id="sort-deals-companyName"></span></button></th>
+                        <th><button class="crm-sort-btn" onclick="sortTable('deals','value')">Value<span class="sort-arrow" id="sort-deals-value"></span></button></th>
+                        <th><button class="crm-sort-btn" onclick="sortTable('deals','stage')">Stage<span class="sort-arrow" id="sort-deals-stage"></span></button></th>
+                        <th><button class="crm-sort-btn" onclick="sortTable('deals','createdAt')">Created<span class="sort-arrow" id="sort-deals-createdAt"></span></button></th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="deals-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div id="deals-board-view" style="display:none;">
+                <div class="crm-kanban-board" id="deals-kanban-board"></div>
               </div>
             </div>
 

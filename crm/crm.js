@@ -31,12 +31,127 @@ function initData() {
     _contacts = results[0] || [];
     _companies = results[1] || [];
     _deals = results[2] || [];
+    _populateContactsCompanyFilter();
   });
 }
 
 function generateId(prefix) {
   const num = Date.now().toString(36).slice(-4).toUpperCase();
   return prefix + '-' + num;
+}
+
+// ============================================================
+// SORT ENGINE
+// ============================================================
+
+var _sort = {
+  contacts: { col: null, dir: 1 },
+  companies: { col: null, dir: 1 },
+  deals: { col: null, dir: 1 }
+};
+
+function sortTable(collection, col) {
+  var s = _sort[collection];
+  if (s.col === col) { s.dir *= -1; } else { s.col = col; s.dir = 1; }
+  _updateSortArrows(collection);
+  if (collection === 'contacts') renderContacts(document.getElementById('contacts-search').value);
+  else if (collection === 'companies') renderCompanies(document.getElementById('companies-search').value);
+  else if (collection === 'deals') { if (_dealView === 'board') renderDealsKanban(); else renderDeals(document.getElementById('deals-search').value); }
+}
+
+function _updateSortArrows(collection) {
+  var s = _sort[collection];
+  document.querySelectorAll('[id^="sort-' + collection + '-"]').forEach(function(el) { el.textContent = ''; });
+  if (s.col) {
+    var el = document.getElementById('sort-' + collection + '-' + s.col);
+    if (el) el.textContent = s.dir === 1 ? ' ↑' : ' ↓';
+  }
+}
+
+function _applySorted(arr, collection, resolveField) {
+  var s = _sort[collection];
+  if (!s.col) return arr.slice();
+  return arr.slice().sort(function(a, b) {
+    if (s.col === 'value') {
+      return ((parseFloat(a.value) || 0) - (parseFloat(b.value) || 0)) * s.dir;
+    }
+    var av = String(resolveField ? resolveField(a, s.col) : (a[s.col] || '')).toLowerCase();
+    var bv = String(resolveField ? resolveField(b, s.col) : (b[s.col] || '')).toLowerCase();
+    if (av < bv) return -s.dir;
+    if (av > bv) return s.dir;
+    return 0;
+  });
+}
+
+// ============================================================
+// DEALS KANBAN VIEW
+// ============================================================
+
+var _dealView = 'list';
+
+var DEAL_KANBAN_COLUMNS = [
+  { key: 'prospecting', label: 'Prospecting', color: '#64748b' },
+  { key: 'proposal',    label: 'Proposal',    color: '#1b708b' },
+  { key: 'negotiation', label: 'Negotiation', color: '#f59e0b' },
+  { key: 'closed-won',  label: 'Closed Won',  color: '#10b981' },
+  { key: 'closed-lost', label: 'Closed Lost', color: '#ef4444' }
+];
+
+function setDealView(view) {
+  _dealView = view;
+  document.getElementById('deals-list-view').style.display = view === 'list' ? '' : 'none';
+  document.getElementById('deals-board-view').style.display = view === 'board' ? '' : 'none';
+  document.getElementById('deals-list-btn').classList.toggle('active', view === 'list');
+  document.getElementById('deals-board-btn').classList.toggle('active', view === 'board');
+  document.getElementById('deals-filter-tabs').style.display = view === 'list' ? '' : 'none';
+  if (view === 'board') renderDealsKanban();
+  else renderDeals(document.getElementById('deals-search').value);
+}
+
+function renderDealsKanban() {
+  var query = (document.getElementById('deals-search').value || '').toLowerCase();
+  var deals = _deals.slice();
+  if (query) deals = deals.filter(function(d) { return d.title.toLowerCase().indexOf(query) !== -1; });
+
+  var board = document.getElementById('deals-kanban-board');
+  if (!board) return;
+
+  board.innerHTML = DEAL_KANBAN_COLUMNS.map(function(col) {
+    var colDeals = _applySorted(
+      deals.filter(function(d) { return (d.stage || 'prospecting') === col.key; }),
+      'deals',
+      function(d, key) {
+        if (key === 'companyName') { var c = _companies.find(function(co) { return co.id === d.companyId; }); return c ? c.name : ''; }
+        return d[key] || '';
+      }
+    );
+    var total = colDeals.reduce(function(s, d) { return s + (d.value || 0); }, 0);
+
+    return '<div class="crm-kanban-col">' +
+      '<div class="crm-kanban-col-header" style="border-top:3px solid ' + col.color + '">' +
+        '<span class="crm-kanban-col-dot" style="background:' + col.color + '"></span>' +
+        '<span class="crm-kanban-col-label">' + col.label + '</span>' +
+        '<span class="crm-kanban-col-count">' + colDeals.length + '</span>' +
+        (total > 0 ? '<span class="crm-kanban-col-value">' + formatIDR(total) + '</span>' : '') +
+      '</div>' +
+      '<div class="crm-kanban-col-cards">' +
+        (colDeals.length === 0
+          ? '<div class="crm-kanban-empty">No deals</div>'
+          : colDeals.map(function(d) {
+              var co = _companies.find(function(c) { return c.id === d.companyId; });
+              return '<div class="crm-kanban-card" onclick="openDetail(\'deal\',\'' + d.id + '\')">' +
+                '<div class="crm-kanban-card-title">' + escapeHtml(d.title) + '</div>' +
+                (co ? '<div class="crm-kanban-card-company">' + escapeHtml(co.name) + '</div>' : '') +
+                '<div class="crm-kanban-card-footer">' +
+                  '<span class="crm-kanban-card-value">' + formatIDR(d.value || 0) + '</span>' +
+                  '<button class="btn-row-action" onclick="event.stopPropagation();openEditDeal(\'' + d.id + '\')">Edit</button>' +
+                '</div>' +
+              '</div>';
+            }).join('')
+        ) +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function openKAAForm() {
@@ -110,17 +225,36 @@ function renderOverview() {
 // CONTACTS PANEL
 // ============================================================
 
+function _populateContactsCompanyFilter() {
+  var sel = document.getElementById('contacts-company-filter');
+  if (!sel) return;
+  var current = sel.value;
+  sel.innerHTML = '<option value="">All Companies</option>' +
+    _companies.slice().sort(function(a,b){ return a.name.localeCompare(b.name); }).map(function(co) {
+      return '<option value="' + co.id + '">' + escapeHtml(co.name) + '</option>';
+    }).join('');
+  sel.value = current;
+}
+
 function renderContacts(filter) {
-  var contacts = loadData('contacts');
   var companies = loadData('companies');
   var query = (filter || '').toLowerCase();
+  var companyFilter = (document.getElementById('contacts-company-filter') || {}).value || '';
+
+  var contacts = _applySorted(_contacts, 'contacts', function(c, key) {
+    if (key === 'companyName') { var co = companies.find(function(x) { return x.id === c.companyId; }); return co ? co.name : ''; }
+    return c[key] || '';
+  });
 
   if (query) {
     contacts = contacts.filter(function(c) {
       return c.name.toLowerCase().indexOf(query) !== -1 ||
-             c.email.toLowerCase().indexOf(query) !== -1 ||
+             (c.email || '').toLowerCase().indexOf(query) !== -1 ||
              (c.role || '').toLowerCase().indexOf(query) !== -1;
     });
+  }
+  if (companyFilter) {
+    contacts = contacts.filter(function(c) { return c.companyId === companyFilter; });
   }
 
   var tbody = document.getElementById('contacts-tbody');
@@ -256,9 +390,11 @@ function deleteContact(id) {
 // ============================================================
 
 function renderCompanies(filter) {
-  var companies = loadData('companies');
   var contacts = loadData('contacts');
   var query = (filter || '').toLowerCase();
+  var typeFilter = (document.getElementById('companies-type-filter') || {}).value || '';
+
+  var companies = _applySorted(_companies, 'companies');
 
   if (query) {
     companies = companies.filter(function(c) {
@@ -266,6 +402,9 @@ function renderCompanies(filter) {
              (c.market || '').toLowerCase().indexOf(query) !== -1 ||
              (c.channel || '').toLowerCase().indexOf(query) !== -1;
     });
+  }
+  if (typeFilter) {
+    companies = companies.filter(function(c) { return (c.type || '') === typeFilter; });
   }
 
   var tbody = document.getElementById('companies-tbody');
@@ -334,6 +473,7 @@ function saveCompany() {
     return CandidStore.load('companies');
   }).then(function(companies) {
     _companies = companies;
+    _populateContactsCompanyFilter();
     closeModal('company-modal');
     renderCompanies();
     renderOverview();
@@ -352,6 +492,7 @@ function deleteCompany(id) {
   }
   CandidStore.remove('companies', id).then(function() {
     _companies = _companies.filter(function(c) { return c.id !== id; });
+    _populateContactsCompanyFilter();
     renderCompanies();
     renderOverview();
   }).catch(function() {
@@ -366,10 +507,14 @@ function deleteCompany(id) {
 var currentDealFilter = 'all';
 
 function renderDeals(filter) {
-  var deals = loadData('deals');
   var companies = loadData('companies');
   var contacts = loadData('contacts');
   var query = (filter || '').toLowerCase();
+
+  var deals = _applySorted(_deals, 'deals', function(d, key) {
+    if (key === 'companyName') { var c = companies.find(function(co) { return co.id === d.companyId; }); return c ? c.name : ''; }
+    return d[key] || '';
+  });
 
   if (query) {
     deals = deals.filter(function(d) {
