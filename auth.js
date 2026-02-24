@@ -222,9 +222,44 @@ var CandidAuth = (function () {
         // Dropdown panel
         var dropdown = document.createElement('div');
         dropdown.className = 'user-dropdown';
-        dropdown.innerHTML =
-          '<div class="user-dropdown-email">' + escapeHtml(user.email) + '</div>' +
-          '<div class="user-dropdown-divider"></div>';
+        var isAdmin = user.role === 'admin';
+
+        // Email row
+        var emailRow = document.createElement('div');
+        emailRow.className = 'user-dropdown-email';
+        emailRow.textContent = user.email;
+        dropdown.appendChild(emailRow);
+
+        // Divider
+        var div1 = document.createElement('div');
+        div1.className = 'user-dropdown-divider';
+        dropdown.appendChild(div1);
+
+        // Admin section: Testing / Roadmap / Admin
+        var adminItems = [
+          { label: 'Testing',  href: '/testing.html' },
+          { label: 'Roadmap',  href: '/roadmap.html' },
+          { label: 'Admin',    href: '/admin/users.html' }
+        ];
+        adminItems.forEach(function (item) {
+          var el;
+          if (isAdmin) {
+            el = document.createElement('a');
+            el.href = item.href;
+            el.className = 'user-dropdown-link';
+          } else {
+            el = document.createElement('span');
+            el.className = 'user-dropdown-link user-dropdown-link--locked';
+            el.setAttribute('title', 'Admin access required');
+          }
+          el.textContent = item.label;
+          dropdown.appendChild(el);
+        });
+
+        // Divider before sign out
+        var div2 = document.createElement('div');
+        div2.className = 'user-dropdown-divider';
+        dropdown.appendChild(div2);
 
         var signOutBtn = document.createElement('button');
         signOutBtn.type = 'button';
