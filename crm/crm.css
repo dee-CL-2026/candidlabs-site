@@ -814,3 +814,35 @@
   .crm-detail-drawer { width: 100vw; }
   .crm-detail-fields { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   INLINE COMPANY CREATION in contact modal
+   ============================================================ */
+
+.crm-inline-company {
+  background: var(--bg-primary);
+  border: 1px dashed var(--color-primary);
+  border-radius: 8px;
+  padding: 14px 16px 4px;
+  margin-bottom: 16px;
+  animation: slideInInline 0.18s ease;
+}
+@keyframes slideInInline {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+.crm-inline-company-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.crm-inline-company-header::before {
+  content: '＋';
+  font-size: 0.9rem;
+}

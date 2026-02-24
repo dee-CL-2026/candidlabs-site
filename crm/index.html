@@ -267,11 +267,41 @@
           </div>
           <div class="crm-form-group">
             <label for="contact-company">Company</label>
-            <select id="contact-company">
+            <select id="contact-company" onchange="onContactCompanySelectChange()">
               <option value="">-- Select Company --</option>
             </select>
           </div>
         </div>
+
+        <!-- Inline new-company form — shown when '＋ New company' is selected -->
+        <div class="crm-inline-company" id="inline-new-company" style="display:none;">
+          <div class="crm-inline-company-header">
+            <span>New company details</span>
+          </div>
+          <div class="crm-form-group">
+            <label for="inline-company-name">Company Name *</label>
+            <input type="text" id="inline-company-name" placeholder="e.g. PT Sinar Mas">
+          </div>
+          <div class="crm-form-row">
+            <div class="crm-form-group">
+              <label for="inline-company-market">Market</label>
+              <input type="text" id="inline-company-market" placeholder="e.g. Jakarta">
+            </div>
+            <div class="crm-form-group">
+              <label for="inline-company-channel">Channel</label>
+              <select id="inline-company-channel">
+                <option value="">-- Select --</option>
+                <option value="Distributor">Distributor</option>
+                <option value="Horeca">Horeca</option>
+                <option value="Modern Trade">Modern Trade</option>
+                <option value="Direct">Direct</option>
+                <option value="Export">Export</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         <div class="crm-form-group">
           <label for="contact-notes">Notes</label>
           <textarea id="contact-notes" placeholder="Additional notes..."></textarea>

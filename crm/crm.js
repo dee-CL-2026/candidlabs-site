@@ -171,6 +171,7 @@ function openAddContact() {
   document.getElementById('contact-modal-title').textContent = 'Add Contact';
   document.getElementById('contact-form').reset();
   document.getElementById('contact-edit-id').value = '';
+  document.getElementById('inline-new-company').style.display = 'none';
   populateCompanySelect('contact-company');
   document.getElementById('contact-modal').classList.add('active');
 }
@@ -195,6 +196,34 @@ function openEditContact(id) {
 function saveContact() {
   var editId = document.getElementById('contact-edit-id').value;
   var contacts = loadData('contacts');
+  var companySelectVal = document.getElementById('contact-company').value;
+
+  // Handle inline new company creation
+  if (companySelectVal === '__new__') {
+    var newCompanyName = (document.getElementById('inline-company-name') || {}).value || '';
+    newCompanyName = newCompanyName.trim();
+    if (!newCompanyName) {
+      document.getElementById('inline-company-name').focus();
+      document.getElementById('inline-company-name').style.borderColor = 'var(--color-error)';
+      return;
+    }
+    // Create the company first
+    var newCompany = {
+      id: generateId('CMP'),
+      name: newCompanyName,
+      market: (document.getElementById('inline-company-market') || {}).value || '',
+      channel: (document.getElementById('inline-company-channel') || {}).value || '',
+      status: 'lead',
+      notes: '',
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    var companies = loadData('companies');
+    companies.push(newCompany);
+    saveData('companies', companies);
+    companySelectVal = newCompany.id;
+    // Reset inline form
+    document.getElementById('inline-new-company').style.display = 'none';
+  }
 
   var record = {
     id: editId || generateId('CON'),
@@ -202,7 +231,7 @@ function saveContact() {
     email: document.getElementById('contact-email').value.trim(),
     phone: document.getElementById('contact-phone').value.trim(),
     role: document.getElementById('contact-role').value.trim(),
-    companyId: document.getElementById('contact-company').value,
+    companyId: companySelectVal || '',
     notes: document.getElementById('contact-notes').value.trim(),
     createdAt: editId ? (contacts.find(function(c) { return c.id === editId; }) || {}).createdAt : new Date().toISOString().split('T')[0]
   };
@@ -218,6 +247,7 @@ function saveContact() {
   saveData('contacts', contacts);
   closeModal('contact-modal');
   renderContacts();
+  renderCompanies();
   renderOverview();
 }
 
@@ -471,7 +501,21 @@ function populateCompanySelect(selectId) {
   select.innerHTML = '<option value="">-- Select Company --</option>' +
     companies.map(function(co) {
       return '<option value="' + co.id + '">' + escapeHtml(co.name) + '</option>';
-    }).join('');
+    }).join('') +
+    '<option value="__new__" style="color:var(--color-primary);font-weight:600;">＋ Create new company…</option>';
+}
+
+function onContactCompanySelectChange() {
+  var val = document.getElementById('contact-company').value;
+  var inlineForm = document.getElementById('inline-new-company');
+  if (!inlineForm) return;
+  if (val === '__new__') {
+    inlineForm.style.display = '';
+    var nameInput = document.getElementById('inline-company-name');
+    if (nameInput) nameInput.focus();
+  } else {
+    inlineForm.style.display = 'none';
+  }
 }
 
 function populateContactSelect(selectId, companyId) {

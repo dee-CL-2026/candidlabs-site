@@ -26,21 +26,21 @@ const COLLECTIONS = {
     table: 'contacts',
     prefix: 'CON',
     required: ['name'],
-    columns: ['id', 'name', 'email', 'phone', 'role', 'company_id', 'notes', 'created_at', 'updated_at'],
+    columns: ['id', 'name', 'email', 'phone', 'role', 'company_id', 'notes', 'meta', 'created_at', 'updated_at'],
     searchable: ['name', 'email', 'role']
   },
   companies: {
     table: 'companies',
     prefix: 'CMP',
     required: ['name'],
-    columns: ['id', 'name', 'market', 'channel', 'status', 'notes', 'created_at', 'updated_at'],
+    columns: ['id', 'name', 'market', 'channel', 'status', 'notes', 'meta', 'created_at', 'updated_at'],
     searchable: ['name', 'market', 'channel']
   },
   deals: {
     table: 'deals',
     prefix: 'DL',
     required: ['title'],
-    columns: ['id', 'title', 'company_id', 'contact_id', 'value', 'stage', 'notes', 'created_at', 'updated_at'],
+    columns: ['id', 'title', 'company_id', 'contact_id', 'value', 'stage', 'notes', 'meta', 'created_at', 'updated_at'],
     searchable: ['title']
   },
   projects: {
@@ -49,7 +49,7 @@ const COLLECTIONS = {
     required: ['name'],
     columns: ['id', 'name', 'description', 'owner', 'status', 'start_date', 'due_date',
               'project_type', 'owner_team', 'visible_to_roles', 'visible_to_teams',
-              'visibility_mode', 'org_id', 'branch_id', 'external_org_id', 'created_at', 'updated_at'],
+              'visibility_mode', 'org_id', 'branch_id', 'external_org_id', 'meta', 'created_at', 'updated_at'],
     searchable: ['name', 'owner']
   },
   tasks: {
@@ -57,7 +57,7 @@ const COLLECTIONS = {
     prefix: 'TSK',
     required: ['title'],
     columns: ['id', 'title', 'project_id', 'assignee', 'status', 'priority', 'due_date',
-              'owner_team', 'visible_to_roles', 'visible_to_teams', 'created_at', 'updated_at'],
+              'owner_team', 'visible_to_roles', 'visible_to_teams', 'meta', 'created_at', 'updated_at'],
     searchable: ['title', 'assignee']
   }
 };
