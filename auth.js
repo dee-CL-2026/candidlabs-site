@@ -23,7 +23,7 @@ var CandidAuth = (function () {
 
   var STORAGE_KEY = 'candidlabs_auth';
   var API_ME = '/api/me';
-  var CF_LOGOUT_URL = 'https://torque-mac.cloudflareaccess.com/cdn-cgi/access/logout';
+  var CF_LOGOUT_URL = 'https://candidlabs.cloudflareaccess.com/cdn-cgi/access/logout';
 
   // ─── State ────────────────────────────────────────────────────────────────
 
