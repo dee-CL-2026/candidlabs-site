@@ -71,9 +71,16 @@
       background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
-      transition: border-color var(--transition-fast);
+      transition: border-color var(--transition-fast), transform var(--transition-fast);
+      text-decoration: none;
+      color: inherit;
+      display: block;
     }
-    .home-stat:hover { border-color: var(--color-primary); }
+    .home-stat:hover {
+      border-color: var(--color-primary);
+      transform: translateY(-2px);
+      color: inherit;
+    }
     .home-stat-value {
       font-family: var(--font-display);
       font-size: 1.75rem;
@@ -183,6 +190,53 @@
       font-size: 0.9rem;
     }
 
+    /* About / Intro — signed-out only */
+    .home-about {
+      max-width: 760px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .home-about h2 {
+      margin-bottom: var(--space-sm);
+    }
+    .home-about > p {
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-xl);
+      line-height: 1.7;
+    }
+    .home-capabilities {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-md);
+      text-align: left;
+    }
+    @media (min-width: 640px) {
+      .home-capabilities { grid-template-columns: repeat(4, 1fr); }
+    }
+    .home-capability {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: var(--space-md);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      gap: var(--space-sm);
+    }
+    .home-capability-icon { font-size: 1.75rem; }
+    .home-capability strong {
+      font-size: 0.95rem;
+      color: var(--text-primary);
+    }
+    .home-capability p {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin: 0;
+      line-height: 1.5;
+    }
+
     /* Login prompt for signed-out state */
     .home-login-prompt {
       text-align: center;
@@ -270,21 +324,53 @@
 
         <!-- Quick stats — visible when signed in -->
         <div class="home-stats" id="home-stats" data-auth-hide="signed-out">
-          <div class="home-stat">
+          <a href="crm/index.html" class="home-stat">
             <div class="home-stat-value" id="hs-pipeline">--</div>
             <div class="home-stat-label">Pipeline</div>
-          </div>
-          <div class="home-stat">
+          </a>
+          <a href="crm/index.html" class="home-stat">
             <div class="home-stat-value" id="hs-deals">--</div>
             <div class="home-stat-label">Active Deals</div>
-          </div>
-          <div class="home-stat">
+          </a>
+          <a href="projects/index.html" class="home-stat">
             <div class="home-stat-value" id="hs-projects">--</div>
             <div class="home-stat-label">Active Projects</div>
-          </div>
-          <div class="home-stat">
+          </a>
+          <a href="projects/index.html" class="home-stat">
             <div class="home-stat-value" id="hs-tasks">--</div>
             <div class="home-stat-label">Open Tasks</div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Signed-out: what is candidlabs? -->
+    <section class="section" data-auth-hide="signed-in">
+      <div class="container">
+        <div class="home-about">
+          <h2>What is Candidlabs?</h2>
+          <p>Candidlabs is Candid Mixers' internal business platform — bringing production, sales, and financial operations together in one place.</p>
+          <div class="home-capabilities">
+            <div class="home-capability">
+              <span class="home-capability-icon">📇</span>
+              <strong>CRM</strong>
+              <p>Contacts, companies, and deal pipeline management.</p>
+            </div>
+            <div class="home-capability">
+              <span class="home-capability-icon">📋</span>
+              <strong>Projects</strong>
+              <p>Task tracking, assignments, and team progress.</p>
+            </div>
+            <div class="home-capability">
+              <span class="home-capability-icon">📊</span>
+              <strong>Reports</strong>
+              <p>Management dashboards and performance analytics.</p>
+            </div>
+            <div class="home-capability">
+              <span class="home-capability-icon">🛠</span>
+              <strong>Tools</strong>
+              <p>KAA Generator, Quote Generator, and production utilities.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -296,59 +382,6 @@
         <div class="home-login-prompt">
           <p>Sign in with your Candid Mixers Google account to access the platform.</p>
           <a href="login.html" class="btn btn-primary">Sign In</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- Signed-in: module cards -->
-    <section class="section" data-auth-hide="signed-out" aria-labelledby="modules-title">
-      <div class="container">
-        <h2 id="modules-title" style="margin-bottom: var(--space-lg);">Your Tools</h2>
-        <div class="home-modules" id="home-modules">
-          <!-- Everyone sees: CRM, Reports, Tools -->
-          <a href="crm/index.html" class="module-card">
-            <div class="module-card-icon">📇</div>
-            <div class="module-card-title">CRM</div>
-            <div class="module-card-desc">Contacts, companies, and deal pipeline management for the sales team.</div>
-            <div class="module-card-arrow">Open CRM &rarr;</div>
-          </a>
-
-          <a href="reports.html" class="module-card">
-            <div class="module-card-icon">📊</div>
-            <div class="module-card-title">Reports & Analytics</div>
-            <div class="module-card-desc">Management overview, sales performance, and operational dashboards.</div>
-            <div class="module-card-arrow">View Reports &rarr;</div>
-          </a>
-
-          <a href="tools.html" class="module-card">
-            <div class="module-card-icon">🛠</div>
-            <div class="module-card-title">Tools</div>
-            <div class="module-card-desc">KAA Generator, Quote Generator, and other production-ready utilities.</div>
-            <div class="module-card-arrow">Open Tools &rarr;</div>
-          </a>
-
-          <!-- Team+ sees: Projects, Roadmap -->
-          <a href="projects/index.html" class="module-card" data-auth-role="team">
-            <div class="module-card-icon">📋</div>
-            <div class="module-card-title">Projects</div>
-            <div class="module-card-desc">Project tracking, task management, and team assignments across the business.</div>
-            <div class="module-card-arrow">Open Projects &rarr;</div>
-          </a>
-
-          <a href="roadmap.html" class="module-card" data-auth-role="team">
-            <div class="module-card-icon">🗺</div>
-            <div class="module-card-title">Roadmap</div>
-            <div class="module-card-desc">Tool status matrix, launch progress, and GAS migration priorities.</div>
-            <div class="module-card-arrow">View Roadmap &rarr;</div>
-          </a>
-
-          <!-- Admin sees: Budget -->
-          <a href="budget.html" class="module-card" data-auth-role="admin">
-            <div class="module-card-icon">💰</div>
-            <div class="module-card-title">Budget Planner</div>
-            <div class="module-card-desc">2026 budget planning with historical actuals and scenario analysis.</div>
-            <div class="module-card-arrow">Open Budget &rarr;</div>
-          </a>
         </div>
       </div>
     </section>
