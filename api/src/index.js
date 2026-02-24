@@ -33,14 +33,14 @@ const COLLECTIONS = {
     table: 'companies',
     prefix: 'CMP',
     required: ['name'],
-    columns: ['id', 'name', 'market', 'channel', 'status', 'notes', 'meta', 'created_at', 'updated_at'],
+    columns: ['id', 'name', 'type', 'parent_id', 'market', 'channel', 'status', 'notes', 'meta', 'created_at', 'updated_at'],
     searchable: ['name', 'market', 'channel']
   },
   deals: {
     table: 'deals',
     prefix: 'DL',
     required: ['title'],
-    columns: ['id', 'title', 'company_id', 'contact_id', 'value', 'stage', 'notes', 'meta', 'created_at', 'updated_at'],
+    columns: ['id', 'title', 'company_id', 'contact_id', 'value', 'stage', 'channel_type', 'notes', 'meta', 'created_at', 'updated_at'],
     searchable: ['title']
   },
   projects: {
