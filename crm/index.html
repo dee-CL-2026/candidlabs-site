@@ -385,6 +385,36 @@
     </div>
   </div>
 
+  <!-- Detail Drawer Backdrop -->
+  <div class="crm-detail-backdrop" id="detail-backdrop" onclick="closeDetail()"></div>
+
+  <!-- Detail Drawer -->
+  <aside class="crm-detail-drawer" id="detail-drawer" role="complementary" aria-label="Record details">
+    <div class="crm-detail-header">
+      <div class="crm-detail-header-left">
+        <h2 id="detail-title">—</h2>
+        <div class="crm-detail-meta" id="detail-meta"></div>
+      </div>
+      <div class="crm-detail-header-actions">
+        <button class="btn-detail-edit" id="detail-edit-btn" onclick="openDetailEdit()">Edit</button>
+        <button class="btn-detail-close" onclick="closeDetail()" aria-label="Close">&#10005;</button>
+      </div>
+    </div>
+    <div class="crm-detail-fields" id="detail-fields"></div>
+    <div class="crm-detail-comments">
+      <div class="crm-comments-header">Activity &amp; Comments</div>
+      <div class="crm-comments-list" id="detail-comments-list">
+        <p class="crm-comment-empty">Loading…</p>
+      </div>
+      <div class="crm-comment-composer">
+        <textarea id="detail-comment-input" placeholder="Add a comment or note…" rows="2"></textarea>
+        <div class="crm-comment-composer-actions">
+          <button class="btn-post-comment" id="detail-comment-submit" onclick="submitDetailComment()">Post</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
   <!-- Footer -->
   <footer class="footer">
     <div class="container">

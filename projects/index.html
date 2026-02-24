@@ -167,41 +167,62 @@
             <!-- TASKS PANEL -->
             <div class="tool-panel" id="tool-tasks">
               <div class="tool-panel-header">
-                <h2>Tasks</h2>
-                <p>All tasks across projects</p>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                  <div>
+                    <h2>Tasks</h2>
+                    <p>All tasks across projects</p>
+                  </div>
+                  <div class="pm-view-toggle">
+                    <button class="pm-view-btn active" id="tasks-view-list" onclick="setTaskView('list')" title="List view">&#9776; List</button>
+                    <button class="pm-view-btn" id="tasks-view-kanban" onclick="setTaskView('kanban')" title="Kanban view">&#9638; Board</button>
+                  </div>
+                </div>
               </div>
 
-              <div class="pm-filter-tabs">
-                <button class="pm-filter-tab active" data-status="all" onclick="filterTasks('all')">All</button>
-                <button class="pm-filter-tab" data-status="to-do" onclick="filterTasks('to-do')">To Do</button>
-                <button class="pm-filter-tab" data-status="in-progress" onclick="filterTasks('in-progress')">In Progress</button>
-                <button class="pm-filter-tab" data-status="done" onclick="filterTasks('done')">Done</button>
-                <button class="pm-filter-tab" data-status="blocked" onclick="filterTasks('blocked')">Blocked</button>
+              <div id="tasks-list-view">
+                <div class="pm-filter-tabs">
+                  <button class="pm-filter-tab active" data-status="all" onclick="filterTasks('all')">All</button>
+                  <button class="pm-filter-tab" data-status="to-do" onclick="filterTasks('to-do')">To Do</button>
+                  <button class="pm-filter-tab" data-status="in-progress" onclick="filterTasks('in-progress')">In Progress</button>
+                  <button class="pm-filter-tab" data-status="done" onclick="filterTasks('done')">Done</button>
+                  <button class="pm-filter-tab" data-status="blocked" onclick="filterTasks('blocked')">Blocked</button>
+                </div>
+
+                <div class="pm-action-bar">
+                  <input type="text" class="pm-search" id="tasks-search" placeholder="Search tasks..." aria-label="Search tasks">
+                  <select class="pm-search" id="task-project-filter" aria-label="Filter by project" style="flex:0 0 auto; min-width:180px;">
+                    <option value="all">All Projects</option>
+                  </select>
+                  <button class="btn-add" onclick="openAddTask()">+ Add Task</button>
+                </div>
+
+                <div class="pm-table-container">
+                  <table class="pm-table">
+                    <thead>
+                      <tr>
+                        <th>Task</th>
+                        <th>Project</th>
+                        <th>Assignee</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Due Date</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tasks-tbody"></tbody>
+                  </table>
+                </div>
               </div>
 
-              <div class="pm-action-bar">
-                <input type="text" class="pm-search" id="tasks-search" placeholder="Search tasks..." aria-label="Search tasks">
-                <select class="pm-search" id="task-project-filter" aria-label="Filter by project" style="flex:0 0 auto; min-width:180px;">
-                  <option value="all">All Projects</option>
-                </select>
-                <button class="btn-add" onclick="openAddTask()">+ Add Task</button>
-              </div>
-
-              <div class="pm-table-container">
-                <table class="pm-table">
-                  <thead>
-                    <tr>
-                      <th>Task</th>
-                      <th>Project</th>
-                      <th>Assignee</th>
-                      <th>Status</th>
-                      <th>Priority</th>
-                      <th>Due Date</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tasks-tbody"></tbody>
-                </table>
+              <!-- Kanban Board -->
+              <div id="tasks-kanban-view" style="display:none;">
+                <div class="pm-action-bar" style="margin-bottom:0;">
+                  <select class="pm-search" id="kanban-project-filter" aria-label="Filter by project" style="flex:0 0 auto; min-width:180px;" onchange="renderTasksKanban()">
+                    <option value="all">All Projects</option>
+                  </select>
+                  <button class="btn-add" onclick="openAddTask()">+ Add Task</button>
+                </div>
+                <div class="kanban-board" id="kanban-board"></div>
               </div>
             </div>
 

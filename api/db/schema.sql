@@ -76,6 +76,18 @@ CREATE TABLE IF NOT EXISTS tasks (
   updated_at TEXT DEFAULT (datetime('now'))
 );
 
+-- CRM: Comments (on contacts, companies, or deals)
+CREATE TABLE IF NOT EXISTS comments (
+  id TEXT PRIMARY KEY,
+  record_type TEXT NOT NULL,   -- 'contact' | 'company' | 'deal'
+  record_id TEXT NOT NULL,
+  author_email TEXT NOT NULL,
+  author_name TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_contacts_company ON contacts(company_id);
 CREATE INDEX IF NOT EXISTS idx_deals_company ON deals(company_id);
@@ -84,3 +96,4 @@ CREATE INDEX IF NOT EXISTS idx_deals_stage ON deals(stage);
 CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
+CREATE INDEX IF NOT EXISTS idx_comments_record ON comments(record_type, record_id);

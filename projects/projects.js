@@ -426,6 +426,98 @@ function deleteTask(id) {
 }
 
 // ============================================================
+// KANBAN VIEW
+// ============================================================
+
+var _taskView = 'list'; // 'list' | 'kanban'
+
+var KANBAN_COLUMNS = [
+  { status: 'to-do',       label: 'To Do',       color: '#64748b' },
+  { status: 'in-progress', label: 'In Progress',  color: '#1b708b' },
+  { status: 'blocked',     label: 'Blocked',      color: '#ef4444' },
+  { status: 'done',        label: 'Done',         color: '#10b981' }
+];
+
+function setTaskView(view) {
+  _taskView = view;
+  document.getElementById('tasks-list-view').style.display = view === 'list' ? '' : 'none';
+  document.getElementById('tasks-kanban-view').style.display = view === 'kanban' ? '' : 'none';
+  document.getElementById('tasks-view-list').classList.toggle('active', view === 'list');
+  document.getElementById('tasks-view-kanban').classList.toggle('active', view === 'kanban');
+  if (view === 'kanban') {
+    populateKanbanProjectFilter();
+    renderTasksKanban();
+  }
+}
+
+function populateKanbanProjectFilter() {
+  var projects = pmLoadData('projects');
+  var select = document.getElementById('kanban-project-filter');
+  if (!select) return;
+  var current = select.value;
+  select.innerHTML = '<option value="all">All Projects</option>' +
+    projects.map(function(p) {
+      return '<option value="' + p.id + '">' + pmEscapeHtml(p.name) + '</option>';
+    }).join('');
+  if (current) select.value = current;
+}
+
+function renderTasksKanban() {
+  var tasks = pmLoadData('tasks');
+  var projects = pmLoadData('projects');
+  var board = document.getElementById('kanban-board');
+  if (!board) return;
+
+  var projectFilter = (document.getElementById('kanban-project-filter') || {}).value || 'all';
+  if (projectFilter !== 'all') {
+    tasks = tasks.filter(function(t) { return t.projectId === projectFilter; });
+  }
+
+  board.innerHTML = KANBAN_COLUMNS.map(function(col) {
+    var colTasks = tasks.filter(function(t) { return t.status === col.status; });
+    var cards = colTasks.map(function(t) {
+      var project = projects.find(function(p) { return p.id === t.projectId; });
+      var dueClass = '';
+      if (t.dueDate) {
+        var due = new Date(t.dueDate);
+        var now = new Date();
+        var diff = (due - now) / 86400000;
+        if (diff < 0) dueClass = 'due-overdue';
+        else if (diff <= 3) dueClass = 'due-soon';
+      }
+      var priorityColors = { high: '#ef4444', medium: '#f59e0b', low: '#10b981' };
+      var pc = priorityColors[t.priority] || '#64748b';
+      return '<div class="kanban-card" onclick="openEditTask(\'' + t.id + '\')">' +
+        '<div class="kanban-card-priority" style="background:' + pc + '" title="' + pmEscapeHtml(t.priority || 'medium') + '"></div>' +
+        '<div class="kanban-card-body">' +
+          '<div class="kanban-card-title">' + pmEscapeHtml(t.title) + '</div>' +
+          (project ? '<div class="kanban-card-project">' + pmEscapeHtml(project.name) + '</div>' : '') +
+          '<div class="kanban-card-footer">' +
+            (t.assignee ? '<span class="kanban-assignee">' + pmEscapeHtml(t.assignee.split(' ')[0]) + '</span>' : '<span></span>') +
+            (t.dueDate ? '<span class="kanban-due ' + dueClass + '">' + formatKanbanDate(t.dueDate) + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    return '<div class="kanban-column">' +
+      '<div class="kanban-col-header">' +
+        '<span class="kanban-col-dot" style="background:' + col.color + '"></span>' +
+        '<span class="kanban-col-label">' + col.label + '</span>' +
+        '<span class="kanban-col-count">' + colTasks.length + '</span>' +
+      '</div>' +
+      '<div class="kanban-col-cards">' + (cards || '<div class="kanban-empty">No tasks</div>') + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function formatKanbanDate(dateStr) {
+  if (!dateStr) return '';
+  var d = new Date(dateStr);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+// ============================================================
 // SELECT HELPERS
 // ============================================================
 
@@ -462,10 +554,9 @@ function pmEscapeHtml(str) {
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-  // TODO: Re-enable when Google OAuth is configured
-  // if (typeof CandidAuth !== 'undefined') {
-  //   CandidAuth.requireAuth();
-  // }
+  if (typeof CandidAuth !== 'undefined') {
+    CandidAuth.requireAuth();
+  }
 
   renderPMOverview();
 

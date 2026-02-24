@@ -5,4 +5,4 @@ compatibility_date = "2026-02-18"
 [[d1_databases]]
 binding = "DB"
 database_name = "candidlabs"
-database_id = "TODO_CREATE_WITH_WRANGLER"
+database_id = "ab4a73ca-5285-4aac-93c2-c45209ef0db2"

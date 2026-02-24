@@ -153,7 +153,7 @@ function renderContacts(filter) {
     var company = companies.find(function(co) { return co.id === c.companyId; });
     var companyName = company ? company.name : '-';
     return '<tr>' +
-      '<td class="row-name">' + escapeHtml(c.name) + '</td>' +
+      '<td class="row-name"><button class="row-name-link" onclick="openDetail(\'contact\',\'' + c.id + '\')">' + escapeHtml(c.name) + '</button></td>' +
       '<td class="row-secondary">' + escapeHtml(companyName) + '</td>' +
       '<td class="row-secondary">' + escapeHtml(c.role || '-') + '</td>' +
       '<td class="row-secondary">' + escapeHtml(c.email) + '</td>' +
@@ -261,7 +261,7 @@ function renderCompanies(filter) {
     var numContacts = contacts.filter(function(c) { return c.companyId === co.id; }).length;
     var statusClass = (co.status || 'active').toLowerCase();
     return '<tr>' +
-      '<td class="row-name">' + escapeHtml(co.name) + '</td>' +
+      '<td class="row-name"><button class="row-name-link" onclick="openDetail(\'company\',\'' + co.id + '\')">' + escapeHtml(co.name) + '</button></td>' +
       '<td class="row-secondary">' + escapeHtml(co.market || '-') + '</td>' +
       '<td class="row-secondary">' + escapeHtml(co.channel || '-') + '</td>' +
       '<td><span class="crm-status ' + statusClass + '">' + escapeHtml(co.status || 'active') + '</span></td>' +
@@ -374,7 +374,7 @@ function renderDeals(filter) {
     var stageClass = (d.stage || '').toLowerCase();
     var stageLabel = d.stage ? d.stage.replace('-', ' ') : '-';
     return '<tr>' +
-      '<td class="row-name">' + escapeHtml(d.title) + '</td>' +
+      '<td class="row-name"><button class="row-name-link" onclick="openDetail(\'deal\',\'' + d.id + '\')">' + escapeHtml(d.title) + '</button></td>' +
       '<td class="row-secondary">' + escapeHtml(companyName) + '</td>' +
       '<td class="deal-value">' + formatIDR(d.value || 0) + '</td>' +
       '<td><span class="crm-stage ' + stageClass + '">' + escapeHtml(stageLabel) + '</span></td>' +
@@ -512,6 +512,180 @@ function escapeHtml(str) {
 }
 
 // ============================================================
+// ============================================================
+// DETAIL DRAWER — record view + comments
+// ============================================================
+
+var _detailState = { type: null, id: null };
+
+function openDetail(type, id) {
+  var contacts = loadData('contacts');
+  var companies = loadData('companies');
+  var deals = loadData('deals');
+  var record;
+
+  _detailState = { type: type, id: id };
+
+  if (type === 'contact') {
+    record = contacts.find(function(c) { return c.id === id; });
+    if (!record) return;
+    var company = companies.find(function(co) { return co.id === record.companyId; });
+    document.getElementById('detail-title').textContent = record.name;
+    document.getElementById('detail-meta').innerHTML =
+      '<span class="badge badge-type">Contact</span>' +
+      (record.role ? '<span class="meta-text">' + escapeHtml(record.role) + '</span>' : '') +
+      (company ? '<span class="meta-text">· ' + escapeHtml(company.name) + '</span>' : '');
+    document.getElementById('detail-fields').innerHTML =
+      field('Email', record.email ? '<a href="mailto:' + escapeHtml(record.email) + '">' + escapeHtml(record.email) + '</a>' : '—') +
+      field('Phone', record.phone || '—') +
+      field('Company', company ? escapeHtml(company.name) : '—') +
+      field('Role', record.role || '—') +
+      field('Added', formatDate(record.createdAt)) +
+      (record.notes ? '<div class="crm-detail-field full-width">' + fieldLabel('Notes') + '<div class="crm-detail-field-value">' + escapeHtml(record.notes) + '</div></div>' : '');
+
+  } else if (type === 'company') {
+    record = companies.find(function(c) { return c.id === id; });
+    if (!record) return;
+    var contactCount = contacts.filter(function(c) { return c.companyId === id; }).length;
+    var dealCount = deals.filter(function(d) { return d.companyId === id; }).length;
+    document.getElementById('detail-title').textContent = record.name;
+    document.getElementById('detail-meta').innerHTML =
+      '<span class="badge badge-type">Company</span>' +
+      '<span class="badge badge-status">' + escapeHtml(record.status || 'lead') + '</span>';
+    document.getElementById('detail-fields').innerHTML =
+      field('Market', record.market || '—') +
+      field('Channel', record.channel || '—') +
+      field('Status', record.status || '—') +
+      field('Contacts', contactCount) +
+      field('Deals', dealCount) +
+      field('Added', formatDate(record.createdAt)) +
+      (record.notes ? '<div class="crm-detail-field full-width">' + fieldLabel('Notes') + '<div class="crm-detail-field-value">' + escapeHtml(record.notes) + '</div></div>' : '');
+
+  } else if (type === 'deal') {
+    record = deals.find(function(d) { return d.id === id; });
+    if (!record) return;
+    var company = companies.find(function(co) { return co.id === record.companyId; });
+    var contact = contacts.find(function(c) { return c.id === record.contactId; });
+    document.getElementById('detail-title').textContent = record.title;
+    document.getElementById('detail-meta').innerHTML =
+      '<span class="badge badge-type">Deal</span>' +
+      '<span class="meta-text">' + formatIDR(record.value || 0) + '</span>' +
+      '<span class="meta-text">· ' + escapeHtml(record.stage || 'prospecting') + '</span>';
+    document.getElementById('detail-fields').innerHTML =
+      field('Company', company ? escapeHtml(company.name) : '—') +
+      field('Contact', contact ? escapeHtml(contact.name) : '—') +
+      field('Value', formatIDR(record.value || 0)) +
+      field('Stage', record.stage || '—') +
+      field('Created', formatDate(record.createdAt)) +
+      (record.notes ? '<div class="crm-detail-field full-width">' + fieldLabel('Notes') + '<div class="crm-detail-field-value">' + escapeHtml(record.notes) + '</div></div>' : '');
+  }
+
+  document.getElementById('detail-drawer').classList.add('active');
+  document.getElementById('detail-backdrop').classList.add('active');
+  document.getElementById('detail-comment-input').value = '';
+  loadDetailComments(type, id);
+}
+
+function field(label, valueHtml) {
+  return '<div class="crm-detail-field">' + fieldLabel(label) + '<div class="crm-detail-field-value">' + valueHtml + '</div></div>';
+}
+function fieldLabel(label) {
+  return '<div class="crm-detail-field-label">' + escapeHtml(label) + '</div>';
+}
+
+function closeDetail() {
+  document.getElementById('detail-drawer').classList.remove('active');
+  document.getElementById('detail-backdrop').classList.remove('active');
+  _detailState = { type: null, id: null };
+}
+
+function openDetailEdit() {
+  var type = _detailState.type;
+  var id = _detailState.id;
+  closeDetail();
+  if (type === 'contact') openEditContact(id);
+  else if (type === 'company') openEditCompany(id);
+  else if (type === 'deal') openEditDeal(id);
+}
+
+function loadDetailComments(type, id) {
+  var list = document.getElementById('detail-comments-list');
+  list.innerHTML = '<p class="crm-comment-empty">Loading…</p>';
+  if (typeof CandidStore === 'undefined' || !CandidStore.loadComments) {
+    list.innerHTML = '<p class="crm-comment-empty">Comments require the API to be available.</p>';
+    return;
+  }
+  CandidStore.loadComments(type, id).then(function(comments) {
+    renderDetailComments(comments, type, id);
+  }).catch(function() {
+    list.innerHTML = '<p class="crm-comment-empty">Could not load comments.</p>';
+  });
+}
+
+function renderDetailComments(comments, type, id) {
+  var list = document.getElementById('detail-comments-list');
+  if (!comments || comments.length === 0) {
+    list.innerHTML = '<p class="crm-comment-empty">No comments yet — be the first.</p>';
+    return;
+  }
+  var userAuth = null;
+  try { userAuth = JSON.parse(localStorage.getItem('candidlabs_auth')); } catch(e) {}
+  var isAdmin = userAuth && userAuth.role === 'admin';
+
+  list.innerHTML = comments.map(function(c) {
+    var initials = (c.authorName || c.authorEmail || '?').split(' ').map(function(w) { return w[0]; }).slice(0,2).join('').toUpperCase();
+    var canDelete = isAdmin || (userAuth && userAuth.email === c.authorEmail);
+    return '<div class="crm-comment-item">' +
+      '<div class="crm-comment-avatar">' + escapeHtml(initials) + '</div>' +
+      '<div class="crm-comment-body">' +
+        '<div class="crm-comment-byline">' +
+          '<span class="crm-comment-author">' + escapeHtml(c.authorName || c.authorEmail) + '</span>' +
+          '<span class="crm-comment-time">' + formatCommentTime(c.createdAt) + '</span>' +
+        '</div>' +
+        '<div class="crm-comment-text">' + escapeHtml(c.body) + '</div>' +
+      '</div>' +
+      (canDelete ? '<button class="crm-comment-delete" onclick="deleteDetailComment(\'' + c.id + '\',\'' + type + '\',\'' + id + '\')" title="Delete">&#10005;</button>' : '') +
+    '</div>';
+  }).join('');
+  list.scrollTop = list.scrollHeight;
+}
+
+function formatCommentTime(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  var now = new Date();
+  var diffMs = now - d;
+  var diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return diffMin + 'm ago';
+  var diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return diffHr + 'h ago';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+function submitDetailComment() {
+  var input = document.getElementById('detail-comment-input');
+  var text = input.value.trim();
+  if (!text || !_detailState.type || !_detailState.id) return;
+  var btn = document.getElementById('detail-comment-submit');
+  btn.disabled = true;
+  CandidStore.postComment(_detailState.type, _detailState.id, text)
+    .then(function() {
+      input.value = '';
+      loadDetailComments(_detailState.type, _detailState.id);
+    })
+    .catch(function() { alert('Could not post comment. Please try again.'); })
+    .finally(function() { btn.disabled = false; });
+}
+
+function deleteDetailComment(commentId, type, recordId) {
+  if (!confirm('Delete this comment?')) return;
+  CandidStore.removeComment(commentId).then(function() {
+    loadDetailComments(type, recordId);
+  });
+}
+
+// ============================================================
 // AUTH VISIBILITY - re-apply after dynamic renders
 // ============================================================
 
@@ -526,10 +700,9 @@ function applyAuthVisibility() {
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-  // TODO: Re-enable when Google OAuth is configured
-  // if (typeof CandidAuth !== 'undefined') {
-  //   CandidAuth.requireAuth();
-  // }
+  if (typeof CandidAuth !== 'undefined') {
+    CandidAuth.requireAuth();
+  }
 
   // Initialize overview stats
   renderOverview();

@@ -206,6 +206,43 @@ async function deleteOne(env, collection, id) {
 }
 
 // ============================================================
+// Comments endpoints
+// ============================================================
+
+async function listComments(env, url) {
+  const recordType = url.searchParams.get('recordType');
+  const recordId = url.searchParams.get('recordId');
+  if (!recordType || !recordId) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'recordType and recordId are required' } }, 400);
+  }
+  const { results } = await env.DB.prepare(
+    'SELECT * FROM comments WHERE record_type = ? AND record_id = ? ORDER BY created_at ASC'
+  ).bind(recordType, recordId).all();
+  return json({ ok: true, data: results, meta: { count: results.length } });
+}
+
+async function createComment(req, env) {
+  const body = await req.json().catch(() => ({}));
+  const { record_type, record_id, author_email, author_name, body: commentBody } = body;
+  if (!record_type || !record_id || !author_email || !commentBody) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'record_type, record_id, author_email, and body are required' } }, 400);
+  }
+  const id = 'CMT-' + Date.now().toString(16).slice(-8);
+  const now = new Date().toISOString();
+  await env.DB.prepare(
+    'INSERT INTO comments (id, record_type, record_id, author_email, author_name, body, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(id, record_type, record_id, author_email, author_name || author_email, commentBody, now, now).run();
+  return json({ ok: true, data: { id, record_type, record_id, author_email, author_name: author_name || author_email, body: commentBody, created_at: now } }, 201);
+}
+
+async function deleteComment(env, id) {
+  const existing = await env.DB.prepare('SELECT id FROM comments WHERE id = ?').bind(id).first();
+  if (!existing) return json({ ok: false, error: { code: 'NOT_FOUND', message: `Comment ${id} not found` } }, 404);
+  await env.DB.prepare('DELETE FROM comments WHERE id = ?').bind(id).run();
+  return json({ ok: true, data: { id } });
+}
+
+// ============================================================
 // Overview / KPI endpoints
 // ============================================================
 
@@ -266,6 +303,12 @@ async function handleApi(req, env, url) {
   // Overview endpoints
   if (path === '/api/overview/crm' && req.method === 'GET') return crmOverview(env);
   if (path === '/api/overview/projects' && req.method === 'GET') return projectsOverview(env);
+
+  // Comments routes: /api/comments[/{id}]
+  if (path === '/api/comments' && req.method === 'GET') return listComments(env, url);
+  if (path === '/api/comments' && req.method === 'POST') return createComment(req, env);
+  const commentDeleteMatch = path.match(/^\/api\/comments\/([^/]+)$/);
+  if (commentDeleteMatch && req.method === 'DELETE') return deleteComment(env, commentDeleteMatch[1]);
 
   // CRUD routes: /api/{collection}[/{id}]
   const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks)(?:\/([^/]+))?$/);

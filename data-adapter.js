@@ -13,7 +13,7 @@
 var CandidStore = (function () {
   'use strict';
 
-  var API_BASE = '/api';
+  var API_BASE = 'https://candidlabs-api.dieterwerwath.workers.dev/api';
   var _useApi = true; // Will be set to false if API is unreachable
 
   // ============================================================
@@ -272,6 +272,41 @@ var CandidStore = (function () {
   }
 
   // ============================================================
+  // Comments (always API-only — no localStorage fallback)
+  // ============================================================
+
+  function loadComments(recordType, recordId) {
+    return fetch(API_BASE + '/comments?recordType=' + encodeURIComponent(recordType) + '&recordId=' + encodeURIComponent(recordId))
+      .then(function (res) { return res.json(); })
+      .then(function (body) { return arrayToCamel(body.data || []); })
+      .catch(function () { return []; });
+  }
+
+  function postComment(recordType, recordId, commentBody) {
+    var user = null;
+    try { user = JSON.parse(localStorage.getItem('candidlabs_auth')); } catch (e) {}
+    return fetch(API_BASE + '/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        record_type: recordType,
+        record_id: recordId,
+        author_email: user ? user.email : 'unknown@candidmixers.com',
+        author_name: user ? user.name : 'Unknown',
+        body: commentBody
+      })
+    }).then(function (res) { return res.json(); })
+      .then(function (body) { return body.data ? keysToCamel(body.data) : null; });
+  }
+
+  function removeComment(id) {
+    return fetch(API_BASE + '/comments/' + id, { method: 'DELETE' })
+      .then(function (res) { return res.json(); })
+      .then(function (body) { return body.ok; })
+      .catch(function () { return false; });
+  }
+
+  // ============================================================
   // Init — probe API availability on load
   // ============================================================
 
@@ -291,6 +326,10 @@ var CandidStore = (function () {
     update: update,
     remove: remove,
     save: save,
+
+    loadComments: loadComments,
+    postComment: postComment,
+    removeComment: removeComment,
 
     canSee: canSee,
     filterForUser: filterForUser,
