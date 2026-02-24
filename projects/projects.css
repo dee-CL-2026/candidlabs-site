@@ -905,24 +905,27 @@
 .pm-drawer-overlay {
   display: none;
   position: fixed;
-  inset: 0;
+  top: 70px;    /* match drawer — starts below sticky navbar, no bleed above */
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 500;
-  backdrop-filter: blur(2px);
+  z-index: 1100;
+  /* no backdrop-filter: avoids blur rendering artifact at the seam */
 }
 .pm-drawer-overlay--visible { display: block; }
 
 .pm-drawer {
   position: fixed;
-  top: 0;
+  top: 70px;                      /* sit below the 70px sticky navbar */
   right: 0;
-  height: 100vh;
+  height: calc(100vh - 70px);     /* fill remaining viewport height */
   width: 420px;
   max-width: 100vw;
   background: var(--bg-card);
   border-left: 1px solid var(--border-color);
   box-shadow: -8px 0 32px var(--shadow-color);
-  z-index: 501;
+  z-index: 1101;  /* above overlay */
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
