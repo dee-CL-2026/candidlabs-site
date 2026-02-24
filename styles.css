@@ -1112,73 +1112,61 @@ a:focus-visible {
 }
 
 /* ===========================================
-   QUICK ACTIONS NAV
+   NAV DROPDOWN (Tools submenu)
    =========================================== */
-.quick-actions-nav-item {
+.nav-dropdown {
   position: relative;
 }
 
-.quick-actions-nav-button {
+.nav-dropdown-trigger {
   background: none;
-  border: 0;
+  border: none;
   cursor: pointer;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.quick-actions-submenu {
+.nav-dropdown-menu {
+  display: none;
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  min-width: 220px;
+  min-width: 200px;
   list-style: none;
   margin: 0;
-  padding: 8px;
+  padding: 6px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   box-shadow: 0 10px 26px var(--shadow-color);
-  display: none;
   z-index: 1200;
 }
 
-.quick-actions-nav-item.open .quick-actions-submenu {
+.nav-dropdown.open .nav-dropdown-menu {
   display: block;
 }
 
-.quick-actions-submenu-link {
+.nav-dropdown-item {
   display: block;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   text-decoration: none;
   font-size: 0.9rem;
+  white-space: nowrap;
 }
 
-.quick-actions-submenu-link:hover {
+.nav-dropdown-item:hover {
   background: var(--bg-secondary);
   color: var(--color-primary);
 }
 
-.quick-actions-mobile-item {
-  border-top: 1px solid var(--border-color);
-  margin-top: 8px;
-  padding-top: 8px;
-}
-
-.quick-actions-mobile-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin: 6px 0;
-}
-
-.quick-actions-mobile-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
 @media (max-width: 767px) {
-  .quick-actions-nav-item {
+  .nav-dropdown {
     display: none;
   }
 }

@@ -262,113 +262,27 @@
     return '';
   }
 
-  function renderQuickActionsDock() {
-    if (document.getElementById('quick-actions-nav-item')) return;
-    if (!document.body || document.body.getAttribute('data-disable-quick-actions') === 'true') return;
-    if ((window.location.pathname || '').indexOf('login.html') !== -1) return;
-    if (typeof CandidAuth === 'undefined' || !CandidAuth.isSignedIn || !CandidAuth.isSignedIn()) return;
-
-    const root = getRootPathPrefix();
-    const navMenu = document.querySelector('.nav-menu');
-    const mobileMenuList = document.querySelector('#mobile-menu ul');
-    if (!navMenu || !mobileMenuList) return;
-    const isAdmin = !!(CandidAuth.hasRole && CandidAuth.hasRole('admin'));
-    const isStaff = !!(CandidAuth.hasRole && CandidAuth.hasRole('team'));
-    const actions = [
-      { label: 'KAA Form', href: 'https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform', external: true },
-      { label: 'Quote Generator', href: 'https://docs.google.com/spreadsheets/d/19kDef25LdbvPssTkMusFGu8FmNbj2rWuF7NNF9SBSvs/edit', external: true },
-      { label: 'Submit Expenses', href: 'https://xero.me', external: true },
-      { label: 'Tools', href: root + 'tools.html' }
-    ];
-
-    if (isStaff) {
-      actions.push({ label: 'Roadmap', href: root + 'roadmap.html' });
-    }
-
-    if (isAdmin) {
-      actions.push({ label: 'Testing', href: root + 'testing.html' });
-      actions.push({ label: 'Budget', href: root + 'budget.html' });
-      actions.push({ label: 'User Roles', href: root + 'admin/users.html' });
-    }
-
-    const navItem = document.createElement('li');
-    navItem.id = 'quick-actions-nav-item';
-    navItem.className = 'quick-actions-nav-item';
-    navItem.setAttribute('role', 'none');
-
-    const navButton = document.createElement('button');
-    navButton.type = 'button';
-    navButton.className = 'nav-link quick-actions-nav-button';
-    navButton.setAttribute('aria-expanded', 'false');
-    navButton.textContent = 'Quick Actions';
-
-    const list = document.createElement('ul');
-    list.className = 'quick-actions-submenu';
-    list.setAttribute('role', 'menu');
-    actions.forEach(function (action) {
-      const li = document.createElement('li');
-      li.setAttribute('role', 'none');
-      const link = document.createElement('a');
-      link.className = 'quick-actions-submenu-link';
-      link.setAttribute('role', 'menuitem');
-      link.href = action.href;
-      link.textContent = action.label;
-      if (action.external) {
-        link.target = '_blank';
-        link.rel = 'noopener';
-      }
-      li.appendChild(link);
-      list.appendChild(li);
+  function initNavDropdowns() {
+    document.querySelectorAll('.nav-dropdown').forEach(function (item) {
+      var trigger = item.querySelector('.nav-dropdown-trigger');
+      var menu = item.querySelector('.nav-dropdown-menu');
+      if (!trigger || !menu) return;
+      trigger.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = item.classList.toggle('open');
+        trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      document.addEventListener('click', function () {
+        item.classList.remove('open');
+        trigger.setAttribute('aria-expanded', 'false');
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          item.classList.remove('open');
+          trigger.setAttribute('aria-expanded', 'false');
+        }
+      });
     });
-
-    navItem.appendChild(navButton);
-    navItem.appendChild(list);
-    navMenu.appendChild(navItem);
-
-    navButton.addEventListener('click', function (e) {
-      e.stopPropagation();
-      const open = navItem.classList.toggle('open');
-      navButton.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-
-    document.addEventListener('click', function () {
-      navItem.classList.remove('open');
-      navButton.setAttribute('aria-expanded', 'false');
-    });
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        navItem.classList.remove('open');
-        navButton.setAttribute('aria-expanded', 'false');
-      }
-    });
-
-    const mobileGroup = document.createElement('li');
-    mobileGroup.id = 'quick-actions-mobile-item';
-    mobileGroup.className = 'quick-actions-mobile-item';
-
-    const mobileLabel = document.createElement('div');
-    mobileLabel.className = 'quick-actions-mobile-label';
-    mobileLabel.textContent = 'Quick Actions';
-
-    const mobileList = document.createElement('ul');
-    mobileList.className = 'quick-actions-mobile-list';
-    actions.forEach(function (action) {
-      const li = document.createElement('li');
-      const link = document.createElement('a');
-      link.href = action.href;
-      link.textContent = action.label;
-      if (action.external) {
-        link.target = '_blank';
-        link.rel = 'noopener';
-      }
-      li.appendChild(link);
-      mobileList.appendChild(li);
-    });
-
-    mobileGroup.appendChild(mobileLabel);
-    mobileGroup.appendChild(mobileList);
-    mobileMenuList.appendChild(mobileGroup);
   }
 
   function runAuthIntegration() {
@@ -399,14 +313,7 @@
       dashboardHeader.querySelector('div').appendChild(roleBadge);
     }
 
-    renderQuickActionsDock();
-    CandidAuth.onAuthChange(function () {
-      var existingDesktop = document.getElementById('quick-actions-nav-item');
-      var existingMobile = document.getElementById('quick-actions-mobile-item');
-      if (existingDesktop) existingDesktop.remove();
-      if (existingMobile) existingMobile.remove();
-      renderQuickActionsDock();
-    });
+    initNavDropdowns();
     return true;
   }
 

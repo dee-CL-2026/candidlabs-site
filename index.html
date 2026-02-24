@@ -6,9 +6,194 @@
   <meta name="description" content="Candidlabs - Internal Business Platform for Candid Mixers. Streamlining production, sales, and financial operations.">
   <title>Candidlabs - Internal Business Platform</title>
   <link rel="stylesheet" href="styles.css">
-  <!-- Preconnect to Google Fonts for performance -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <style>
+    /* ========================================
+       HOMEPAGE — MODULE CARDS + ACTIVITY
+       ======================================== */
+    .home-hero {
+      padding: var(--space-3xl) 0 var(--space-xl);
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .home-hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image:
+        radial-gradient(circle at 20% 50%, rgba(27,112,139,0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(45,156,186,0.06) 0%, transparent 40%),
+        radial-gradient(circle at 40% 80%, rgba(27,112,139,0.05) 0%, transparent 40%);
+      pointer-events: none;
+    }
+    [data-theme="dark"] .home-hero::before {
+      background-image:
+        radial-gradient(circle at 20% 50%, rgba(45,156,186,0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(62,184,212,0.1) 0%, transparent 40%),
+        radial-gradient(circle at 40% 80%, rgba(45,156,186,0.08) 0%, transparent 40%);
+    }
+    .home-hero-inner {
+      position: relative;
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .home-hero-title {
+      color: var(--color-primary);
+      margin-bottom: var(--space-sm);
+    }
+    .home-hero-sub {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-xs);
+    }
+    .home-hero-role {
+      display: inline-block;
+      margin-top: var(--space-sm);
+    }
+
+    /* Quick stats ribbon */
+    .home-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-md);
+      max-width: 800px;
+      margin: var(--space-xl) auto 0;
+    }
+    @media (min-width: 640px) {
+      .home-stats { grid-template-columns: repeat(4, 1fr); }
+    }
+    .home-stat {
+      text-align: center;
+      padding: var(--space-md);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      transition: border-color var(--transition-fast);
+    }
+    .home-stat:hover { border-color: var(--color-primary); }
+    .home-stat-value {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      color: var(--color-primary);
+      line-height: 1.2;
+    }
+    .home-stat-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: var(--space-xs);
+    }
+
+    /* Module cards grid */
+    .home-modules {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-lg);
+    }
+    @media (min-width: 640px) {
+      .home-modules { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 1024px) {
+      .home-modules { grid-template-columns: repeat(3, 1fr); }
+    }
+    .module-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl) var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+    }
+    .module-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 30px var(--shadow-color);
+      border-color: var(--color-primary);
+      color: inherit;
+    }
+    .module-card-icon {
+      font-size: 2.25rem;
+      margin-bottom: var(--space-md);
+    }
+    .module-card-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      margin-bottom: var(--space-sm);
+      color: var(--text-primary);
+    }
+    .module-card-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      flex: 1;
+    }
+    .module-card-arrow {
+      margin-top: var(--space-md);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--color-primary);
+    }
+    .module-card:hover .module-card-arrow { color: var(--color-accent); }
+
+    /* Activity feed */
+    .home-activity {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-md);
+      padding: var(--space-md) 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+    .activity-dot.deal { background: var(--color-primary); }
+    .activity-dot.task { background: var(--color-success); }
+    .activity-dot.company { background: var(--color-warning); }
+    .activity-dot.contact { background: #8b5cf6; }
+    .activity-dot.project { background: #ec4899; }
+    .activity-text {
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+    .activity-time {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .activity-empty {
+      text-align: center;
+      padding: var(--space-xl);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* Login prompt for signed-out state */
+    .home-login-prompt {
+      text-align: center;
+      padding: var(--space-2xl);
+    }
+    .home-login-prompt p {
+      color: var(--text-secondary);
+      margin-bottom: var(--space-lg);
+      font-size: 1rem;
+    }
+  </style>
 </head>
 <body>
   <!-- Navigation -->
@@ -20,19 +205,21 @@
         <li role="none"><a href="crm/index.html" class="nav-link" role="menuitem">CRM</a></li>
         <li role="none"><a href="projects/index.html" class="nav-link" role="menuitem">Projects</a></li>
         <li role="none"><a href="reports.html" class="nav-link" role="menuitem">Reports</a></li>
-        <li role="none"><a href="tools.html" class="nav-link" role="menuitem">Tools</a></li>
-        <li role="none"><a href="testing.html" class="nav-link" role="menuitem">Testing</a></li>
-                <li role="none" data-auth-role="team"><a href="roadmap.html" class="nav-link" role="menuitem">Roadmap</a></li>
+        <li role="none" class="nav-dropdown">
+              <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Tools ▾</button>
+              <ul class="nav-dropdown-menu">
+                <li><a href="https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform" class="nav-dropdown-item" target="_blank" rel="noopener">KAA Form</a></li>
+                <li><a href="https://docs.google.com/spreadsheets/d/19kDef25LdbvPssTkMusFGu8FmNbj2rWuF7NNF9SBSvs/edit" class="nav-dropdown-item" target="_blank" rel="noopener">Quote Generator</a></li>
+                <li><a href="https://xero.me" class="nav-dropdown-item" target="_blank" rel="noopener">Submit Expenses</a></li>
+              </ul>
+            </li>
+        <li role="none" data-auth-role="admin"><a href="testing.html" class="nav-link" role="menuitem">Testing</a></li>
+        <li role="none" data-auth-role="admin"><a href="roadmap.html" class="nav-link" role="menuitem">Roadmap</a></li>
         <li role="none" data-auth-role="admin"><a href="admin/users.html" class="nav-link" role="menuitem">Admin</a></li>
       </ul>
 
       <div class="nav-actions">
-        <button
-          id="theme-toggle"
-          class="theme-toggle"
-          type="button"
-          aria-label="Switch to dark mode"
-        >
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">
           <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
@@ -51,14 +238,7 @@
 
         <a href="login.html" class="btn btn-primary btn-login" aria-label="Login">Login</a>
 
-        <button
-          id="mobile-menu-toggle"
-          class="mobile-menu-toggle"
-          type="button"
-          aria-label="Toggle navigation menu"
-          aria-expanded="false"
-          aria-controls="mobile-menu"
-        >
+        <button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu">
           <span></span>
           <span></span>
           <span></span>
@@ -72,8 +252,11 @@
         <li><a href="crm/index.html" role="menuitem">CRM</a></li>
         <li><a href="projects/index.html" role="menuitem">Projects</a></li>
         <li><a href="reports.html" role="menuitem">Reports</a></li>
-        <li><a href="tools.html" role="menuitem">Tools</a></li>
-                <li data-auth-role="team"><a href="roadmap.html" role="menuitem">Roadmap</a></li>
+        <li><a href="https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform" role="menuitem" target="_blank" rel="noopener">KAA Form</a></li>
+      <li><a href="https://docs.google.com/spreadsheets/d/19kDef25LdbvPssTkMusFGu8FmNbj2rWuF7NNF9SBSvs/edit" role="menuitem" target="_blank" rel="noopener">Quote Generator</a></li>
+      <li><a href="https://xero.me" role="menuitem" target="_blank" rel="noopener">Submit Expenses</a></li>
+        <li data-auth-role="admin"><a href="testing.html" role="menuitem">Testing</a></li>
+        <li data-auth-role="admin"><a href="roadmap.html" role="menuitem">Roadmap</a></li>
         <li data-auth-role="admin"><a href="admin/users.html" role="menuitem">Admin</a></li>
         <li><a href="login.html" role="menuitem">Login</a></li>
       </ul>
@@ -81,34 +264,109 @@
   </nav>
 
   <main>
-    <!-- Hero Section -->
-    <section class="hero" aria-labelledby="hero-title">
+    <!-- Hero -->
+    <section class="home-hero" aria-labelledby="home-title">
       <div class="container">
-        <div class="hero-content">
-          <h1 id="hero-title" class="hero-title">candidlabs</h1>
-          <p class="hero-subtitle">Internal Business Platform for Candid Mixers</p>
-          <p class="hero-tagline">Streamlining production, sales, and financial operations</p>
+        <div class="home-hero-inner">
+          <h1 id="home-title" class="home-hero-title">candidlabs</h1>
+          <p class="home-hero-sub" id="home-greeting">Internal Business Platform for Candid Mixers</p>
+          <p class="home-hero-sub" style="font-size:0.95rem;" data-auth-hide="signed-in">Streamlining production, sales, and financial operations</p>
+          <span class="badge home-hero-role" id="home-role-badge" style="display:none;"></span>
+        </div>
+
+        <!-- Quick stats — visible when signed in -->
+        <div class="home-stats" id="home-stats" data-auth-hide="signed-out">
+          <div class="home-stat">
+            <div class="home-stat-value" id="hs-pipeline">--</div>
+            <div class="home-stat-label">Pipeline</div>
+          </div>
+          <div class="home-stat">
+            <div class="home-stat-value" id="hs-deals">--</div>
+            <div class="home-stat-label">Active Deals</div>
+          </div>
+          <div class="home-stat">
+            <div class="home-stat-value" id="hs-projects">--</div>
+            <div class="home-stat-label">Active Projects</div>
+          </div>
+          <div class="home-stat">
+            <div class="home-stat-value" id="hs-tasks">--</div>
+            <div class="home-stat-label">Open Tasks</div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- About Section -->
-    <section class="section" aria-labelledby="about-title">
+    <!-- Signed-out: login prompt -->
+    <section class="section" data-auth-hide="signed-in">
       <div class="container">
-        <div class="about-section">
-          <h2 id="about-title">What is Candidlabs?</h2>
-          <p>Candidlabs is the internal business platform for Candid Mixers, providing integrated tools for production management, sales tracking, and financial analysis. Built with Google Apps Script and modern web technologies, it serves as the operational backbone for our beverage manufacturing business.</p>
+        <div class="home-login-prompt">
+          <p>Sign in with your Candid Mixers Google account to access the platform.</p>
+          <a href="login.html" class="btn btn-primary">Sign In</a>
         </div>
+      </div>
+    </section>
 
-        <div class="about-section">
-          <h2>Core Capabilities</h2>
-          <ul class="capabilities-list">
-            <li>Automated data pipelines for real-time data synchronization</li>
-            <li>Real-time operational dashboards for instant visibility</li>
-            <li>Financial analytics and reporting for informed decisions</li>
-            <li>Production tracking and SKU management for manufacturing control</li>
-            <li>Integration with Xero accounting for seamless financial workflows</li>
-          </ul>
+    <!-- Signed-in: module cards -->
+    <section class="section" data-auth-hide="signed-out" aria-labelledby="modules-title">
+      <div class="container">
+        <h2 id="modules-title" style="margin-bottom: var(--space-lg);">Your Tools</h2>
+        <div class="home-modules" id="home-modules">
+          <!-- Everyone sees: CRM, Reports, Tools -->
+          <a href="crm/index.html" class="module-card">
+            <div class="module-card-icon">📇</div>
+            <div class="module-card-title">CRM</div>
+            <div class="module-card-desc">Contacts, companies, and deal pipeline management for the sales team.</div>
+            <div class="module-card-arrow">Open CRM &rarr;</div>
+          </a>
+
+          <a href="reports.html" class="module-card">
+            <div class="module-card-icon">📊</div>
+            <div class="module-card-title">Reports & Analytics</div>
+            <div class="module-card-desc">Management overview, sales performance, and operational dashboards.</div>
+            <div class="module-card-arrow">View Reports &rarr;</div>
+          </a>
+
+          <a href="tools.html" class="module-card">
+            <div class="module-card-icon">🛠</div>
+            <div class="module-card-title">Tools</div>
+            <div class="module-card-desc">KAA Generator, Quote Generator, and other production-ready utilities.</div>
+            <div class="module-card-arrow">Open Tools &rarr;</div>
+          </a>
+
+          <!-- Team+ sees: Projects, Roadmap -->
+          <a href="projects/index.html" class="module-card" data-auth-role="team">
+            <div class="module-card-icon">📋</div>
+            <div class="module-card-title">Projects</div>
+            <div class="module-card-desc">Project tracking, task management, and team assignments across the business.</div>
+            <div class="module-card-arrow">Open Projects &rarr;</div>
+          </a>
+
+          <a href="roadmap.html" class="module-card" data-auth-role="team">
+            <div class="module-card-icon">🗺</div>
+            <div class="module-card-title">Roadmap</div>
+            <div class="module-card-desc">Tool status matrix, launch progress, and GAS migration priorities.</div>
+            <div class="module-card-arrow">View Roadmap &rarr;</div>
+          </a>
+
+          <!-- Admin sees: Budget -->
+          <a href="budget.html" class="module-card" data-auth-role="admin">
+            <div class="module-card-icon">💰</div>
+            <div class="module-card-title">Budget Planner</div>
+            <div class="module-card-desc">2026 budget planning with historical actuals and scenario analysis.</div>
+            <div class="module-card-arrow">Open Budget &rarr;</div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Activity feed — team+ only -->
+    <section class="section" data-auth-role="team" aria-labelledby="activity-title">
+      <div class="container">
+        <div class="home-activity">
+          <h2 id="activity-title" style="margin-bottom: var(--space-lg);">Recent Activity</h2>
+          <div id="activity-feed">
+            <div class="activity-empty">Loading activity...</div>
+          </div>
         </div>
       </div>
     </section>
@@ -123,5 +381,200 @@
 
   <script src="auth.js"></script>
   <script src="script.js"></script>
+  <script>
+    /**
+     * Homepage dynamic content — populates stats and activity feed
+     * from localStorage data (same source as CRM + Projects modules).
+     */
+    (function () {
+      'use strict';
+
+      // ---- Helpers ----
+      function formatShortIDR(num) {
+        if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
+        if (num >= 1000000) return (num / 1000000).toFixed(0) + 'M';
+        return Math.round(num).toLocaleString('id-ID');
+      }
+      function timeAgo(dateStr) {
+        if (!dateStr) return '';
+        var now = new Date();
+        var then = new Date(dateStr);
+        var diff = Math.floor((now - then) / 1000);
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        var days = Math.floor(diff / 86400);
+        if (days === 1) return 'yesterday';
+        if (days < 30) return days + 'd ago';
+        return then.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      }
+      function escHtml(s) {
+        if (!s) return '';
+        var d = document.createElement('div');
+        d.appendChild(document.createTextNode(s));
+        return d.innerHTML;
+      }
+      function loadLS(key) {
+        try { var r = localStorage.getItem(key); return r ? JSON.parse(r) : null; }
+        catch(e) { return null; }
+      }
+
+      // Default seed data (mirrors CRM + Projects seed for first-visit stats)
+      var SEED_DEALS = [
+        { title: 'SK Distribution Q1 2026 Order', value: 450000000, stage: 'negotiation', createdAt: '2026-01-20' },
+        { title: 'Grand Hotel Trial Program', value: 85000000, stage: 'proposal', createdAt: '2026-02-01' },
+        { title: 'Mandiri Bali Expansion', value: 275000000, stage: 'prospecting', createdAt: '2026-02-10' }
+      ];
+      var SEED_PROJECTS = [
+        { name: 'Looker Dashboard Rollout', status: 'active', createdAt: '2026-01-10' },
+        { name: 'candidlabs Platform Build', status: 'active', createdAt: '2026-02-01' },
+        { name: 'Q1 2026 Sales Push', status: 'active', createdAt: '2025-12-20' }
+      ];
+      var SEED_TASKS = [
+        { title: 'Define exec dashboard KPIs', status: 'done', createdAt: '2026-01-10' },
+        { title: 'Build Sales_Looker data source', status: 'in-progress', createdAt: '2026-01-15' },
+        { title: 'Build Finance_Looker data source', status: 'to-do', createdAt: '2026-01-15' },
+        { title: 'Deploy Production_Looker views', status: 'to-do', createdAt: '2026-01-15' },
+        { title: 'Build CRM module', status: 'done', createdAt: '2026-02-01' },
+        { title: 'Build PM module', status: 'in-progress', createdAt: '2026-02-01' },
+        { title: 'Implement auth system', status: 'in-progress', createdAt: '2026-02-01' },
+        { title: 'Wire dashboard with live data', status: 'to-do', createdAt: '2026-02-01' },
+        { title: 'Onboard 3 new Jakarta accounts', status: 'in-progress', createdAt: '2025-12-20' },
+        { title: 'Launch Bali hotel trial program', status: 'to-do', createdAt: '2025-12-20' }
+      ];
+      var SEED_CONTACTS = [
+        { name: 'Sarah Chen', createdAt: '2025-09-15' },
+        { name: 'Budi Santoso', createdAt: '2025-11-02' },
+        { name: 'Lisa Wong', createdAt: '2026-01-10' }
+      ];
+      var SEED_COMPANIES = [
+        { name: 'SK Distribution', createdAt: '2025-09-01' },
+        { name: 'PT Mandiri Beverages', createdAt: '2025-10-15' },
+        { name: 'Grand Hotel Group', createdAt: '2026-01-08' }
+      ];
+
+      // ---- Populate Stats ----
+      function populateStats() {
+        var deals = loadLS('crm_deals') || SEED_DEALS;
+        var projects = loadLS('pm_projects') || SEED_PROJECTS;
+        var tasks = loadLS('pm_tasks') || SEED_TASKS;
+
+        var pipelineValue = deals
+          .filter(function(d) { return d.stage !== 'closed-lost'; })
+          .reduce(function(sum, d) { return sum + (d.value || 0); }, 0);
+        var activeDeals = deals.filter(function(d) {
+          return d.stage !== 'closed-won' && d.stage !== 'closed-lost';
+        }).length;
+        var activeProjects = projects.filter(function(p) { return p.status === 'active'; }).length;
+        var openTasks = tasks.filter(function(t) { return t.status !== 'done'; }).length;
+
+        var el;
+        el = document.getElementById('hs-pipeline');
+        if (el) el.textContent = formatShortIDR(pipelineValue);
+        el = document.getElementById('hs-deals');
+        if (el) el.textContent = activeDeals;
+        el = document.getElementById('hs-projects');
+        if (el) el.textContent = activeProjects;
+        el = document.getElementById('hs-tasks');
+        if (el) el.textContent = openTasks;
+      }
+
+      // ---- Build Activity Feed ----
+      function buildActivityFeed() {
+        var feed = document.getElementById('activity-feed');
+        if (!feed) return;
+
+        var events = [];
+        var contacts = loadLS('crm_contacts') || SEED_CONTACTS;
+        var companies = loadLS('crm_companies') || SEED_COMPANIES;
+        var deals = loadLS('crm_deals') || SEED_DEALS;
+        var projects = loadLS('pm_projects') || SEED_PROJECTS;
+        var tasks = loadLS('pm_tasks') || SEED_TASKS;
+
+        contacts.forEach(function(c) {
+          events.push({ type: 'contact', text: 'Contact <strong>' + escHtml(c.name) + '</strong> added', date: c.createdAt });
+        });
+        companies.forEach(function(c) {
+          events.push({ type: 'company', text: 'Company <strong>' + escHtml(c.name) + '</strong> created', date: c.createdAt });
+        });
+        deals.forEach(function(d) {
+          var label = d.stage ? d.stage.replace('-', ' ') : '';
+          events.push({ type: 'deal', text: 'Deal <strong>' + escHtml(d.title) + '</strong> &mdash; ' + escHtml(label), date: d.createdAt });
+        });
+        projects.forEach(function(p) {
+          events.push({ type: 'project', text: 'Project <strong>' + escHtml(p.name) + '</strong> created', date: p.createdAt });
+        });
+        tasks.forEach(function(t) {
+          var statusLabel = t.status ? t.status.replace('-', ' ') : '';
+          events.push({ type: 'task', text: 'Task <strong>' + escHtml(t.title) + '</strong> &mdash; ' + escHtml(statusLabel), date: t.createdAt });
+        });
+
+        // Sort newest first, take top 12
+        events.sort(function(a, b) {
+          return new Date(b.date || 0) - new Date(a.date || 0);
+        });
+        events = events.slice(0, 12);
+
+        if (!events.length) {
+          feed.innerHTML = '<div class="activity-empty">No activity yet. Start by adding contacts, deals, or projects.</div>';
+          return;
+        }
+
+        feed.innerHTML = events.map(function(ev) {
+          return '<div class="activity-item">' +
+            '<div class="activity-dot ' + ev.type + '"></div>' +
+            '<div>' +
+              '<div class="activity-text">' + ev.text + '</div>' +
+              '<div class="activity-time">' + timeAgo(ev.date) + '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      // ---- Greeting ----
+      function setGreeting() {
+        if (typeof CandidAuth === 'undefined' || !CandidAuth.isSignedIn()) return;
+        var user = CandidAuth.getUser();
+        if (!user) return;
+
+        var firstName = user.name ? user.name.split(' ')[0] : '';
+        var greetEl = document.getElementById('home-greeting');
+        if (greetEl && firstName) {
+          var hour = new Date().getHours();
+          var greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+          greetEl.textContent = greeting + ', ' + firstName;
+        }
+
+        var badgeEl = document.getElementById('home-role-badge');
+        if (badgeEl) {
+          var role = CandidAuth.getRole();
+          badgeEl.textContent = role ? role.toUpperCase() : '';
+          badgeEl.className = 'badge home-hero-role ' + (role === 'admin' ? 'badge-info' : 'badge-success');
+          badgeEl.style.display = role ? '' : 'none';
+        }
+      }
+
+      // ---- Init ----
+      function init() {
+        setGreeting();
+        if (typeof CandidAuth !== 'undefined' && CandidAuth.isSignedIn()) {
+          populateStats();
+          if (CandidAuth.hasRole('team')) {
+            buildActivityFeed();
+          }
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+      if (typeof CandidAuth !== 'undefined' && CandidAuth.onAuthChange) {
+        CandidAuth.onAuthChange(init);
+      }
+    })();
+  </script>
 </body>
 </html>
