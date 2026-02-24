@@ -126,6 +126,19 @@
   text-align: center;
 }
 
+.crm-stat-link {
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  width: 100%;
+  font: inherit;
+}
+.crm-stat-link:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 14px rgba(27, 112, 139, 0.12);
+  transform: translateY(-2px);
+}
+.crm-stat-link:hover .crm-stat-label { color: var(--color-primary); }
+
 .crm-stat-number {
   font-family: var(--font-display);
   font-size: 1.75rem;
