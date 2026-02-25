@@ -249,6 +249,8 @@ function renderContacts(filter) {
   if (query) {
     contacts = contacts.filter(function(c) {
       return c.name.toLowerCase().indexOf(query) !== -1 ||
+             (c.firstName || c.first_name || '').toLowerCase().indexOf(query) !== -1 ||
+             (c.lastName || c.last_name || '').toLowerCase().indexOf(query) !== -1 ||
              (c.email || '').toLowerCase().indexOf(query) !== -1 ||
              (c.role || '').toLowerCase().indexOf(query) !== -1;
     });
@@ -267,7 +269,7 @@ function renderContacts(filter) {
     var company = companies.find(function(co) { return co.id === c.companyId; });
     var companyName = company ? company.name : '-';
     return '<tr>' +
-      '<td class="row-name"><button class="row-name-link" onclick="openDetail(\'contact\',\'' + c.id + '\')">' + escapeHtml(c.name) + '</button></td>' +
+      '<td class="row-name"><button class="row-name-link" onclick="openDetail(\'contact\',\'' + c.id + '\')">' + (escapeHtml((c.firstName || c.first_name || '') + ' ' + (c.lastName || c.last_name || '')).trim() || escapeHtml(c.name)) + '</button></td>' +
       '<td class="row-secondary">' + escapeHtml(companyName) + '</td>' +
       '<td class="row-secondary">' + escapeHtml(c.role || '-') + '</td>' +
       '<td class="row-secondary">' + escapeHtml(c.email) + '</td>' +
@@ -297,7 +299,8 @@ function openEditContact(id) {
 
   document.getElementById('contact-modal-title').textContent = 'Edit Contact';
   document.getElementById('contact-edit-id').value = contact.id;
-  document.getElementById('contact-name').value = contact.name;
+  document.getElementById('contact-first-name').value = contact.firstName || contact.first_name || (contact.name ? contact.name.split(' ')[0] : '');
+  document.getElementById('contact-last-name').value = contact.lastName || contact.last_name || (contact.name && contact.name.indexOf(' ') !== -1 ? contact.name.split(' ').slice(1).join(' ') : '');
   document.getElementById('contact-email').value = contact.email;
   document.getElementById('contact-phone').value = contact.phone || '';
   document.getElementById('contact-role').value = contact.role || '';
@@ -312,15 +315,19 @@ function saveContact() {
   var companySelectVal = document.getElementById('contact-company').value;
 
   function doSave(resolvedCompanyId) {
+    var firstName = document.getElementById('contact-first-name').value.trim();
+    var lastName = document.getElementById('contact-last-name').value.trim();
     var record = {
-      name: document.getElementById('contact-name').value.trim(),
+      firstName: firstName,
+      lastName: lastName,
+      name: (firstName + ' ' + lastName).trim(),
       email: document.getElementById('contact-email').value.trim(),
       phone: document.getElementById('contact-phone').value.trim(),
       role: document.getElementById('contact-role').value.trim(),
       companyId: resolvedCompanyId || '',
       notes: document.getElementById('contact-notes').value.trim()
     };
-    if (!record.name) return;
+    if (!firstName) return;
 
     var promise = editId
       ? CandidStore.update('contacts', editId, record)
@@ -662,7 +669,8 @@ function populateContactSelect(selectId, companyId) {
   var select = document.getElementById(selectId);
   select.innerHTML = '<option value="">-- Select Contact --</option>' +
     contacts.map(function(c) {
-      return '<option value="' + c.id + '">' + escapeHtml(c.name) + '</option>';
+      var displayName = ((c.firstName || '') + ' ' + (c.lastName || '')).trim() || c.name;
+      return '<option value="' + c.id + '">' + escapeHtml(displayName) + '</option>';
     }).join('');
 }
 
@@ -710,7 +718,7 @@ function openDetail(type, id) {
     record = contacts.find(function(c) { return c.id === id; });
     if (!record) return;
     var company = companies.find(function(co) { return co.id === record.companyId; });
-    document.getElementById('detail-title').textContent = record.name;
+    document.getElementById('detail-title').textContent = ((record.firstName || record.first_name || '') + ' ' + (record.lastName || record.last_name || '')).trim() || record.name;
     document.getElementById('detail-meta').innerHTML =
       '<span class="badge badge-type">Contact</span>' +
       (record.role ? '<span class="meta-text">' + escapeHtml(record.role) + '</span>' : '') +
@@ -925,4 +933,309 @@ document.addEventListener('DOMContentLoaded', function() {
   if (dealCompanySelect) {
     dealCompanySelect.addEventListener('change', onDealCompanyChange);
   }
+
+  // Import modal: upload area click + drag
+  var crmUploadArea = document.getElementById('crm-upload-area');
+  if (crmUploadArea) {
+    crmUploadArea.addEventListener('click', function() {
+      document.getElementById('crm-import-file').click();
+    });
+    crmUploadArea.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      crmUploadArea.classList.add('dragover');
+    });
+    crmUploadArea.addEventListener('dragleave', function() {
+      crmUploadArea.classList.remove('dragover');
+    });
+    crmUploadArea.addEventListener('drop', function(e) {
+      e.preventDefault();
+      crmUploadArea.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        document.getElementById('crm-import-file').files = e.dataTransfer.files;
+        crmHandleFile(document.getElementById('crm-import-file'));
+      }
+    });
+  }
+
+  // Close import/dedupe modals on overlay click
+  var crmImportModal = document.getElementById('crm-import-modal');
+  if (crmImportModal) {
+    crmImportModal.addEventListener('click', function(e) {
+      if (e.target === crmImportModal) crmCloseImport();
+    });
+  }
+  var crmDedupeModal = document.getElementById('crm-dedupe-modal');
+  if (crmDedupeModal) {
+    crmDedupeModal.addEventListener('click', function(e) {
+      if (e.target === crmDedupeModal) crmCloseDedupe();
+    });
+  }
 });
+
+// ============================================================
+// IMPORT / EXPORT / DEDUPE
+// ============================================================
+
+var _crmImportCollection = null;
+var _crmImportRows = [];
+
+function crmExport(collection) {
+  var records, lookupData = { companies: loadData('companies') };
+  if (collection === 'contacts') {
+    records = loadData('contacts');
+  } else {
+    records = loadData('companies');
+  }
+  if (!records.length) { alert('No records to export.'); return; }
+  CandidIO.exportCSV(collection, records, lookupData);
+}
+
+function crmOpenImport(collection) {
+  _crmImportCollection = collection;
+  window._crmImportCollection = collection;
+  _crmImportRows = [];
+  document.getElementById('crm-import-title').textContent = 'Import ' + collection.charAt(0).toUpperCase() + collection.slice(1);
+  document.querySelectorAll('#crm-import-modal .io-step').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById('crm-import-step-upload').classList.add('active');
+  document.getElementById('crm-import-confirm-btn').style.display = 'none';
+  document.getElementById('crm-import-file').value = '';
+  // Show/hide auto-create companies option (only for contacts)
+  var createCo = document.getElementById('crm-import-create-companies');
+  if (createCo) createCo.closest('label').style.display = collection === 'contacts' ? '' : 'none';
+  document.getElementById('crm-import-modal').classList.add('active');
+}
+
+function crmCloseImport() {
+  document.getElementById('crm-import-modal').classList.remove('active');
+  _crmImportCollection = null;
+  _crmImportRows = [];
+}
+
+function crmHandleFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var rows = CandidIO.parseCSV(e.target.result);
+    if (!rows.length) { alert('No data found in CSV.'); return; }
+
+    rows = CandidIO.validateRows(rows, _crmImportCollection);
+    var lookupData = { companies: loadData('companies'), projects: [] };
+    rows = CandidIO.resolveFK(rows, _crmImportCollection, lookupData);
+    var existing = _crmImportCollection === 'contacts' ? loadData('contacts') : loadData('companies');
+    rows = CandidIO.findDuplicates(rows, existing, _crmImportCollection);
+
+    _crmImportRows = rows;
+    _crmRenderPreview(rows);
+
+    document.querySelectorAll('#crm-import-modal .io-step').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById('crm-import-step-preview').classList.add('active');
+    document.getElementById('crm-import-confirm-btn').style.display = '';
+  };
+  reader.readAsText(file);
+}
+
+function _crmRenderPreview(rows) {
+  var tmpl = CandidIO.TEMPLATES[_crmImportCollection];
+  var headers = tmpl.headers;
+  var newCount = 0, dupeCount = 0, errorCount = 0;
+
+  rows.forEach(function(r) {
+    if (r._errors) errorCount++;
+    else if (r._dupeOf) dupeCount++;
+    else newCount++;
+  });
+
+  document.getElementById('crm-import-stats').innerHTML =
+    '<div class="io-stat"><span class="io-stat-dot total"></span> ' + rows.length + ' rows</div>' +
+    '<div class="io-stat"><span class="io-stat-dot new"></span> ' + newCount + ' new</div>' +
+    '<div class="io-stat"><span class="io-stat-dot dupe"></span> ' + dupeCount + ' duplicates</div>' +
+    '<div class="io-stat"><span class="io-stat-dot error"></span> ' + errorCount + ' errors</div>';
+
+  var html = '<table class="io-preview-table"><thead><tr><th>#</th><th>Status</th>';
+  headers.forEach(function(h) { html += '<th>' + escapeHtml(h) + '</th>'; });
+  html += '</tr></thead><tbody>';
+
+  rows.forEach(function(r, idx) {
+    var cls = r._errors ? 'io-row-error' : (r._dupeOf ? 'io-row-dupe' : 'io-row-new');
+    var badge = r._errors ? '<span class="io-row-badge error">Error</span>'
+              : (r._dupeOf ? '<span class="io-row-badge dupe">' + (r._dupeType === 'exact' ? 'Exact' : 'Fuzzy') + ' Dupe</span>'
+              : '<span class="io-row-badge new">New</span>');
+    html += '<tr class="' + cls + '"><td>' + (r._row || idx + 2) + '</td><td>' + badge + '</td>';
+    headers.forEach(function(h) { html += '<td>' + escapeHtml(r[h] || '') + '</td>'; });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('crm-import-preview').innerHTML = html;
+}
+
+function crmConfirmImport() {
+  var skipDupes = document.getElementById('crm-import-skip-dupes').checked;
+  var createCompanies = document.getElementById('crm-import-create-companies').checked;
+
+  var toImport = _crmImportRows.filter(function(r) {
+    if (r._errors) return false;
+    if (skipDupes && r._dupeOf) return false;
+    return true;
+  });
+
+  if (!toImport.length) { alert('No rows to import.'); return; }
+
+  document.querySelectorAll('#crm-import-modal .io-step').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById('crm-import-step-progress').classList.add('active');
+  document.getElementById('crm-import-confirm-btn').style.display = 'none';
+  document.getElementById('crm-import-progress-fill').style.width = '20%';
+
+  // Auto-create missing companies if option checked
+  var companiesPromise = Promise.resolve();
+  if (_crmImportCollection === 'contacts' && createCompanies) {
+    var missingCompanies = {};
+    toImport.forEach(function(r) {
+      if (r.company_name && r._companyResolved === false) {
+        missingCompanies[r.company_name.toLowerCase().trim()] = r.company_name.trim();
+      }
+    });
+    var companyNames = Object.keys(missingCompanies);
+    if (companyNames.length > 0) {
+      var newCompanies = companyNames.map(function(key) {
+        return { name: missingCompanies[key], status: 'lead' };
+      });
+      companiesPromise = CandidStore.bulkCreate('companies', newCompanies).then(function() {
+        return CandidStore.load('companies');
+      }).then(function(companies) {
+        _companies = companies;
+        // Re-resolve FKs
+        var lookupData = { companies: _companies, projects: [] };
+        toImport = CandidIO.resolveFK(toImport, _crmImportCollection, lookupData);
+      });
+    }
+  }
+
+  document.getElementById('crm-import-progress-fill').style.width = '40%';
+
+  companiesPromise.then(function() {
+    var tmpl = CandidIO.TEMPLATES[_crmImportCollection];
+    var cleanRecords = toImport.map(function(r) {
+      var rec = {};
+      tmpl.headers.forEach(function(h) {
+        if (r[h]) rec[h] = r[h];
+      });
+      if (r.company_id) rec.company_id = r.company_id;
+      return rec;
+    });
+
+    document.getElementById('crm-import-progress-fill').style.width = '60%';
+
+    return CandidStore.bulkCreate(_crmImportCollection, cleanRecords);
+  }).then(function(result) {
+    document.getElementById('crm-import-progress-fill').style.width = '100%';
+
+    setTimeout(function() {
+      document.querySelectorAll('#crm-import-modal .io-step').forEach(function(s) { s.classList.remove('active'); });
+      document.getElementById('crm-import-step-results').classList.add('active');
+
+      var errHtml = '';
+      if (result.errors && result.errors.length) {
+        errHtml = '<div class="io-error-list">' +
+          result.errors.map(function(e) { return '<div class="io-error-item">Row ' + e.row + ': ' + escapeHtml(e.error) + '</div>'; }).join('') +
+          '</div>';
+      }
+
+      document.getElementById('crm-import-results').innerHTML =
+        '<div class="io-results-icon">&#9989;</div>' +
+        '<h4>Import Complete</h4>' +
+        '<div class="io-results-stats">' +
+          '<div class="io-results-stat"><span class="num">' + (result.imported || 0) + '</span><span class="label">Imported</span></div>' +
+          '<div class="io-results-stat"><span class="num">' + (_crmImportRows.filter(function(r) { return r._dupeOf; }).length) + '</span><span class="label">Skipped (dupes)</span></div>' +
+          '<div class="io-results-stat"><span class="num">' + (result.errors ? result.errors.length : 0) + '</span><span class="label">Errors</span></div>' +
+        '</div>' + errHtml;
+
+      // Refresh
+      initData().then(function() {
+        renderContacts();
+        renderCompanies();
+        renderOverview();
+      });
+    }, 400);
+  }).catch(function(err) {
+    alert('Import failed: ' + (err.message || err));
+    crmCloseImport();
+  });
+}
+
+// ---- Standalone Dedupe ----
+
+function crmFindDupes(collection) {
+  document.getElementById('crm-dedupe-title').textContent = 'Find Duplicates — ' + collection.charAt(0).toUpperCase() + collection.slice(1);
+  document.getElementById('crm-dedupe-modal').classList.add('active');
+  document.getElementById('crm-dedupe-body').innerHTML = '<p style="text-align:center;">Scanning...</p>';
+
+  var records = collection === 'contacts' ? loadData('contacts') : loadData('companies');
+  var groups = CandidIO.findDuplicatesInSet(records, collection);
+
+  if (!groups.length) {
+    document.getElementById('crm-dedupe-body').innerHTML =
+      '<div class="io-dedupe-empty"><div class="io-dedupe-empty-icon">&#10004;</div><p>No duplicates found!</p></div>';
+    return;
+  }
+
+  var html = '<p style="margin-bottom:12px;">' + groups.length + ' duplicate group(s) found.</p>';
+  groups.forEach(function(g, gi) {
+    var nameField = collection === 'contacts' ? 'name' : 'name';
+    var displayName = collection === 'contacts'
+      ? ((g.canonical.firstName || '') + ' ' + (g.canonical.lastName || '')).trim() || g.canonical.name
+      : g.canonical.name;
+    html += '<div class="io-dedupe-group">';
+    html += '<div class="io-dedupe-group-header"><span>' + escapeHtml(displayName || 'Unnamed') + '</span><span class="badge">' + (g.duplicates.length + 1) + ' records</span></div>';
+    html += '<div class="io-dedupe-item canonical"><span><span class="tag keep">KEEP</span> ' + escapeHtml(displayName) + ' <small style="color:var(--text-muted);">(' + (g.canonical.email || g.canonical.id || '') + ')</small></span></div>';
+    g.duplicates.forEach(function(d) {
+      var dName = collection === 'contacts'
+        ? ((d.firstName || '') + ' ' + (d.lastName || '')).trim() || d.name
+        : d.name;
+      html += '<div class="io-dedupe-item"><span><span class="tag dup">DUP</span> ' + escapeHtml(dName) + ' <small style="color:var(--text-muted);">(' + (d.email || d.id || '') + ')</small></span></div>';
+    });
+    html += '<div class="io-dedupe-actions"><button class="btn-io primary" onclick="crmMergeDupes(\'' + collection + '\',' + gi + ')">Merge (keep first, delete others)</button><button class="btn-io" onclick="this.closest(\'.io-dedupe-group\').remove()">Dismiss</button></div>';
+    html += '</div>';
+  });
+
+  document.getElementById('crm-dedupe-body').innerHTML = html;
+  window._crmDedupeGroups = groups;
+}
+
+function crmMergeDupes(collection, groupIndex) {
+  var groups = window._crmDedupeGroups;
+  if (!groups || !groups[groupIndex]) return;
+  var g = groups[groupIndex];
+
+  // For contacts: update linked deals to point to canonical
+  var updatePromises = [];
+  if (collection === 'contacts') {
+    g.duplicates.forEach(function(dupe) {
+      var linkedDeals = _deals.filter(function(d) { return d.contactId === dupe.id; });
+      linkedDeals.forEach(function(deal) {
+        updatePromises.push(CandidStore.update('deals', deal.id, { contactId: g.canonical.id }));
+      });
+    });
+  }
+
+  var deletePromises = g.duplicates.map(function(d) {
+    return CandidStore.remove(collection, d.id);
+  });
+
+  Promise.all(updatePromises).then(function() {
+    return Promise.all(deletePromises);
+  }).then(function() {
+    return initData();
+  }).then(function() {
+    renderContacts();
+    renderCompanies();
+    renderOverview();
+    crmFindDupes(collection);
+  });
+}
+
+function crmCloseDedupe() {
+  document.getElementById('crm-dedupe-modal').classList.remove('active');
+  window._crmDedupeGroups = null;
+}

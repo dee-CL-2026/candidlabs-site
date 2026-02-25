@@ -7,6 +7,7 @@
   <title>candidCRM - Candidlabs</title>
   <link rel="stylesheet" href="../styles.css">
   <link rel="stylesheet" href="crm.css">
+  <link rel="stylesheet" href="../import-export.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
@@ -153,6 +154,12 @@
                 <select class="crm-filter-select" id="contacts-company-filter" onchange="renderContacts(document.getElementById('contacts-search').value)">
                   <option value="">All Companies</option>
                 </select>
+                <div class="io-actions">
+                  <button class="btn-io" onclick="crmExport('contacts')">Export CSV</button>
+                  <button class="btn-io" onclick="CandidIO.downloadTemplate('contacts')">Template</button>
+                  <button class="btn-io" onclick="crmFindDupes('contacts')">Find Duplicates</button>
+                  <button class="btn-io primary" onclick="crmOpenImport('contacts')">Import CSV</button>
+                </div>
                 <button class="btn-add" onclick="openAddContact()">+ Add Contact</button>
               </div>
 
@@ -191,6 +198,12 @@
                   <option value="individual">Individual</option>
                   <option value="partner">Partner</option>
                 </select>
+                <div class="io-actions">
+                  <button class="btn-io" onclick="crmExport('companies')">Export CSV</button>
+                  <button class="btn-io" onclick="CandidIO.downloadTemplate('companies')">Template</button>
+                  <button class="btn-io" onclick="crmFindDupes('companies')">Find Duplicates</button>
+                  <button class="btn-io primary" onclick="crmOpenImport('companies')">Import CSV</button>
+                </div>
                 <button class="btn-add" onclick="openAddCompany()">+ Add Company</button>
                 <button class="btn-add" onclick="openKAAForm()">KAA Form</button>
               </div>
@@ -277,9 +290,15 @@
       <h3 id="contact-modal-title">Add Contact</h3>
       <form id="contact-form" onsubmit="event.preventDefault(); saveContact();">
         <input type="hidden" id="contact-edit-id">
-        <div class="crm-form-group">
-          <label for="contact-name">Name *</label>
-          <input type="text" id="contact-name" required>
+        <div class="crm-form-row">
+          <div class="crm-form-group">
+            <label for="contact-first-name">First Name *</label>
+            <input type="text" id="contact-first-name" required>
+          </div>
+          <div class="crm-form-group">
+            <label for="contact-last-name">Last Name</label>
+            <input type="text" id="contact-last-name">
+          </div>
         </div>
         <div class="crm-form-row">
           <div class="crm-form-group">
@@ -447,6 +466,61 @@
     </div>
   </div>
 
+  <!-- Import Modal -->
+  <div class="io-modal-overlay" id="crm-import-modal">
+    <div class="io-modal-lg" role="dialog" aria-label="Import CSV">
+      <div class="io-modal-header">
+        <h3 id="crm-import-title">Import CSV</h3>
+        <button class="io-modal-close" onclick="crmCloseImport()">&times;</button>
+      </div>
+      <div class="io-modal-body">
+        <div class="io-step active" id="crm-import-step-upload">
+          <div class="io-upload-area" id="crm-upload-area">
+            <div class="io-upload-icon">&#128196;</div>
+            <p><strong>Click to select a CSV file</strong> or drag and drop</p>
+            <p>Download the <button class="btn-io" onclick="event.stopPropagation(); CandidIO.downloadTemplate(window._crmImportCollection || 'contacts')" style="display:inline;">template</button> first</p>
+            <input type="file" id="crm-import-file" accept=".csv" style="display:none" onchange="crmHandleFile(this)">
+          </div>
+        </div>
+        <div class="io-step" id="crm-import-step-preview">
+          <div class="io-stats" id="crm-import-stats"></div>
+          <div class="io-options">
+            <label><input type="checkbox" id="crm-import-skip-dupes" checked> Skip duplicates</label>
+            <label><input type="checkbox" id="crm-import-create-companies"> Auto-create missing companies</label>
+          </div>
+          <div class="io-preview-scroll" id="crm-import-preview"></div>
+        </div>
+        <div class="io-step" id="crm-import-step-progress">
+          <p style="text-align:center;">Importing records...</p>
+          <div class="io-progress-bar"><div class="io-progress-fill" id="crm-import-progress-fill"></div></div>
+        </div>
+        <div class="io-step" id="crm-import-step-results">
+          <div class="io-results" id="crm-import-results"></div>
+        </div>
+      </div>
+      <div class="io-modal-footer" id="crm-import-footer">
+        <button type="button" class="btn-modal secondary" onclick="crmCloseImport()">Cancel</button>
+        <button type="button" class="btn-modal primary" id="crm-import-confirm-btn" onclick="crmConfirmImport()" style="display:none">Import</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedupe Modal -->
+  <div class="io-modal-overlay" id="crm-dedupe-modal">
+    <div class="io-modal-lg" role="dialog" aria-label="Find Duplicates">
+      <div class="io-modal-header">
+        <h3 id="crm-dedupe-title">Find Duplicates</h3>
+        <button class="io-modal-close" onclick="crmCloseDedupe()">&times;</button>
+      </div>
+      <div class="io-modal-body" id="crm-dedupe-body">
+        <p style="text-align:center;">Scanning...</p>
+      </div>
+      <div class="io-modal-footer">
+        <button type="button" class="btn-modal secondary" onclick="crmCloseDedupe()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Detail Drawer Backdrop -->
   <div class="crm-detail-backdrop" id="detail-backdrop" onclick="closeDetail()"></div>
 
@@ -488,6 +562,7 @@
   <script src="../auth.js"></script>
   <!-- script.js handles theme toggle + mobile menu (site-wide) -->
   <script src="../data-adapter.js"></script>
+  <script src="../import-export.js"></script>
   <script src="../script.js"></script>
   <script src="crm.js"></script>
 </body>

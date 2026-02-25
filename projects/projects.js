@@ -1034,5 +1034,275 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.key === 'Escape' && _drawerProjectId) closeProjectDrawer();
   });
 
+  // Import modal: upload area click + drag-and-drop
+  var pmUploadArea = document.getElementById('pm-upload-area');
+  if (pmUploadArea) {
+    pmUploadArea.addEventListener('click', function() {
+      document.getElementById('pm-import-file').click();
+    });
+    pmUploadArea.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      pmUploadArea.classList.add('dragover');
+    });
+    pmUploadArea.addEventListener('dragleave', function() {
+      pmUploadArea.classList.remove('dragover');
+    });
+    pmUploadArea.addEventListener('drop', function(e) {
+      e.preventDefault();
+      pmUploadArea.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        document.getElementById('pm-import-file').files = e.dataTransfer.files;
+        pmHandleFile(document.getElementById('pm-import-file'));
+      }
+    });
+  }
+
+  // Close import/dedupe modals on overlay click
+  var pmImportModal = document.getElementById('pm-import-modal');
+  if (pmImportModal) {
+    pmImportModal.addEventListener('click', function(e) {
+      if (e.target === pmImportModal) pmCloseImport();
+    });
+  }
+  var pmDedupeModal = document.getElementById('pm-dedupe-modal');
+  if (pmDedupeModal) {
+    pmDedupeModal.addEventListener('click', function(e) {
+      if (e.target === pmDedupeModal) pmCloseDedupe();
+    });
+  }
+
   switchTool('overview');
 });
+
+// ============================================================
+// IMPORT / EXPORT / DEDUPE
+// ============================================================
+
+var _pmImportCollection = null;
+var _pmImportRows = [];
+
+function pmExport(collection) {
+  var records, lookupData;
+  if (collection === 'projects') {
+    records = scopedProjects(pmGetProjects());
+    lookupData = {};
+  } else {
+    records = scopedTasks(pmGetTasks(), pmGetProjects());
+    lookupData = { projects: pmGetProjects() };
+  }
+  if (!records.length) { alert('No records to export.'); return; }
+  CandidIO.exportCSV(collection, records, lookupData);
+}
+
+function pmOpenImport(collection) {
+  _pmImportCollection = collection;
+  window._pmImportCollection = collection;
+  _pmImportRows = [];
+  document.getElementById('pm-import-title').textContent = 'Import ' + collection.charAt(0).toUpperCase() + collection.slice(1);
+  // Reset steps
+  document.querySelectorAll('#pm-import-modal .io-step').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById('pm-import-step-upload').classList.add('active');
+  document.getElementById('pm-import-confirm-btn').style.display = 'none';
+  document.getElementById('pm-import-file').value = '';
+  document.getElementById('pm-import-modal').classList.add('active');
+}
+
+function pmCloseImport() {
+  document.getElementById('pm-import-modal').classList.remove('active');
+  _pmImportCollection = null;
+  _pmImportRows = [];
+}
+
+function pmHandleFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var rows = CandidIO.parseCSV(e.target.result);
+    if (!rows.length) { alert('No data found in CSV.'); return; }
+
+    // Validate
+    rows = CandidIO.validateRows(rows, _pmImportCollection);
+
+    // Resolve FKs
+    var lookupData = { projects: pmGetProjects(), companies: [] };
+    rows = CandidIO.resolveFK(rows, _pmImportCollection, lookupData);
+
+    // Find duplicates
+    var existing = _pmImportCollection === 'projects' ? pmGetProjects() : pmGetTasks();
+    rows = CandidIO.findDuplicates(rows, existing, _pmImportCollection);
+
+    _pmImportRows = rows;
+    _pmRenderPreview(rows);
+
+    // Show preview step
+    document.querySelectorAll('#pm-import-modal .io-step').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById('pm-import-step-preview').classList.add('active');
+    document.getElementById('pm-import-confirm-btn').style.display = '';
+  };
+  reader.readAsText(file);
+}
+
+function _pmRenderPreview(rows) {
+  var tmpl = CandidIO.TEMPLATES[_pmImportCollection];
+  var headers = tmpl.headers;
+  var newCount = 0, dupeCount = 0, errorCount = 0;
+
+  rows.forEach(function(r) {
+    if (r._errors) errorCount++;
+    else if (r._dupeOf) dupeCount++;
+    else newCount++;
+  });
+
+  // Stats
+  document.getElementById('pm-import-stats').innerHTML =
+    '<div class="io-stat"><span class="io-stat-dot total"></span> ' + rows.length + ' rows</div>' +
+    '<div class="io-stat"><span class="io-stat-dot new"></span> ' + newCount + ' new</div>' +
+    '<div class="io-stat"><span class="io-stat-dot dupe"></span> ' + dupeCount + ' duplicates</div>' +
+    '<div class="io-stat"><span class="io-stat-dot error"></span> ' + errorCount + ' errors</div>';
+
+  // Table
+  var html = '<table class="io-preview-table"><thead><tr><th>#</th><th>Status</th>';
+  headers.forEach(function(h) { html += '<th>' + pmEscapeHtml(h) + '</th>'; });
+  html += '</tr></thead><tbody>';
+
+  rows.forEach(function(r, idx) {
+    var cls = r._errors ? 'io-row-error' : (r._dupeOf ? 'io-row-dupe' : 'io-row-new');
+    var badge = r._errors ? '<span class="io-row-badge error">Error</span>'
+              : (r._dupeOf ? '<span class="io-row-badge dupe">' + (r._dupeType === 'exact' ? 'Exact' : 'Fuzzy') + ' Dupe</span>'
+              : '<span class="io-row-badge new">New</span>');
+    html += '<tr class="' + cls + '"><td>' + (r._row || idx + 2) + '</td><td>' + badge + '</td>';
+    headers.forEach(function(h) { html += '<td>' + pmEscapeHtml(r[h] || '') + '</td>'; });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('pm-import-preview').innerHTML = html;
+}
+
+function pmConfirmImport() {
+  var skipDupes = document.getElementById('pm-import-skip-dupes').checked;
+
+  // Filter rows
+  var toImport = _pmImportRows.filter(function(r) {
+    if (r._errors) return false;
+    if (skipDupes && r._dupeOf) return false;
+    return true;
+  });
+
+  if (!toImport.length) { alert('No rows to import.'); return; }
+
+  // Show progress
+  document.querySelectorAll('#pm-import-modal .io-step').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById('pm-import-step-progress').classList.add('active');
+  document.getElementById('pm-import-confirm-btn').style.display = 'none';
+  document.getElementById('pm-import-progress-fill').style.width = '30%';
+
+  // Build clean records
+  var tmpl = CandidIO.TEMPLATES[_pmImportCollection];
+  var cleanRecords = toImport.map(function(r) {
+    var rec = {};
+    tmpl.headers.forEach(function(h) {
+      if (r[h]) rec[h] = r[h];
+    });
+    // Include resolved FK
+    if (r.project_id) rec.project_id = r.project_id;
+    return rec;
+  });
+
+  document.getElementById('pm-import-progress-fill').style.width = '60%';
+
+  CandidStore.bulkCreate(_pmImportCollection, cleanRecords).then(function(result) {
+    document.getElementById('pm-import-progress-fill').style.width = '100%';
+
+    setTimeout(function() {
+      // Show results
+      document.querySelectorAll('#pm-import-modal .io-step').forEach(function(s) { s.classList.remove('active'); });
+      document.getElementById('pm-import-step-results').classList.add('active');
+
+      var errHtml = '';
+      if (result.errors && result.errors.length) {
+        errHtml = '<div class="io-error-list">' +
+          result.errors.map(function(e) { return '<div class="io-error-item">Row ' + e.row + ': ' + pmEscapeHtml(e.error) + '</div>'; }).join('') +
+          '</div>';
+      }
+
+      document.getElementById('pm-import-results').innerHTML =
+        '<div class="io-results-icon">&#9989;</div>' +
+        '<h4>Import Complete</h4>' +
+        '<div class="io-results-stats">' +
+          '<div class="io-results-stat"><span class="num">' + (result.imported || 0) + '</span><span class="label">Imported</span></div>' +
+          '<div class="io-results-stat"><span class="num">' + (_pmImportRows.filter(function(r) { return r._dupeOf; }).length) + '</span><span class="label">Skipped (dupes)</span></div>' +
+          '<div class="io-results-stat"><span class="num">' + (result.errors ? result.errors.length : 0) + '</span><span class="label">Errors</span></div>' +
+        '</div>' + errHtml;
+
+      // Refresh data
+      pmLoadAll().then(function() {
+        renderProjects();
+        renderTasks();
+        renderPMOverview();
+      });
+    }, 400);
+  }).catch(function(err) {
+    alert('Import failed: ' + (err.message || err));
+    pmCloseImport();
+  });
+}
+
+// ---- Standalone Dedupe ----
+
+function pmFindDupes(collection) {
+  document.getElementById('pm-dedupe-title').textContent = 'Find Duplicates — ' + collection.charAt(0).toUpperCase() + collection.slice(1);
+  document.getElementById('pm-dedupe-modal').classList.add('active');
+  document.getElementById('pm-dedupe-body').innerHTML = '<p style="text-align:center;">Scanning...</p>';
+
+  var records = collection === 'projects' ? pmGetProjects() : pmGetTasks();
+  var groups = CandidIO.findDuplicatesInSet(records, collection);
+
+  if (!groups.length) {
+    document.getElementById('pm-dedupe-body').innerHTML =
+      '<div class="io-dedupe-empty"><div class="io-dedupe-empty-icon">&#10004;</div><p>No duplicates found!</p></div>';
+    return;
+  }
+
+  var html = '<p style="margin-bottom:12px;">' + groups.length + ' duplicate group(s) found.</p>';
+  groups.forEach(function(g, gi) {
+    var nameField = collection === 'tasks' ? 'title' : 'name';
+    html += '<div class="io-dedupe-group">';
+    html += '<div class="io-dedupe-group-header"><span>' + pmEscapeHtml(g.canonical[nameField] || 'Unnamed') + '</span><span class="badge">' + (g.duplicates.length + 1) + ' records</span></div>';
+    html += '<div class="io-dedupe-item canonical"><span><span class="tag keep">KEEP</span> ' + pmEscapeHtml(g.canonical[nameField]) + ' <small style="color:var(--text-muted);">(' + (g.canonical.id || '') + ')</small></span></div>';
+    g.duplicates.forEach(function(d) {
+      html += '<div class="io-dedupe-item"><span><span class="tag dup">DUP</span> ' + pmEscapeHtml(d[nameField]) + ' <small style="color:var(--text-muted);">(' + (d.id || '') + ')</small></span></div>';
+    });
+    html += '<div class="io-dedupe-actions"><button class="btn-io primary" onclick="pmMergeDupes(\'' + collection + '\',' + gi + ')">Merge (keep first, delete others)</button><button class="btn-io" onclick="this.closest(\'.io-dedupe-group\').remove()">Dismiss</button></div>';
+    html += '</div>';
+  });
+
+  document.getElementById('pm-dedupe-body').innerHTML = html;
+  window._pmDedupeGroups = groups;
+}
+
+function pmMergeDupes(collection, groupIndex) {
+  var groups = window._pmDedupeGroups;
+  if (!groups || !groups[groupIndex]) return;
+  var g = groups[groupIndex];
+
+  var deletePromises = g.duplicates.map(function(d) {
+    return CandidStore.remove(collection, d.id);
+  });
+
+  Promise.all(deletePromises).then(function() {
+    return pmLoadAll();
+  }).then(function() {
+    renderProjects();
+    renderTasks();
+    renderPMOverview();
+    // Re-scan
+    pmFindDupes(collection);
+  });
+}
+
+function pmCloseDedupe() {
+  document.getElementById('pm-dedupe-modal').classList.remove('active');
+  window._pmDedupeGroups = null;
+}

@@ -25,9 +25,9 @@ const COLLECTIONS = {
   contacts: {
     table: 'contacts',
     prefix: 'CON',
-    required: ['name'],
-    columns: ['id', 'name', 'email', 'phone', 'role', 'company_id', 'notes', 'meta', 'created_at', 'updated_at'],
-    searchable: ['name', 'email', 'role']
+    required: ['first_name'],
+    columns: ['id', 'name', 'first_name', 'last_name', 'email', 'phone', 'role', 'company_id', 'notes', 'meta', 'created_at', 'updated_at'],
+    searchable: ['name', 'first_name', 'last_name', 'email', 'role']
   },
   companies: {
     table: 'companies',
@@ -121,6 +121,13 @@ async function createOne(req, env, collection) {
   const id = generateId(cfg.prefix);
   const now = new Date().toISOString();
 
+  // Contacts: auto-compute name from first_name + last_name
+  if (collection === 'contacts') {
+    if ((body.first_name || body.last_name) && !body.name) {
+      body.name = ((body.first_name || '') + ' ' + (body.last_name || '')).trim();
+    }
+  }
+
   // Build insert from known columns only
   const record = { id, created_at: now, updated_at: now };
   for (const col of cfg.columns) {
@@ -147,6 +154,14 @@ async function updateOne(req, env, collection, id) {
 
   const existing = await env.DB.prepare(`SELECT id FROM ${cfg.table} WHERE id = ?`).bind(id).first();
   if (!existing) return json({ ok: false, error: { code: 'NOT_FOUND', message: `${collection} ${id} not found` } }, 404);
+
+  // Contacts: recompute name when first_name or last_name changes
+  if (collection === 'contacts' && (body.first_name !== undefined || body.last_name !== undefined)) {
+    const cur = await env.DB.prepare(`SELECT first_name, last_name FROM ${cfg.table} WHERE id = ?`).bind(id).first();
+    const fn = body.first_name !== undefined ? body.first_name : (cur?.first_name || '');
+    const ln = body.last_name !== undefined ? body.last_name : (cur?.last_name || '');
+    body.name = (fn + ' ' + ln).trim();
+  }
 
   const sets = [];
   const binds = [];
@@ -289,6 +304,85 @@ async function projectsOverview(env) {
 }
 
 // ============================================================
+// Bulk Import
+// ============================================================
+
+async function bulkImport(req, env, collection) {
+  const cfg = COLLECTIONS[collection];
+  const body = await req.json().catch(() => ({}));
+  const records = body.records;
+
+  if (!Array.isArray(records) || records.length === 0) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'records array is required' } }, 400);
+  }
+  if (records.length > 500) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'Max 500 records per request' } }, 400);
+  }
+
+  const imported = [];
+  const errors = [];
+  const now = new Date().toISOString();
+  const stmts = [];
+
+  for (let i = 0; i < records.length; i++) {
+    try {
+      const row = records[i];
+
+      // Validate required fields
+      for (const field of cfg.required) {
+        if (!row[field] || String(row[field]).trim() === '') {
+          throw new Error(`${field} is required`);
+        }
+      }
+
+      // Contacts: auto-compute name from first_name + last_name
+      if (collection === 'contacts') {
+        if ((row.first_name || row.last_name) && !row.name) {
+          row.name = ((row.first_name || '') + ' ' + (row.last_name || '')).trim();
+        }
+      }
+
+      const id = generateId(cfg.prefix);
+      const record = { id, created_at: now, updated_at: now };
+      for (const col of cfg.columns) {
+        if (col === 'id' || col === 'created_at' || col === 'updated_at') continue;
+        if (row[col] !== undefined) {
+          record[col] = row[col];
+        }
+      }
+
+      const cols = Object.keys(record);
+      const placeholders = cols.map(() => '?').join(', ');
+      const values = cols.map(c => record[c]);
+
+      stmts.push(env.DB.prepare(
+        `INSERT INTO ${cfg.table} (${cols.join(', ')}) VALUES (${placeholders})`
+      ).bind(...values));
+
+      imported.push(record);
+    } catch (err) {
+      errors.push({ row: i + 1, error: err.message });
+    }
+  }
+
+  // Execute in batches of 100 (D1 batch limit)
+  for (let b = 0; b < stmts.length; b += 100) {
+    const batch = stmts.slice(b, b + 100);
+    await env.DB.batch(batch);
+  }
+
+  return json({
+    ok: true,
+    data: {
+      imported: imported.length,
+      skipped: 0,
+      errors: errors,
+      records: imported
+    }
+  }, 201);
+}
+
+// ============================================================
 // Router
 // ============================================================
 
@@ -309,6 +403,10 @@ async function handleApi(req, env, url) {
   if (path === '/api/comments' && req.method === 'POST') return createComment(req, env);
   const commentDeleteMatch = path.match(/^\/api\/comments\/([^/]+)$/);
   if (commentDeleteMatch && req.method === 'DELETE') return deleteComment(env, commentDeleteMatch[1]);
+
+  // Bulk import: /api/{collection}/import
+  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks)\/import$/);
+  if (importMatch && req.method === 'POST') return bulkImport(req, env, importMatch[1]);
 
   // CRUD routes: /api/{collection}[/{id}]
   const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks)(?:\/([^/]+))?$/);

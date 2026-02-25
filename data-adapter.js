@@ -340,6 +340,61 @@ var CandidStore = (function () {
     TEAM_ENUM: TEAM_ENUM,
     PROJECT_TYPE_ENUM: PROJECT_TYPE_ENUM,
 
-    isApiMode: function () { return _useApi; }
+    isApiMode: function () { return _useApi; },
+
+    // Bulk import — POST to /{collection}/import, fallback to sequential create
+    bulkCreate: function (collection, records) {
+      if (!_useApi) {
+        // localStorage fallback: sequential insert
+        var all = lsLoad(collection) || [];
+        records.forEach(function (r) { all.push(r); });
+        lsSave(collection, all);
+        return Promise.resolve({ imported: records.length, skipped: 0, errors: [], records: records });
+      }
+
+      var snakeRecords = records.map(function (r) { return keysToSnake(r); });
+
+      return apiFetch('/' + collection + '/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ records: snakeRecords })
+      }).then(function (body) {
+        if (body.ok) {
+          return {
+            imported: body.data.imported || 0,
+            skipped: body.data.skipped || 0,
+            errors: body.data.errors || [],
+            records: body.data.records ? arrayToCamel(body.data.records) : []
+          };
+        }
+        throw new Error(body.error ? body.error.message : 'Import failed');
+      }).catch(function (err) {
+        // Fallback: sequential create if bulk endpoint not available
+        if (err.message && err.message.indexOf('404') !== -1) {
+          var results = { imported: 0, skipped: 0, errors: [], records: [] };
+          var chain = Promise.resolve();
+          snakeRecords.forEach(function (rec, idx) {
+            chain = chain.then(function () {
+              return apiFetch('/' + collection, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rec)
+              }).then(function (body) {
+                if (body.ok) {
+                  results.imported++;
+                  if (body.data) results.records.push(keysToCamel(body.data));
+                } else {
+                  results.errors.push({ row: idx + 1, error: body.error ? body.error.message : 'Failed' });
+                }
+              }).catch(function (e) {
+                results.errors.push({ row: idx + 1, error: e.message || 'Failed' });
+              });
+            });
+          });
+          return chain.then(function () { return results; });
+        }
+        throw err;
+      });
+    }
   };
 })();

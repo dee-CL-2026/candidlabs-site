@@ -7,6 +7,7 @@
   <title>Projects - Candidlabs</title>
   <link rel="stylesheet" href="../styles.css">
   <link rel="stylesheet" href="projects.css">
+  <link rel="stylesheet" href="../import-export.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
@@ -151,6 +152,11 @@
 
               <div class="pm-action-bar">
                 <input type="text" class="pm-search" id="projects-search" placeholder="Search projects..." aria-label="Search projects">
+                <div class="io-actions">
+                  <button class="btn-io" onclick="pmExport('projects')">Export CSV</button>
+                  <button class="btn-io" onclick="CandidIO.downloadTemplate('projects')">Template</button>
+                  <button class="btn-io primary" onclick="pmOpenImport('projects')">Import CSV</button>
+                </div>
                 <button class="btn-add" onclick="openAddProject()">+ Add Project</button>
               </div>
 
@@ -203,6 +209,12 @@
                   <select class="pm-search" id="tasks-assignee-filter" aria-label="Filter by assignee" style="flex:0 0 auto; min-width:150px;" onchange="filterTasksByAssignee()">
                     <option value="all">All Assignees</option>
                   </select>
+                  <div class="io-actions">
+                    <button class="btn-io" onclick="pmExport('tasks')">Export CSV</button>
+                    <button class="btn-io" onclick="CandidIO.downloadTemplate('tasks')">Template</button>
+                    <button class="btn-io" onclick="pmFindDupes('tasks')">Find Duplicates</button>
+                    <button class="btn-io primary" onclick="pmOpenImport('tasks')">Import CSV</button>
+                  </div>
                   <button class="btn-add" onclick="openAddTask()">+ Add Task</button>
                 </div>
 
@@ -449,6 +461,64 @@
     </div>
   </div>
 
+  <!-- Import Modal -->
+  <div class="io-modal-overlay" id="pm-import-modal">
+    <div class="io-modal-lg" role="dialog" aria-label="Import CSV">
+      <div class="io-modal-header">
+        <h3 id="pm-import-title">Import CSV</h3>
+        <button class="io-modal-close" onclick="pmCloseImport()">&times;</button>
+      </div>
+      <div class="io-modal-body">
+        <!-- Step 1: Upload -->
+        <div class="io-step active" id="pm-import-step-upload">
+          <div class="io-upload-area" id="pm-upload-area">
+            <div class="io-upload-icon">&#128196;</div>
+            <p><strong>Click to select a CSV file</strong> or drag and drop</p>
+            <p>Download the <button class="btn-io" onclick="event.stopPropagation(); CandidIO.downloadTemplate(window._pmImportCollection || 'projects')" style="display:inline;">template</button> first</p>
+            <input type="file" id="pm-import-file" accept=".csv" style="display:none" onchange="pmHandleFile(this)">
+          </div>
+        </div>
+        <!-- Step 2: Preview -->
+        <div class="io-step" id="pm-import-step-preview">
+          <div class="io-stats" id="pm-import-stats"></div>
+          <div class="io-options">
+            <label><input type="checkbox" id="pm-import-skip-dupes" checked> Skip duplicates</label>
+          </div>
+          <div class="io-preview-scroll" id="pm-import-preview"></div>
+        </div>
+        <!-- Step 3: Importing -->
+        <div class="io-step" id="pm-import-step-progress">
+          <p style="text-align:center;">Importing records...</p>
+          <div class="io-progress-bar"><div class="io-progress-fill" id="pm-import-progress-fill"></div></div>
+        </div>
+        <!-- Step 4: Results -->
+        <div class="io-step" id="pm-import-step-results">
+          <div class="io-results" id="pm-import-results"></div>
+        </div>
+      </div>
+      <div class="io-modal-footer" id="pm-import-footer">
+        <button class="btn-modal secondary" onclick="pmCloseImport()">Cancel</button>
+        <button class="btn-modal primary" id="pm-import-confirm-btn" onclick="pmConfirmImport()" style="display:none">Import</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedupe Modal -->
+  <div class="io-modal-overlay" id="pm-dedupe-modal">
+    <div class="io-modal-lg" role="dialog" aria-label="Find Duplicates">
+      <div class="io-modal-header">
+        <h3 id="pm-dedupe-title">Find Duplicates</h3>
+        <button class="io-modal-close" onclick="pmCloseDedupe()">&times;</button>
+      </div>
+      <div class="io-modal-body" id="pm-dedupe-body">
+        <p style="text-align:center;">Scanning...</p>
+      </div>
+      <div class="io-modal-footer">
+        <button class="btn-modal secondary" onclick="pmCloseDedupe()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="footer">
     <div class="container">
@@ -460,6 +530,7 @@
   <script src="../auth.js"></script>
   <!-- script.js handles theme toggle + mobile menu (site-wide) -->
   <script src="../data-adapter.js"></script>
+  <script src="../import-export.js"></script>
   <script src="../script.js"></script>
   <script src="projects.js"></script>
 </body>
