@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Candid Labs R&D Workspace - Product development pipeline, documents, trials, and SKU catalog.">
+  <title>R&D Workspace - Candidlabs</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../projects/projects.css">
+  <link rel="stylesheet" href="rnd.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body data-auth-require="true">
+  <!-- Navigation -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-container">
+      <a href="../index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
+
+      <ul class="nav-menu" role="menubar">
+        <li role="none"><a href="../crm/index.html" class="nav-link" role="menuitem">CRM</a></li>
+        <li role="none"><a href="../prospecting/index.html" class="nav-link" role="menuitem">Prospecting</a></li>
+        <li role="none"><a href="../projects/index.html" class="nav-link" role="menuitem">Projects</a></li>
+        <li role="none" data-auth-role="admin"><a href="../rnd/index.html" class="nav-link active" role="menuitem">R&D</a></li>
+        <li role="none"><a href="../reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none" class="nav-dropdown">
+              <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Tools ▾</button>
+              <ul class="nav-dropdown-menu">
+                <li><a href="https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform" class="nav-dropdown-item" target="_blank" rel="noopener">KAA Form</a></li>
+                <li><a href="https://docs.google.com/spreadsheets/d/19kDef25LdbvPssTkMusFGu8FmNbj2rWuF7NNF9SBSvs/edit" class="nav-dropdown-item" target="_blank" rel="noopener">Quote Generator</a></li>
+                <li><a href="https://xero.me" class="nav-dropdown-item" target="_blank" rel="noopener">Submit Expenses</a></li>
+              </ul>
+            </li>
+      </ul>
+
+      <div class="nav-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+
+        <a href="../login.html" class="btn btn-primary btn-login" aria-label="Login">Login</a>
+
+        <button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu" role="menu" aria-label="Mobile navigation">
+      <ul>
+        <li><a href="../crm/index.html" role="menuitem">CRM</a></li>
+        <li><a href="../prospecting/index.html" role="menuitem">Prospecting</a></li>
+        <li><a href="../projects/index.html" role="menuitem">Projects</a></li>
+        <li data-auth-role="admin"><a href="../rnd/index.html" role="menuitem">R&D</a></li>
+        <li><a href="../reports.html" role="menuitem">Reports</a></li>
+        <li><a href="https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform" role="menuitem" target="_blank" rel="noopener">KAA Form</a></li>
+        <li><a href="https://docs.google.com/spreadsheets/d/19kDef25LdbvPssTkMusFGu8FmNbj2rWuF7NNF9SBSvs/edit" role="menuitem" target="_blank" rel="noopener">Quote Generator</a></li>
+        <li><a href="https://xero.me" role="menuitem" target="_blank" rel="noopener">Submit Expenses</a></li>
+        <li><a href="../login.html" role="menuitem">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="container">
+        <h1 class="page-title">R&D Workspace</h1>
+        <p class="page-description">Product development pipeline, structured documents, trials, and SKU catalog</p>
+      </div>
+    </header>
+
+    <!-- Tool Layout: Sidebar + Content -->
+    <section class="section" aria-label="R&D Workspace Tool">
+      <div class="container">
+        <div class="tool-layout">
+
+          <!-- Sidebar -->
+          <aside class="tool-sidebar" aria-label="R&D navigation">
+            <div class="sidebar-section">
+              <div class="sidebar-label">R&D Modules</div>
+              <button class="tool-btn active" data-tool="overview" onclick="rndSwitchTool('overview')">Overview</button>
+              <button class="tool-btn" data-tool="pipeline" onclick="rndSwitchTool('pipeline')">Pipeline</button>
+              <button class="tool-btn" data-tool="documents" onclick="rndSwitchTool('documents')">Documents</button>
+              <button class="tool-btn" data-tool="skus" onclick="rndSwitchTool('skus')">SKU Catalog</button>
+            </div>
+          </aside>
+
+          <!-- Content Area -->
+          <div class="tool-content">
+
+            <!-- OVERVIEW PANEL -->
+            <div class="tool-panel active" id="tool-overview">
+              <div class="tool-panel-header">
+                <h2>R&D Overview</h2>
+                <p>Pipeline summary and recent activity</p>
+              </div>
+
+              <div class="rnd-stats">
+                <div class="rnd-stat-card">
+                  <div class="rnd-stat-number" id="stat-rnd-idea">0</div>
+                  <div class="rnd-stat-label">Ideas</div>
+                </div>
+                <div class="rnd-stat-card">
+                  <div class="rnd-stat-number" id="stat-rnd-feasibility">0</div>
+                  <div class="rnd-stat-label">Feasibility</div>
+                </div>
+                <div class="rnd-stat-card">
+                  <div class="rnd-stat-number" id="stat-rnd-trials">0</div>
+                  <div class="rnd-stat-label">In Trials</div>
+                </div>
+                <div class="rnd-stat-card">
+                  <div class="rnd-stat-number" id="stat-rnd-prelaunch">0</div>
+                  <div class="rnd-stat-label">Pre-Launch</div>
+                </div>
+                <div class="rnd-stat-card">
+                  <div class="rnd-stat-number" id="stat-rnd-docs">0</div>
+                  <div class="rnd-stat-label">Documents</div>
+                </div>
+                <div class="rnd-stat-card">
+                  <div class="rnd-stat-number" id="stat-rnd-skus">0</div>
+                  <div class="rnd-stat-label">Active SKUs</div>
+                </div>
+              </div>
+
+              <div id="rnd-recent-activity"></div>
+            </div>
+
+            <!-- PIPELINE PANEL -->
+            <div class="tool-panel" id="tool-pipeline">
+              <div class="tool-panel-header">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                  <div>
+                    <h2>R&D Pipeline</h2>
+                    <p>Product concepts from idea to launch</p>
+                  </div>
+                  <div class="rnd-view-toggle">
+                    <button class="rnd-view-btn active" id="pipeline-view-kanban" onclick="rndSetPipelineView('kanban')">&#9638; Board</button>
+                    <button class="rnd-view-btn" id="pipeline-view-list" onclick="rndSetPipelineView('list')">&#9776; List</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pm-action-bar">
+                <input type="text" class="pm-search" id="rnd-pipeline-search" placeholder="Search projects..." aria-label="Search R&D projects" oninput="rndRenderPipeline()">
+                <button class="btn-add" onclick="rndOpenAddProject()">+ New Project</button>
+              </div>
+
+              <div id="rnd-pipeline-kanban-view">
+                <div class="rnd-kanban-board" id="rnd-kanban-board"></div>
+              </div>
+
+              <div id="rnd-pipeline-list-view" style="display:none;">
+                <div class="rnd-table-container">
+                  <table class="rnd-table">
+                    <thead>
+                      <tr>
+                        <th>Project</th>
+                        <th>Stage</th>
+                        <th>Owner</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Target Launch</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="rnd-pipeline-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- DOCUMENTS PANEL -->
+            <div class="tool-panel" id="tool-documents">
+              <div class="tool-panel-header">
+                <h2>Documents</h2>
+                <p>All R&D documents across projects</p>
+              </div>
+
+              <div class="rnd-filter-bar">
+                <select class="rnd-filter-select" id="rnd-doc-project-filter" onchange="rndRenderDocuments()" aria-label="Filter by project">
+                  <option value="all">All Projects</option>
+                </select>
+                <select class="rnd-filter-select" id="rnd-doc-type-filter" onchange="rndRenderDocuments()" aria-label="Filter by type">
+                  <option value="all">All Types</option>
+                  <option value="concept_brief">Concept Brief</option>
+                  <option value="feasibility">Feasibility</option>
+                  <option value="trial_log">Trial Log</option>
+                  <option value="pdp">PDP</option>
+                  <option value="gtm">GTM Plan</option>
+                </select>
+              </div>
+
+              <div class="rnd-table-container">
+                <table class="rnd-table">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Type</th>
+                      <th>Project</th>
+                      <th>Status</th>
+                      <th>Author</th>
+                      <th>Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rnd-docs-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- SKU CATALOG PANEL -->
+            <div class="tool-panel" id="tool-skus">
+              <div class="tool-panel-header">
+                <h2>SKU Catalog</h2>
+                <p>Product SKU registry and status tracking</p>
+              </div>
+
+              <div class="pm-action-bar">
+                <input type="text" class="pm-search" id="rnd-sku-search" placeholder="Search SKUs..." aria-label="Search SKUs" oninput="rndRenderSkus()">
+                <button class="btn-add" onclick="rndOpenAddSku()">+ Add SKU</button>
+              </div>
+
+              <div class="rnd-table-container">
+                <table class="rnd-table">
+                  <thead>
+                    <tr>
+                      <th>SKU Code</th>
+                      <th>Product Name</th>
+                      <th>Variant</th>
+                      <th>Pack Size</th>
+                      <th>Status</th>
+                      <th>Linked R&D</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rnd-skus-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div><!-- /tool-content -->
+        </div><!-- /tool-layout -->
+      </div>
+    </section>
+  </main>
+
+  <!-- ================================================================
+       DRAWERS
+       ================================================================ -->
+
+  <!-- R&D PROJECT FORM DRAWER (Add/Edit) -->
+  <div class="rnd-form-backdrop" id="rnd-project-modal-backdrop" onclick="rndCloseModal('rnd-project-modal')"></div>
+  <aside class="rnd-form-drawer" id="rnd-project-modal" role="dialog" aria-labelledby="rnd-project-modal-title">
+    <div class="rnd-form-drawer-header">
+      <h3 id="rnd-project-modal-title">New R&D Project</h3>
+      <button class="btn-drawer-close" onclick="rndCloseModal('rnd-project-modal')">&times;</button>
+    </div>
+    <div class="rnd-form-drawer-body">
+      <form id="rnd-project-form" onsubmit="event.preventDefault(); rndSaveProject();">
+        <input type="hidden" id="rnd-project-edit-id">
+        <div class="rnd-form-group">
+          <label for="rnd-project-name">Project Name *</label>
+          <input type="text" id="rnd-project-name" required>
+        </div>
+        <div class="rnd-form-row">
+          <div class="rnd-form-group">
+            <label for="rnd-project-stage">Stage</label>
+            <select id="rnd-project-stage">
+              <option value="idea">Idea / Intake</option>
+              <option value="feasibility">Feasibility</option>
+              <option value="trials">R&D Trials</option>
+              <option value="pre-launch">Pre-Launch</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+          <div class="rnd-form-group">
+            <label for="rnd-project-priority">Priority</label>
+            <select id="rnd-project-priority">
+              <option value="high">High</option>
+              <option value="medium" selected>Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </div>
+        <div class="rnd-form-row">
+          <div class="rnd-form-group">
+            <label for="rnd-project-owner">Owner</label>
+            <input type="text" id="rnd-project-owner" placeholder="e.g. Dieter">
+          </div>
+          <div class="rnd-form-group">
+            <label for="rnd-project-category">Product Category</label>
+            <input type="text" id="rnd-project-category" placeholder="e.g. RTD Spirit, Mixer">
+          </div>
+        </div>
+        <div class="rnd-form-group">
+          <label for="rnd-project-target-market">Target Market</label>
+          <input type="text" id="rnd-project-target-market" placeholder="e.g. Indonesia, SEA">
+        </div>
+        <div class="rnd-form-row">
+          <div class="rnd-form-group">
+            <label for="rnd-project-start-date">Start Date</label>
+            <input type="date" id="rnd-project-start-date">
+          </div>
+          <div class="rnd-form-group">
+            <label for="rnd-project-target-launch">Target Launch</label>
+            <input type="date" id="rnd-project-target-launch">
+          </div>
+        </div>
+        <div class="rnd-form-group">
+          <label for="rnd-project-notes">Notes</label>
+          <textarea id="rnd-project-notes" placeholder="Additional context..."></textarea>
+        </div>
+        <div class="rnd-form-drawer-actions">
+          <button type="button" class="btn-modal secondary" onclick="rndCloseModal('rnd-project-modal')">Cancel</button>
+          <button type="submit" class="btn-modal primary">Save Project</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+  <!-- R&D PROJECT DETAIL DRAWER -->
+  <div class="rnd-detail-backdrop" id="rnd-detail-backdrop" onclick="rndCloseDetail()"></div>
+  <aside class="rnd-detail-drawer" id="rnd-detail-drawer" role="complementary" aria-label="R&D Project details">
+    <div class="rnd-detail-header">
+      <div class="rnd-detail-header-left">
+        <h3 id="rnd-detail-name">Project</h3>
+        <span class="rnd-stage" id="rnd-detail-stage"></span>
+      </div>
+      <div class="rnd-detail-header-right">
+        <button class="btn-row-action" onclick="rndEditFromDetail()">Edit</button>
+        <button class="btn-drawer-close" onclick="rndCloseDetail()" aria-label="Close drawer">&times;</button>
+      </div>
+    </div>
+    <div class="rnd-detail-body">
+      <!-- Stage timeline -->
+      <div id="rnd-detail-timeline" class="rnd-stage-timeline"></div>
+
+      <!-- Meta -->
+      <div class="rnd-detail-meta" id="rnd-detail-meta"></div>
+
+      <!-- Notes -->
+      <p id="rnd-detail-notes" style="font-size:0.85rem;color:var(--text-secondary);display:none;"></p>
+
+      <!-- Documents section -->
+      <div class="rnd-detail-section">
+        <div class="rnd-detail-section-header">
+          <span class="rnd-detail-section-title">Documents</span>
+          <span class="rnd-detail-section-count" id="rnd-detail-docs-count">0</span>
+          <div class="rnd-detail-add-btn" style="position:relative;">
+            <button class="rnd-detail-add-btn" id="rnd-detail-add-doc-btn" onclick="rndToggleDocMenu()">+ Add Doc</button>
+            <div id="rnd-doc-type-menu" style="display:none;position:absolute;top:100%;right:0;z-index:10;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.15);padding:4px 0;min-width:180px;margin-top:4px;">
+              <button class="rnd-doc-menu-item" onclick="rndOpenAddDoc(null,'concept_brief')" style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.85rem;color:var(--text-primary);cursor:pointer;">Concept Brief</button>
+              <button class="rnd-doc-menu-item" onclick="rndOpenAddDoc(null,'feasibility')" style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.85rem;color:var(--text-primary);cursor:pointer;">Feasibility Document</button>
+              <button class="rnd-doc-menu-item" onclick="rndOpenAddDoc(null,'trial_log')" style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.85rem;color:var(--text-primary);cursor:pointer;">R&D Trial Log</button>
+              <button class="rnd-doc-menu-item" onclick="rndOpenAddDoc(null,'pdp')" style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.85rem;color:var(--text-primary);cursor:pointer;">Product Dev Plan (PDP)</button>
+              <button class="rnd-doc-menu-item" onclick="rndOpenAddDoc(null,'gtm')" style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.85rem;color:var(--text-primary);cursor:pointer;">Go-To-Market Plan</button>
+            </div>
+          </div>
+        </div>
+        <div id="rnd-detail-docs-list"></div>
+      </div>
+
+      <!-- SKUs section -->
+      <div class="rnd-detail-section">
+        <div class="rnd-detail-section-header">
+          <span class="rnd-detail-section-title">Linked SKUs</span>
+          <span class="rnd-detail-section-count" id="rnd-detail-skus-count">0</span>
+        </div>
+        <div id="rnd-detail-skus-list"></div>
+      </div>
+
+      <!-- Comments section -->
+      <div class="rnd-detail-section">
+        <div class="rnd-detail-section-header">
+          <span class="rnd-detail-section-title">Comments</span>
+          <span class="rnd-detail-section-count" id="rnd-detail-comments-count">0</span>
+        </div>
+        <div id="rnd-detail-comments-list"></div>
+        <div class="rnd-comment-form">
+          <textarea id="rnd-detail-comment-input" placeholder="Add a comment..." rows="2"></textarea>
+          <button class="btn-modal primary" style="width:100%;margin-top:6px;" onclick="rndSaveComment()">Add Comment</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- DOCUMENT DRAWER (Add/Edit — dynamic form based on doc_type) -->
+  <div class="rnd-form-backdrop" id="rnd-doc-modal-backdrop" onclick="rndCloseModal('rnd-doc-modal')"></div>
+  <aside class="rnd-form-drawer" id="rnd-doc-modal" role="dialog" aria-labelledby="rnd-doc-modal-title">
+    <div class="rnd-form-drawer-header">
+      <h3 id="rnd-doc-modal-title">New Document</h3>
+      <button class="btn-drawer-close" onclick="rndCloseModal('rnd-doc-modal')">&times;</button>
+    </div>
+    <div class="rnd-form-drawer-body">
+      <form id="rnd-doc-form" onsubmit="event.preventDefault(); rndSaveDoc();">
+        <input type="hidden" id="rnd-doc-edit-id">
+        <input type="hidden" id="rnd-doc-project-id">
+        <input type="hidden" id="rnd-doc-type">
+        <div class="rnd-form-group">
+          <label for="rnd-doc-title">Document Title *</label>
+          <input type="text" id="rnd-doc-title" required>
+        </div>
+        <div class="rnd-form-row">
+          <div class="rnd-form-group">
+            <label for="rnd-doc-author">Author</label>
+            <input type="text" id="rnd-doc-author">
+          </div>
+          <div class="rnd-form-group">
+            <label for="rnd-doc-status">Status</label>
+            <select id="rnd-doc-status">
+              <option value="draft">Draft</option>
+              <option value="review">In Review</option>
+              <option value="approved">Approved</option>
+            </select>
+          </div>
+        </div>
+        <!-- Dynamic form fields rendered here by JS -->
+        <div id="rnd-doc-dynamic-fields"></div>
+        <!-- Trial entries table (only for trial_log) -->
+        <div id="rnd-doc-trials-section" style="display:none;">
+          <div class="rnd-form-section-label">Trial Entries</div>
+          <div id="rnd-doc-trials-list"></div>
+          <button type="button" class="btn-add" style="margin-top:8px;font-size:0.8rem;padding:6px 14px;" onclick="rndOpenAddTrial()">+ Add Trial</button>
+        </div>
+        <div class="rnd-form-group" style="margin-top:16px;">
+          <label for="rnd-doc-notes">Notes</label>
+          <textarea id="rnd-doc-notes" placeholder="Additional notes..."></textarea>
+        </div>
+        <div class="rnd-form-drawer-actions">
+          <button type="button" class="btn-modal secondary" onclick="rndCloseModal('rnd-doc-modal')">Cancel</button>
+          <button type="submit" class="btn-modal primary">Save Document</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+  <!-- SKU DRAWER (Add/Edit) -->
+  <div class="rnd-form-backdrop" id="rnd-sku-modal-backdrop" onclick="rndCloseModal('rnd-sku-modal')"></div>
+  <aside class="rnd-form-drawer" id="rnd-sku-modal" role="dialog" aria-labelledby="rnd-sku-modal-title">
+    <div class="rnd-form-drawer-header">
+      <h3 id="rnd-sku-modal-title">Add SKU</h3>
+      <button class="btn-drawer-close" onclick="rndCloseModal('rnd-sku-modal')">&times;</button>
+    </div>
+    <div class="rnd-form-drawer-body">
+      <form id="rnd-sku-form" onsubmit="event.preventDefault(); rndSaveSku();">
+        <input type="hidden" id="rnd-sku-edit-id">
+        <div class="rnd-form-row">
+          <div class="rnd-form-group">
+            <label for="rnd-sku-code">SKU Code *</label>
+            <input type="text" id="rnd-sku-code" required placeholder="e.g. CS-STD-24">
+          </div>
+          <div class="rnd-form-group">
+            <label for="rnd-sku-product-name">Product Name *</label>
+            <input type="text" id="rnd-sku-product-name" required>
+          </div>
+        </div>
+        <div class="rnd-form-row">
+          <div class="rnd-form-group">
+            <label for="rnd-sku-variant">Variant</label>
+            <input type="text" id="rnd-sku-variant" placeholder="e.g. Original, Lime">
+          </div>
+          <div class="rnd-form-group">
+            <label for="rnd-sku-pack-size">Pack Size</label>
+            <input type="text" id="rnd-sku-pack-size" placeholder="e.g. 24x250ml">
+          </div>
+        </div>
+        <div class="rnd-form-row">
+          <div class="rnd-form-group">
+            <label for="rnd-sku-status">Status</label>
+            <select id="rnd-sku-status">
+              <option value="active">Active</option>
+              <option value="development">Development</option>
+              <option value="discontinued">Discontinued</option>
+            </select>
+          </div>
+          <div class="rnd-form-group">
+            <label for="rnd-sku-rnd-project">Linked R&D Project</label>
+            <select id="rnd-sku-rnd-project">
+              <option value="">-- None --</option>
+            </select>
+          </div>
+        </div>
+        <div class="rnd-form-group">
+          <label for="rnd-sku-notes">Notes</label>
+          <textarea id="rnd-sku-notes" placeholder="Additional notes..."></textarea>
+        </div>
+        <div class="rnd-form-drawer-actions">
+          <button type="button" class="btn-modal secondary" onclick="rndCloseModal('rnd-sku-modal')">Cancel</button>
+          <button type="submit" class="btn-modal primary">Save SKU</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+  <!-- TRIAL ENTRY DRAWER -->
+  <div class="rnd-form-backdrop" id="rnd-trial-modal-backdrop" onclick="rndCloseModal('rnd-trial-modal')"></div>
+  <aside class="rnd-form-drawer" id="rnd-trial-modal" role="dialog" aria-labelledby="rnd-trial-modal-title">
+    <div class="rnd-form-drawer-header">
+      <h3 id="rnd-trial-modal-title">Add Trial Entry</h3>
+      <button class="btn-drawer-close" onclick="rndCloseModal('rnd-trial-modal')">&times;</button>
+    </div>
+    <div class="rnd-form-drawer-body">
+      <form id="rnd-trial-form" onsubmit="event.preventDefault(); rndSaveTrial();">
+        <input type="hidden" id="rnd-trial-edit-id">
+        <input type="hidden" id="rnd-trial-doc-id">
+        <div class="rnd-form-row">
+          <div class="rnd-form-group">
+            <label for="rnd-trial-number">Trial #</label>
+            <input type="number" id="rnd-trial-number" min="1">
+          </div>
+          <div class="rnd-form-group">
+            <label for="rnd-trial-date">Date</label>
+            <input type="date" id="rnd-trial-date">
+          </div>
+        </div>
+        <div class="rnd-form-group">
+          <label for="rnd-trial-recipe">Recipe / Ingredients</label>
+          <textarea id="rnd-trial-recipe" placeholder="Ingredients and ratios..."></textarea>
+        </div>
+        <div class="rnd-form-group">
+          <label for="rnd-trial-result">Result</label>
+          <select id="rnd-trial-result">
+            <option value="">-- Select --</option>
+            <option value="pass">Pass</option>
+            <option value="fail">Fail</option>
+            <option value="partial">Partial</option>
+          </select>
+        </div>
+        <div class="rnd-form-group">
+          <label for="rnd-trial-tasting-notes">Tasting Notes</label>
+          <textarea id="rnd-trial-tasting-notes" placeholder="Flavour profile, mouthfeel, appearance..."></textarea>
+        </div>
+        <div class="rnd-form-group">
+          <label for="rnd-trial-adjustments">Adjustments for Next Trial</label>
+          <textarea id="rnd-trial-adjustments" placeholder="What to change next..."></textarea>
+        </div>
+        <div class="rnd-form-drawer-actions">
+          <button type="button" class="btn-modal secondary" onclick="rndCloseModal('rnd-trial-modal')">Cancel</button>
+          <button type="submit" class="btn-modal primary">Save Trial</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-content">&copy; 2026 Candidlabs - Internal Use Only</p>
+    </div>
+  </footer>
+
+  <script src="../auth.js"></script>
+  <script src="../data-adapter.js"></script>
+  <script src="../script.js"></script>
+  <script src="rnd.js"></script>
+</body>
+</html>

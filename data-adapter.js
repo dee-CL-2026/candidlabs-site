@@ -63,7 +63,13 @@ var CandidStore = (function () {
     companies: 'crm_companies',
     deals: 'crm_deals',
     projects: 'pm_projects',
-    tasks: 'pm_tasks'
+    tasks: 'pm_tasks',
+    rnd_projects: 'rnd_projects',
+    rnd_documents: 'rnd_documents',
+    rnd_trial_entries: 'rnd_trial_entries',
+    rnd_stage_history: 'rnd_stage_history',
+    rnd_approvals: 'rnd_approvals',
+    skus: 'rnd_skus'
   };
 
   function lsLoad(collection) {

@@ -1,5 +1,5 @@
 // Candidlabs API — Cloudflare Worker + D1
-// RESTful CRUD for CRM (contacts, companies, deals) and Projects (projects, tasks)
+// RESTful CRUD for CRM (contacts, companies, deals), Projects (projects, tasks), and R&D (rnd_projects, rnd_documents, rnd_trial_entries, skus)
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -59,6 +59,54 @@ const COLLECTIONS = {
     columns: ['id', 'title', 'project_id', 'assignee', 'status', 'priority', 'due_date',
               'blocker_note', 'owner_team', 'visible_to_roles', 'visible_to_teams', 'meta', 'created_at', 'updated_at'],
     searchable: ['title', 'assignee']
+  },
+  rnd_projects: {
+    table: 'rnd_projects',
+    prefix: 'RND',
+    required: ['name'],
+    columns: ['id', 'name', 'stage', 'owner', 'target_market', 'product_category',
+              'priority', 'start_date', 'target_launch', 'gate_outcome', 'confidence_level',
+              'current_score', 'notes', 'meta', 'created_at', 'updated_at'],
+    searchable: ['name', 'owner', 'target_market']
+  },
+  rnd_stage_history: {
+    table: 'rnd_stage_history',
+    prefix: 'STH',
+    required: ['rnd_project_id', 'to_stage'],
+    columns: ['id', 'rnd_project_id', 'from_stage', 'to_stage', 'changed_by', 'note', 'created_at'],
+    searchable: []
+  },
+  rnd_approvals: {
+    table: 'rnd_approvals',
+    prefix: 'APR',
+    required: ['rnd_project_id', 'stage'],
+    columns: ['id', 'rnd_project_id', 'stage', 'approver', 'decision', 'comment', 'decided_at'],
+    searchable: ['approver'],
+    orderBy: 'decided_at'
+  },
+  rnd_documents: {
+    table: 'rnd_documents',
+    prefix: 'DOC',
+    required: ['rnd_project_id', 'doc_type', 'title'],
+    columns: ['id', 'rnd_project_id', 'doc_type', 'title', 'content', 'status',
+              'author', 'notes', 'meta', 'created_at', 'updated_at'],
+    searchable: ['title', 'author']
+  },
+  rnd_trial_entries: {
+    table: 'rnd_trial_entries',
+    prefix: 'TRL',
+    required: ['rnd_document_id'],
+    columns: ['id', 'rnd_document_id', 'trial_number', 'date', 'recipe', 'result',
+              'tasting_notes', 'adjustments', 'meta', 'created_at', 'updated_at'],
+    searchable: ['tasting_notes']
+  },
+  skus: {
+    table: 'skus',
+    prefix: 'SKU',
+    required: ['sku_code', 'product_name'],
+    columns: ['id', 'sku_code', 'product_name', 'variant', 'pack_size', 'status',
+              'rnd_project_id', 'notes', 'meta', 'created_at', 'updated_at'],
+    searchable: ['sku_code', 'product_name']
   }
 };
 
@@ -91,7 +139,7 @@ async function listCollection(env, collection, url) {
     sql += ' WHERE ' + wheres.join(' AND ');
   }
 
-  sql += ' ORDER BY created_at DESC';
+  sql += ` ORDER BY ${cfg.orderBy || 'created_at'} DESC`;
 
   const stmt = binds.length > 0
     ? env.DB.prepare(sql).bind(...binds)
@@ -197,6 +245,22 @@ async function deleteOne(env, collection, id) {
   // Cascade: if deleting a project, delete its tasks
   if (collection === 'projects') {
     await env.DB.prepare('DELETE FROM tasks WHERE project_id = ?').bind(id).run();
+  }
+
+  // Cascade: if deleting an rnd_project, delete docs (and their trial entries) and unlink SKUs
+  if (collection === 'rnd_projects') {
+    // Get all docs for this project
+    const { results: rndDocs } = await env.DB.prepare('SELECT id FROM rnd_documents WHERE rnd_project_id = ?').bind(id).all();
+    for (const doc of rndDocs) {
+      await env.DB.prepare('DELETE FROM rnd_trial_entries WHERE rnd_document_id = ?').bind(doc.id).run();
+    }
+    await env.DB.prepare('DELETE FROM rnd_documents WHERE rnd_project_id = ?').bind(id).run();
+    await env.DB.prepare('UPDATE skus SET rnd_project_id = NULL WHERE rnd_project_id = ?').bind(id).run();
+  }
+
+  // Cascade: if deleting an rnd_document, delete its trial entries
+  if (collection === 'rnd_documents') {
+    await env.DB.prepare('DELETE FROM rnd_trial_entries WHERE rnd_document_id = ?').bind(id).run();
   }
 
   // Referential checks: don't delete company if contacts/deals reference it
@@ -405,11 +469,11 @@ async function handleApi(req, env, url) {
   if (commentDeleteMatch && req.method === 'DELETE') return deleteComment(env, commentDeleteMatch[1]);
 
   // Bulk import: /api/{collection}/import
-  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks)\/import$/);
+  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus)\/import$/);
   if (importMatch && req.method === 'POST') return bulkImport(req, env, importMatch[1]);
 
   // CRUD routes: /api/{collection}[/{id}]
-  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks)(?:\/([^/]+))?$/);
+  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus)(?:\/([^/]+))?$/);
   if (!match) return json({ ok: false, error: { code: 'NOT_FOUND', message: 'Unknown endpoint' } }, 404);
 
   const collection = match[1];
