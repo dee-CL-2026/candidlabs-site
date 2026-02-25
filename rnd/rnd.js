@@ -101,6 +101,130 @@ var DOC_TYPE_LABELS = {
 };
 
 // ============================================================
+// GATE CRITERIA CONFIG — 5 criteria per stage transition
+// ============================================================
+
+var GATE_CRITERIA = {
+  'idea->feasibility': [
+    { check: 'doc_exists', docType: 'concept_brief', label: 'Concept Brief created' },
+    { check: 'doc_field_filled', docType: 'concept_brief', field: 'target_market', label: 'Target use case defined' },
+    { check: 'doc_field_filled', docType: 'concept_brief', field: 'flavour_direction', label: 'Core flavour direction defined' },
+    { check: 'doc_field_filled', docType: 'concept_brief', field: 'proposed_solution', label: 'Brand fit / positioning written' },
+    { check: 'approval_exists', stage: 'idea', label: 'Founder approval recorded' }
+  ],
+  'feasibility->trials': [
+    { check: 'doc_field_filled', docType: 'feasibility', field: 'ingredient_availability', label: 'Ingredient availability checked' },
+    { check: 'doc_field_filled', docType: 'feasibility', field: 'est_cogs', label: 'Rough COGS estimated' },
+    { check: 'doc_field_filled', docType: 'feasibility', field: 'supply_chain', label: 'Margin sanity vs Imperial baseline' },
+    { check: 'doc_field_filled', docType: 'feasibility', field: 'regulatory', label: 'Key risks documented' },
+    { check: 'approval_exists', stage: 'feasibility', label: 'Founder approval recorded' }
+  ],
+  'trials->pre-launch': [
+    { check: 'has_trial_entries', label: 'At least 1 trial entry with outcome' },
+    { check: 'doc_field_filled', docType: 'trial_log', field: 'final_recipe', label: 'Winning direction selected' },
+    { check: 'doc_field_filled', docType: 'trial_log', field: 'base_recipe', label: 'Dosage / sugar range defined' },
+    { check: 'doc_field_filled', docType: 'trial_log', field: 'signoff_name', label: 'Format decision confirmed' },
+    { check: 'approval_exists', stage: 'trials', label: 'Founder approval recorded' }
+  ],
+  'pre-launch->archived': [
+    { check: 'doc_exists', docType: 'pdp', label: 'PDP created' },
+    { check: 'doc_exists', docType: 'gtm', label: 'GTM plan created' },
+    { check: 'project_field_filled', field: 'owner', label: 'Owner assigned for handover' },
+    { check: 'doc_field_filled', docType: 'pdp', field: 'production_process', label: 'Production feasibility confirmed' },
+    { check: 'approval_exists', stage: 'pre-launch', label: 'Final commercial signoff' }
+  ]
+};
+
+var _rndGateCache = {};
+
+// ============================================================
+// GATE EVALUATION
+// ============================================================
+
+function rndEvaluateGate(projectId, fromStage, toStage) {
+  var key = fromStage + '->' + toStage;
+  var criteria = GATE_CRITERIA[key];
+
+  // No criteria (backwards move, same stage, or undefined transition) — allow freely
+  if (!criteria) {
+    return Promise.resolve({ criteria: [], passCount: 0, total: 0, percent: 100, status: 'GREEN' });
+  }
+
+  var project = rndGetProjects().find(function (x) { return x.id === projectId; });
+  var docs = rndGetDocs().filter(function (d) { return d.rndProjectId === projectId; });
+  var trials = rndGetTrials();
+
+  // Load approvals from API (not in main cache)
+  return CandidStore.load('rnd_approvals', { filter: projectId, filterCol: 'rnd_project_id' }).then(function (approvals) {
+    var results = criteria.map(function (c) {
+      var passed = false;
+
+      if (c.check === 'doc_exists') {
+        passed = docs.some(function (d) { return d.docType === c.docType; });
+
+      } else if (c.check === 'doc_field_filled') {
+        var doc = docs.find(function (d) { return d.docType === c.docType; });
+        if (doc) {
+          var content = {};
+          try { content = typeof doc.content === 'string' ? JSON.parse(doc.content) : (doc.content || {}); } catch (e) {}
+          var val = content[c.field];
+          passed = val !== undefined && val !== null && val !== '';
+        }
+
+      } else if (c.check === 'has_trial_entries') {
+        var trialDocs = docs.filter(function (d) { return d.docType === 'trial_log'; });
+        passed = trialDocs.some(function (td) {
+          return trials.some(function (t) {
+            return t.rndDocumentId === td.id && t.result;
+          });
+        });
+
+      } else if (c.check === 'project_field_filled') {
+        if (project) {
+          var pVal = project[c.field];
+          passed = pVal !== undefined && pVal !== null && pVal !== '';
+        }
+
+      } else if (c.check === 'approval_exists') {
+        passed = approvals.some(function (a) {
+          return a.stage === c.stage && a.decision === 'approved';
+        });
+      }
+
+      return { label: c.label, passed: passed };
+    });
+
+    var passCount = results.filter(function (r) { return r.passed; }).length;
+    var total = results.length;
+    var percent = total > 0 ? Math.round((passCount / total) * 100) : 100;
+    var status = percent >= 80 ? 'GREEN' : percent >= 40 ? 'AMBER' : 'RED';
+
+    return { criteria: results, passCount: passCount, total: total, percent: percent, status: status };
+  });
+}
+
+function rndGetNextTransition(stage) {
+  var idx = RND_STAGES.findIndex(function (s) { return s.key === stage; });
+  if (idx < 0 || idx >= RND_STAGES.length - 1) return null;
+  return { from: stage, to: RND_STAGES[idx + 1].key };
+}
+
+function rndPrecomputeGates() {
+  var projects = rndGetProjects();
+  var promises = projects.map(function (p) {
+    var transition = rndGetNextTransition(p.stage || 'idea');
+    if (!transition) {
+      _rndGateCache[p.id] = { criteria: [], passCount: 0, total: 0, percent: 100, status: 'GREEN' };
+      return Promise.resolve();
+    }
+    return rndEvaluateGate(p.id, transition.from, transition.to).then(function (result) {
+      _rndGateCache[p.id] = result;
+    });
+  });
+  return Promise.all(promises);
+}
+
+// ============================================================
 // LOAD DATA
 // ============================================================
 
@@ -116,6 +240,7 @@ function rndLoadAll() {
     _rndTrials = results[2] || [];
     _skus = results[3] || [];
     _rndDataReady = true;
+    return rndPrecomputeGates();
   });
 }
 
@@ -259,6 +384,17 @@ function rndRenderPipelineKanban() {
         var docCount = docs.filter(function (d) { return d.rndProjectId === p.id; }).length;
         var priColor = p.priority === 'high' ? '#ef4444' : p.priority === 'medium' ? '#f59e0b' : '#94a3b8';
 
+        // Readiness badge from precomputed gate cache
+        var gate = _rndGateCache[p.id];
+        var readinessBadge = '';
+        if (gate && gate.total > 0) {
+          var badgeColor = gate.status === 'RED' ? '#ef4444' : gate.status === 'AMBER' ? '#f59e0b' : '#10b981';
+          readinessBadge = '<div style="margin-top:4px;">'
+            + '<span class="rnd-readiness-badge" style="color:' + badgeColor + ';border-color:' + badgeColor + '30;">' + gate.percent + '% READY</span>'
+            + '<div class="rnd-readiness-subtitle">' + gate.passCount + '/' + gate.total + ' criteria met</div>'
+            + '</div>';
+        }
+
         html += '<div class="rnd-kanban-card" onclick="rndOpenDetail(\'' + p.id + '\')">'
           + '<div class="rnd-kanban-card-priority" style="background:' + priColor + '"></div>'
           + '<div class="rnd-kanban-card-body">'
@@ -267,7 +403,9 @@ function rndRenderPipelineKanban() {
           + '<div class="rnd-kanban-card-footer">'
           + '<span class="rnd-priority ' + (p.priority || 'medium') + '">' + (p.priority || 'medium') + '</span>'
           + '<span class="rnd-kanban-card-docs">' + docCount + ' doc' + (docCount !== 1 ? 's' : '') + '</span>'
-          + '</div></div></div>';
+          + '</div>'
+          + readinessBadge
+          + '</div></div>';
       });
     }
 
@@ -288,9 +426,15 @@ function rndRenderPipelineList() {
 
   var html = '';
   projects.forEach(function (p) {
+    var gate = _rndGateCache[p.id];
+    var readinessHtml = '';
+    if (gate && gate.total > 0) {
+      var badgeColor = gate.status === 'RED' ? '#ef4444' : gate.status === 'AMBER' ? '#f59e0b' : '#10b981';
+      readinessHtml = ' <span class="rnd-readiness-badge" style="color:' + badgeColor + ';border-color:' + badgeColor + '30;">' + gate.percent + '%</span>';
+    }
     html += '<tr>'
       + '<td><button class="rnd-project-name-link" onclick="rndOpenDetail(\'' + p.id + '\')">' + escHtml(p.name) + '</button></td>'
-      + '<td><span class="rnd-stage ' + (p.stage || 'idea') + '">' + (p.stage || 'idea').replace('-', ' ') + '</span></td>'
+      + '<td><span class="rnd-stage ' + (p.stage || 'idea') + '">' + (p.stage || 'idea').replace('-', ' ') + '</span>' + readinessHtml + '</td>'
       + '<td>' + escHtml(p.owner || '—') + '</td>'
       + '<td>' + escHtml(p.productCategory || '—') + '</td>'
       + '<td><span class="rnd-priority ' + (p.priority || 'medium') + '">' + (p.priority || 'medium') + '</span></td>'
@@ -584,6 +728,18 @@ function rndOpenDetail(id) {
   }
   document.getElementById('rnd-detail-skus-list').innerHTML = skusHtml;
 
+  // Gate fields
+  rndPopulateGateFields(p);
+
+  // Gate checklist
+  rndRenderGateChecklist(id);
+
+  // Approvals
+  rndLoadApprovals(id);
+
+  // Stage history
+  rndLoadStageHistory(id);
+
   // Comments
   rndLoadComments(id);
 
@@ -609,19 +765,47 @@ function rndEditFromDetail() {
 
 function rndChangeStage(projectId, newStage) {
   var p = rndGetProjects().find(function (x) { return x.id === projectId; });
+  if (!p) return;
+  var fromStage = p.stage || 'idea';
+  if (fromStage === newStage) return;
+
+  // Determine if this is a forward move
+  var fromIdx = RND_STAGES.findIndex(function (s) { return s.key === fromStage; });
+  var toIdx = RND_STAGES.findIndex(function (s) { return s.key === newStage; });
+  var isForward = toIdx > fromIdx;
+
+  if (!isForward) {
+    // Backwards move — allow freely, no gate check
+    rndExecuteStageChange(projectId, newStage, '');
+    return;
+  }
+
+  // Forward move — evaluate gate
+  rndEvaluateGate(projectId, fromStage, newStage).then(function (result) {
+    if (result.percent >= 80) {
+      // Pass threshold — proceed directly
+      rndExecuteStageChange(projectId, newStage, '');
+    } else {
+      // Below threshold — show gate modal
+      rndShowGateModal(projectId, fromStage, newStage, result);
+    }
+  });
+}
+
+function rndExecuteStageChange(projectId, newStage, overrideNote) {
+  var p = rndGetProjects().find(function (x) { return x.id === projectId; });
   var fromStage = p ? (p.stage || 'idea') : '';
   var user = null;
   try { user = JSON.parse(localStorage.getItem('candidlabs_auth')); } catch (e) {}
 
   CandidStore.update('rnd_projects', projectId, { stage: newStage }).then(function () {
-    // Log stage transition
     return CandidStore.create('rnd_stage_history', {
       id: 'STH-' + Date.now().toString(16).slice(-6),
       rndProjectId: projectId,
       fromStage: fromStage,
       toStage: newStage,
       changedBy: user ? user.name : '',
-      note: '',
+      note: overrideNote || '',
       createdAt: new Date().toISOString()
     });
   }).then(function () {
@@ -631,6 +815,97 @@ function rndChangeStage(projectId, newStage) {
     rndRenderPipeline();
     rndRenderOverview();
   });
+}
+
+function rndShowGateModal(projectId, fromStage, toStage, result) {
+  var fromLabel = RND_STAGES.find(function (s) { return s.key === fromStage; });
+  var toLabel = RND_STAGES.find(function (s) { return s.key === toStage; });
+  fromLabel = fromLabel ? fromLabel.label : fromStage;
+  toLabel = toLabel ? toLabel.label : toStage;
+
+  var failedCriteria = result.criteria.filter(function (c) { return !c.passed; });
+  var statusColor = result.status === 'RED' ? '#ef4444' : result.status === 'AMBER' ? '#f59e0b' : '#10b981';
+
+  var html = '<div style="margin-bottom:16px;">'
+    + '<div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;">'
+    + '<strong>' + escHtml(fromLabel) + '</strong> &rarr; <strong>' + escHtml(toLabel) + '</strong>'
+    + '</div>'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">'
+    + '<span class="rnd-gate-score" style="background:' + statusColor + '15;color:' + statusColor + ';">' + result.percent + '% READY</span>'
+    + '<span style="font-size:0.8rem;color:var(--text-secondary);">' + result.passCount + '/' + result.total + ' criteria met</span>'
+    + '</div>';
+
+  if (failedCriteria.length > 0) {
+    html += '<div style="font-size:0.85rem;font-weight:600;color:var(--text-primary);margin-bottom:8px;">Missing ' + failedCriteria.length + ' gate criteria:</div>';
+    failedCriteria.forEach(function (c) {
+      html += '<div class="rnd-gate-checklist-item">'
+        + '<span class="rnd-gate-check-icon fail">&#10007;</span>'
+        + '<span>' + escHtml(c.label) + '</span>'
+        + '</div>';
+    });
+  }
+
+  html += '</div>';
+
+  // Reason section (hidden initially, shown on "Proceed Anyway")
+  html += '<div id="rnd-gate-reason-section" style="display:none;margin-top:16px;">'
+    + '<label style="display:block;font-size:0.85rem;font-weight:500;color:var(--text-secondary);margin-bottom:6px;">Override Reason (min 10 characters)</label>'
+    + '<textarea id="rnd-gate-reason-input" class="rnd-gate-reason" rows="3" placeholder="Explain why you are proceeding despite missing criteria..."></textarea>'
+    + '<div id="rnd-gate-reason-error" style="display:none;font-size:0.78rem;color:#ef4444;margin-top:4px;">Reason must be at least 10 characters.</div>'
+    + '</div>';
+
+  // Buttons
+  html += '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border-color);">'
+    + '<button class="btn-modal secondary" onclick="rndCloseModal(\'rnd-gate-modal\')">Cancel</button>'
+    + '<button class="btn-modal primary" id="rnd-gate-proceed-btn" onclick="rndGateProceedStep(\'' + projectId + '\',\'' + toStage + '\',' + result.percent + ')">'
+    + 'Proceed Anyway</button>'
+    + '</div>';
+
+  document.getElementById('rnd-gate-modal-title').textContent = 'Stage Gate Check';
+  document.getElementById('rnd-gate-modal-body').innerHTML = html;
+  rndOpenDrawer('rnd-gate-modal');
+}
+
+var _rndGateProceedState = false;
+
+function rndGateProceedStep(projectId, newStage, percent) {
+  var reasonSection = document.getElementById('rnd-gate-reason-section');
+  var reasonInput = document.getElementById('rnd-gate-reason-input');
+  var errorEl = document.getElementById('rnd-gate-reason-error');
+
+  if (!_rndGateProceedState) {
+    // First click: show reason textarea
+    _rndGateProceedState = true;
+    reasonSection.style.display = '';
+    reasonInput.focus();
+    document.getElementById('rnd-gate-proceed-btn').textContent = 'Confirm Override';
+    return;
+  }
+
+  // Second click: validate reason and execute
+  var reason = reasonInput.value.trim();
+  if (reason.length < 10) {
+    errorEl.style.display = '';
+    reasonInput.focus();
+    return;
+  }
+
+  // Build override note
+  var cached = _rndGateCache[projectId];
+  var missing = [];
+  if (cached && cached.criteria) {
+    cached.criteria.forEach(function (c) {
+      if (!c.passed) missing.push(c.label);
+    });
+  }
+  // Re-evaluate to get fresh data for the specific transition
+  var p = rndGetProjects().find(function (x) { return x.id === projectId; });
+  var fromStage = p ? (p.stage || 'idea') : '';
+  var overrideNote = 'OVERRIDE | readiness=' + percent + ' | missing=[' + missing.join('; ') + '] | reason=' + reason;
+
+  _rndGateProceedState = false;
+  rndCloseModal('rnd-gate-modal');
+  rndExecuteStageChange(projectId, newStage, overrideNote);
 }
 
 // Doc type dropdown menu
@@ -1031,6 +1306,191 @@ function rndDeleteSku(id) {
     rndRenderSkus();
     rndRenderOverview();
     if (_rndCurrentDetailId) rndOpenDetail(_rndCurrentDetailId);
+  });
+}
+
+// ============================================================
+// GATE ASSESSMENT
+// ============================================================
+
+function rndPopulateGateFields(project) {
+  document.getElementById('rnd-gate-outcome').value = project.gateOutcome || '';
+  document.getElementById('rnd-gate-confidence').value = project.confidenceLevel || '';
+  document.getElementById('rnd-gate-score').value = project.currentScore || '';
+  document.getElementById('rnd-gate-rationale').value = project.gateRationale || '';
+}
+
+function rndSaveGateFields() {
+  if (!_rndCurrentDetailId) return;
+  var data = {
+    gateOutcome: document.getElementById('rnd-gate-outcome').value,
+    confidenceLevel: document.getElementById('rnd-gate-confidence').value,
+    currentScore: document.getElementById('rnd-gate-score').value || null,
+    gateRationale: document.getElementById('rnd-gate-rationale').value.trim()
+  };
+  CandidStore.update('rnd_projects', _rndCurrentDetailId, data).then(function () {
+    return rndLoadAll();
+  }).then(function () {
+    rndRenderPipeline();
+  });
+}
+
+// ============================================================
+// APPROVALS
+// ============================================================
+
+function rndLoadApprovals(projectId) {
+  CandidStore.load('rnd_approvals', { filter: projectId, filterCol: 'rnd_project_id' }).then(function (approvals) {
+    document.getElementById('rnd-detail-approvals-count').textContent = approvals.length;
+    var html = '';
+    if (approvals.length === 0) {
+      html = '<div class="rnd-empty" style="padding:16px;font-size:0.83rem;">No approvals recorded yet.</div>';
+    } else {
+      approvals.forEach(function (a) {
+        var decisionCls = a.decision === 'approved' ? 'approved' : a.decision === 'rejected' ? 'rejected' : 'conditional';
+        html += '<div class="rnd-approval-item">'
+          + '<div class="rnd-approval-header">'
+          + '<span class="rnd-approval-decision ' + decisionCls + '">' + escHtml(a.decision || '') + '</span>'
+          + '<span class="rnd-approval-stage">' + escHtml(a.stage || '') + '</span>'
+          + '</div>'
+          + '<div class="rnd-approval-meta">'
+          + (a.approver ? escHtml(a.approver) + ' &middot; ' : '')
+          + (a.decidedAt ? new Date(a.decidedAt).toLocaleString() : '')
+          + '</div>'
+          + (a.comment ? '<div class="rnd-approval-comment">' + escHtml(a.comment) + '</div>' : '')
+          + '</div>';
+      });
+    }
+    document.getElementById('rnd-detail-approvals-list').innerHTML = html;
+  });
+}
+
+function rndOpenAddApproval() {
+  if (!_rndCurrentDetailId) return;
+  var p = rndGetProjects().find(function (x) { return x.id === _rndCurrentDetailId; });
+  document.getElementById('rnd-approval-form').reset();
+  document.getElementById('rnd-approval-stage').value = p ? (p.stage || 'idea') : 'idea';
+  // Auto-fill approver from auth
+  try {
+    var user = JSON.parse(localStorage.getItem('candidlabs_auth'));
+    if (user && user.name) document.getElementById('rnd-approval-approver').value = user.name;
+  } catch (e) {}
+  rndOpenDrawer('rnd-approval-modal');
+}
+
+function rndSaveApproval() {
+  if (!_rndCurrentDetailId) return;
+  var data = {
+    id: 'APR-' + Date.now().toString(16).slice(-6),
+    rndProjectId: _rndCurrentDetailId,
+    stage: document.getElementById('rnd-approval-stage').value,
+    approver: document.getElementById('rnd-approval-approver').value.trim(),
+    decision: document.getElementById('rnd-approval-decision').value,
+    comment: document.getElementById('rnd-approval-comment').value.trim(),
+    decidedAt: new Date().toISOString()
+  };
+
+  CandidStore.create('rnd_approvals', data).then(function () {
+    rndCloseModal('rnd-approval-modal');
+    rndLoadApprovals(_rndCurrentDetailId);
+  });
+}
+
+// ============================================================
+// GATE CHECKLIST IN DETAIL DRAWER
+// ============================================================
+
+function rndRenderGateChecklist(projectId) {
+  var p = rndGetProjects().find(function (x) { return x.id === projectId; });
+  if (!p) return;
+
+  var transition = rndGetNextTransition(p.stage || 'idea');
+  var section = document.getElementById('rnd-detail-gate-checklist-section');
+
+  if (!transition) {
+    // No next stage (archived) — hide section
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+
+  var fromLabel = RND_STAGES.find(function (s) { return s.key === transition.from; });
+  var toLabel = RND_STAGES.find(function (s) { return s.key === transition.to; });
+  fromLabel = fromLabel ? fromLabel.label : transition.from;
+  toLabel = toLabel ? toLabel.label : transition.to;
+
+  var stageIdx = RND_STAGES.findIndex(function (s) { return s.key === (p.stage || 'idea'); });
+  document.getElementById('rnd-detail-gate-subtitle').textContent = 'Gate ' + (stageIdx + 1) + ' \u2014 ' + fromLabel + ' \u2192 ' + toLabel;
+
+  rndEvaluateGate(projectId, transition.from, transition.to).then(function (result) {
+    // Score badge
+    var statusColor = result.status === 'RED' ? '#ef4444' : result.status === 'AMBER' ? '#f59e0b' : '#10b981';
+    document.getElementById('rnd-gate-score-badge').innerHTML = '<span style="background:' + statusColor + '15;color:' + statusColor + ';padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;">' + result.percent + '%</span>';
+
+    // Checklist
+    var html = '';
+    result.criteria.forEach(function (c) {
+      var icon = c.passed
+        ? '<span class="rnd-gate-check-icon pass">&#10003;</span>'
+        : '<span class="rnd-gate-check-icon fail">&#10007;</span>';
+      html += '<div class="rnd-gate-checklist-item">' + icon + '<span>' + escHtml(c.label) + '</span></div>';
+    });
+    document.getElementById('rnd-detail-gate-checklist').innerHTML = html;
+
+    // Progress bar
+    var barColor = result.status === 'RED' ? '#ef4444' : result.status === 'AMBER' ? '#f59e0b' : '#10b981';
+    document.getElementById('rnd-detail-gate-progress').innerHTML =
+      '<div class="rnd-gate-progress-bar">'
+      + '<div class="rnd-gate-progress-fill" style="width:' + result.percent + '%;background:' + barColor + ';"></div>'
+      + '</div>'
+      + '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">' + result.passCount + '/' + result.total + ' criteria met</div>';
+  });
+}
+
+// ============================================================
+// STAGE HISTORY IN DETAIL DRAWER
+// ============================================================
+
+function rndLoadStageHistory(projectId) {
+  CandidStore.load('rnd_stage_history', { filter: projectId, filterCol: 'rnd_project_id' }).then(function (history) {
+    document.getElementById('rnd-detail-history-count').textContent = history.length;
+    var html = '';
+    if (history.length === 0) {
+      html = '<div class="rnd-empty" style="padding:16px;font-size:0.83rem;">No stage transitions yet.</div>';
+    } else {
+      // Sort newest first
+      history.sort(function (a, b) { return (b.createdAt || '').localeCompare(a.createdAt || ''); });
+      history.forEach(function (h) {
+        var dateStr = h.createdAt ? new Date(h.createdAt).toLocaleString() : '';
+        var isOverride = h.note && h.note.indexOf('OVERRIDE |') === 0;
+
+        html += '<div class="rnd-history-item">'
+          + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'
+          + '<span class="rnd-stage ' + (h.fromStage || 'idea') + '" style="font-size:0.68rem;">' + (h.fromStage || 'idea').replace('-', ' ') + '</span>'
+          + '<span style="color:var(--text-muted);font-size:0.75rem;">&rarr;</span>'
+          + '<span class="rnd-stage ' + (h.toStage || 'idea') + '" style="font-size:0.68rem;">' + (h.toStage || 'idea').replace('-', ' ') + '</span>';
+
+        if (isOverride) {
+          html += '<span class="rnd-history-override">Override</span>';
+        }
+
+        html += '</div>';
+        html += '<div style="font-size:0.75rem;color:var(--text-muted);">'
+          + (h.changedBy ? escHtml(h.changedBy) + ' &middot; ' : '') + dateStr
+          + '</div>';
+
+        // Parse override reason for display
+        if (isOverride) {
+          var reasonMatch = h.note.match(/reason=(.+)$/);
+          if (reasonMatch) {
+            html += '<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px;font-style:italic;">&ldquo;' + escHtml(reasonMatch[1]) + '&rdquo;</div>';
+          }
+        }
+
+        html += '</div>';
+      });
+    }
+    document.getElementById('rnd-detail-history-list').innerHTML = html;
   });
 }
 

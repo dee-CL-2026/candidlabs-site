@@ -845,3 +845,262 @@
   outline: none;
   border-color: var(--color-primary);
 }
+
+/* Gate Assessment Panel */
+.rnd-gate-panel {
+  padding: 4px 0;
+}
+.rnd-gate-fields label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.rnd-gate-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 80px;
+  gap: 10px;
+}
+.rnd-gate-field select,
+.rnd-gate-field input,
+.rnd-gate-field textarea {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.83rem;
+}
+.rnd-gate-field textarea {
+  resize: vertical;
+  min-height: 44px;
+}
+
+/* Approval items */
+.rnd-approval-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.rnd-approval-item:last-child { border-bottom: none; }
+.rnd-approval-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.rnd-approval-decision {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.rnd-approval-decision.approved { background: rgba(16,185,129,0.12); color: #10b981; }
+.rnd-approval-decision.rejected { background: rgba(239,68,68,0.12); color: #ef4444; }
+.rnd-approval-decision.conditional { background: rgba(245,158,11,0.12); color: #f59e0b; }
+.rnd-approval-decision.deferred { background: rgba(100,116,139,0.12); color: #64748b; }
+.rnd-approval-stage {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.rnd-approval-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.rnd-approval-comment {
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* Dark mode gate & approval */
+[data-theme="dark"] .rnd-gate-field select,
+[data-theme="dark"] .rnd-gate-field input,
+[data-theme="dark"] .rnd-gate-field textarea {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   GATE DRAWER (narrower modal for gate check)
+   ============================================================ */
+
+.rnd-gate-drawer {
+  width: 420px;
+  max-width: 95vw;
+}
+
+/* ============================================================
+   GATE CHECKLIST ITEMS
+   ============================================================ */
+
+.rnd-gate-checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.rnd-gate-check-icon {
+  font-size: 0.85rem;
+  font-weight: 700;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.rnd-gate-check-icon.pass {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+.rnd-gate-check-icon.fail {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* ============================================================
+   GATE PROGRESS BAR
+   ============================================================ */
+
+.rnd-gate-progress-bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.rnd-gate-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* ============================================================
+   GATE SCORE BADGE (inline, color-coded)
+   ============================================================ */
+
+.rnd-gate-score {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   READINESS BADGE (small, for kanban cards)
+   ============================================================ */
+
+.rnd-readiness-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.rnd-readiness-subtitle {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ============================================================
+   GATE REASON TEXTAREA (override)
+   ============================================================ */
+
+.rnd-gate-reason {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  resize: vertical;
+  min-height: 60px;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.rnd-gate-reason:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* ============================================================
+   STAGE HISTORY
+   ============================================================ */
+
+.rnd-history-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.rnd-history-item:last-child {
+  border-bottom: none;
+}
+
+.rnd-history-override {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* ============================================================
+   DARK MODE — gate system
+   ============================================================ */
+
+[data-theme="dark"] .rnd-gate-check-icon.pass {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.15);
+}
+[data-theme="dark"] .rnd-gate-check-icon.fail {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+[data-theme="dark"] .rnd-gate-progress-bar {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .rnd-gate-reason {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .rnd-history-override {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+@media (max-width: 520px) {
+  .rnd-gate-drawer { width: 100vw; }
+}

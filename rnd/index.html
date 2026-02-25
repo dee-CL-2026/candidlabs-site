@@ -358,6 +358,67 @@
       <!-- Notes -->
       <p id="rnd-detail-notes" style="font-size:0.85rem;color:var(--text-secondary);display:none;"></p>
 
+      <!-- Gate Assessment section -->
+      <div class="rnd-detail-section" id="rnd-detail-gate-section">
+        <div class="rnd-detail-section-header">
+          <span class="rnd-detail-section-title">Gate Assessment</span>
+        </div>
+        <div class="rnd-gate-panel" id="rnd-gate-panel">
+          <div class="rnd-gate-fields">
+            <div class="rnd-gate-row">
+              <div class="rnd-gate-field">
+                <label for="rnd-gate-outcome">Gate Outcome</label>
+                <select id="rnd-gate-outcome" onchange="rndSaveGateFields()">
+                  <option value="">-- Not Set --</option>
+                  <option value="go">Go</option>
+                  <option value="no-go">No-Go</option>
+                  <option value="conditional">Conditional</option>
+                  <option value="recycle">Recycle</option>
+                </select>
+              </div>
+              <div class="rnd-gate-field">
+                <label for="rnd-gate-confidence">Confidence</label>
+                <select id="rnd-gate-confidence" onchange="rndSaveGateFields()">
+                  <option value="">-- Not Set --</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <div class="rnd-gate-field">
+                <label for="rnd-gate-score">Score</label>
+                <input type="number" id="rnd-gate-score" min="0" max="100" placeholder="0–100" onchange="rndSaveGateFields()">
+              </div>
+            </div>
+            <div class="rnd-gate-field" style="margin-top:8px;">
+              <label for="rnd-gate-rationale">Rationale</label>
+              <textarea id="rnd-gate-rationale" rows="2" placeholder="Why this decision..." onchange="rndSaveGateFields()"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gate Checklist section -->
+      <div class="rnd-detail-section" id="rnd-detail-gate-checklist-section">
+        <div class="rnd-detail-section-header">
+          <span class="rnd-detail-section-title">Gate Checklist</span>
+          <span class="rnd-gate-score" id="rnd-gate-score-badge"></span>
+        </div>
+        <div id="rnd-detail-gate-subtitle" style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;"></div>
+        <div id="rnd-detail-gate-checklist"></div>
+        <div id="rnd-detail-gate-progress"></div>
+      </div>
+
+      <!-- Approvals section -->
+      <div class="rnd-detail-section">
+        <div class="rnd-detail-section-header">
+          <span class="rnd-detail-section-title">Approvals</span>
+          <span class="rnd-detail-section-count" id="rnd-detail-approvals-count">0</span>
+          <button class="rnd-detail-add-btn" onclick="rndOpenAddApproval()">+ Record Approval</button>
+        </div>
+        <div id="rnd-detail-approvals-list"></div>
+      </div>
+
       <!-- Documents section -->
       <div class="rnd-detail-section">
         <div class="rnd-detail-section-header">
@@ -384,6 +445,15 @@
           <span class="rnd-detail-section-count" id="rnd-detail-skus-count">0</span>
         </div>
         <div id="rnd-detail-skus-list"></div>
+      </div>
+
+      <!-- Stage History section -->
+      <div class="rnd-detail-section">
+        <div class="rnd-detail-section-header">
+          <span class="rnd-detail-section-title">Stage History</span>
+          <span class="rnd-detail-section-count" id="rnd-detail-history-count">0</span>
+        </div>
+        <div id="rnd-detail-history-list"></div>
       </div>
 
       <!-- Comments section -->
@@ -556,6 +626,62 @@
           <button type="submit" class="btn-modal primary">Save Trial</button>
         </div>
       </form>
+    </div>
+  </aside>
+
+  <!-- APPROVAL DRAWER -->
+  <div class="rnd-form-backdrop" id="rnd-approval-modal-backdrop" onclick="rndCloseModal('rnd-approval-modal')"></div>
+  <aside class="rnd-form-drawer" id="rnd-approval-modal" role="dialog" aria-labelledby="rnd-approval-modal-title">
+    <div class="rnd-form-drawer-header">
+      <h3 id="rnd-approval-modal-title">Record Approval</h3>
+      <button class="btn-drawer-close" onclick="rndCloseModal('rnd-approval-modal')">&times;</button>
+    </div>
+    <div class="rnd-form-drawer-body">
+      <form id="rnd-approval-form" onsubmit="event.preventDefault(); rndSaveApproval();">
+        <div class="rnd-form-group">
+          <label for="rnd-approval-stage">Stage</label>
+          <select id="rnd-approval-stage">
+            <option value="idea">Idea / Intake</option>
+            <option value="feasibility">Feasibility</option>
+            <option value="trials">R&D Trials</option>
+            <option value="pre-launch">Pre-Launch</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+        <div class="rnd-form-group">
+          <label for="rnd-approval-approver">Approver</label>
+          <input type="text" id="rnd-approval-approver" placeholder="Name of approver">
+        </div>
+        <div class="rnd-form-group">
+          <label for="rnd-approval-decision">Decision</label>
+          <select id="rnd-approval-decision">
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="conditional">Conditional</option>
+            <option value="deferred">Deferred</option>
+          </select>
+        </div>
+        <div class="rnd-form-group">
+          <label for="rnd-approval-comment">Comment</label>
+          <textarea id="rnd-approval-comment" rows="3" placeholder="Approval notes..."></textarea>
+        </div>
+        <div class="rnd-form-drawer-actions">
+          <button type="button" class="btn-modal secondary" onclick="rndCloseModal('rnd-approval-modal')">Cancel</button>
+          <button type="submit" class="btn-modal primary">Save Approval</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+  <!-- GATE MODAL (Stage Gate Check) -->
+  <div class="rnd-form-backdrop" id="rnd-gate-modal-backdrop" onclick="rndCloseModal('rnd-gate-modal')"></div>
+  <aside class="rnd-form-drawer rnd-gate-drawer" id="rnd-gate-modal" role="dialog">
+    <div class="rnd-form-drawer-header">
+      <h3 id="rnd-gate-modal-title">Stage Gate Check</h3>
+      <button class="btn-drawer-close" onclick="rndCloseModal('rnd-gate-modal')">&times;</button>
+    </div>
+    <div class="rnd-form-drawer-body">
+      <div id="rnd-gate-modal-body"></div>
     </div>
   </aside>
 
