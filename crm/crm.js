@@ -297,7 +297,7 @@ function openAddContact() {
   document.getElementById('contact-edit-id').value = '';
   document.getElementById('inline-new-company').style.display = 'none';
   populateCompanySelect('contact-company');
-  document.getElementById('contact-modal').classList.add('active');
+  openDrawer('contact-modal');
 }
 
 function openEditContact(id) {
@@ -315,7 +315,7 @@ function openEditContact(id) {
   populateCompanySelect('contact-company');
   document.getElementById('contact-company').value = contact.companyId || '';
   document.getElementById('contact-notes').value = contact.notes || '';
-  document.getElementById('contact-modal').classList.add('active');
+  openDrawer('contact-modal');
 }
 
 function saveContact() {
@@ -451,7 +451,7 @@ function openAddCompany() {
   document.getElementById('company-modal-title').textContent = 'Add Company';
   document.getElementById('company-form').reset();
   document.getElementById('company-edit-id').value = '';
-  document.getElementById('company-modal').classList.add('active');
+  openDrawer('company-modal');
 }
 
 function openEditCompany(id) {
@@ -466,7 +466,7 @@ function openEditCompany(id) {
   document.getElementById('company-channel').value = company.channel || '';
   document.getElementById('company-status').value = company.status || 'active';
   document.getElementById('company-notes').value = company.notes || '';
-  document.getElementById('company-modal').classList.add('active');
+  openDrawer('company-modal');
 }
 
 function saveCompany() {
@@ -582,7 +582,7 @@ function openAddDeal() {
   document.getElementById('deal-edit-id').value = '';
   populateCompanySelect('deal-company');
   populateContactSelect('deal-contact', '');
-  document.getElementById('deal-modal').classList.add('active');
+  openDrawer('deal-modal');
 }
 
 function openEditDeal(id) {
@@ -600,7 +600,7 @@ function openEditDeal(id) {
   document.getElementById('deal-value').value = deal.value || 0;
   document.getElementById('deal-stage').value = deal.stage || 'prospecting';
   document.getElementById('deal-notes').value = deal.notes || '';
-  document.getElementById('deal-modal').classList.add('active');
+  openDrawer('deal-modal');
 }
 
 function saveDeal() {
@@ -694,6 +694,14 @@ function onDealCompanyChange() {
 
 function closeModal(modalId) {
   document.getElementById(modalId).classList.remove('active');
+  var backdrop = document.getElementById(modalId + '-backdrop');
+  if (backdrop) backdrop.classList.remove('active');
+}
+
+function openDrawer(modalId) {
+  document.getElementById(modalId).classList.add('active');
+  var backdrop = document.getElementById(modalId + '-backdrop');
+  if (backdrop) backdrop.classList.add('active');
 }
 
 // ============================================================

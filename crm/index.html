@@ -283,12 +283,16 @@
     </section>
   </main>
 
-  <!-- MODALS -->
+  <!-- FORM DRAWERS -->
 
-  <!-- Contact Modal -->
-  <div class="crm-modal-overlay" id="contact-modal">
-    <div class="crm-modal" role="dialog" aria-labelledby="contact-modal-title">
+  <!-- Contact Drawer -->
+  <div class="crm-form-backdrop" id="contact-modal-backdrop" onclick="closeModal('contact-modal')"></div>
+  <aside class="crm-form-drawer" id="contact-modal" role="dialog" aria-labelledby="contact-modal-title">
+    <div class="crm-form-drawer-header">
       <h3 id="contact-modal-title">Add Contact</h3>
+      <button class="btn-drawer-close" onclick="closeModal('contact-modal')">&times;</button>
+    </div>
+    <div class="crm-form-drawer-body">
       <form id="contact-form" onsubmit="event.preventDefault(); saveContact();">
         <input type="hidden" id="contact-edit-id">
         <div class="crm-form-row">
@@ -357,18 +361,22 @@
           <label for="contact-notes">Notes</label>
           <textarea id="contact-notes" placeholder="Additional notes..."></textarea>
         </div>
-        <div class="crm-modal-actions">
+        <div class="crm-form-drawer-actions">
           <button type="button" class="btn-modal secondary" onclick="closeModal('contact-modal')">Cancel</button>
           <button type="submit" class="btn-modal primary">Save Contact</button>
         </div>
       </form>
     </div>
-  </div>
+  </aside>
 
-  <!-- Company Modal -->
-  <div class="crm-modal-overlay" id="company-modal">
-    <div class="crm-modal" role="dialog" aria-labelledby="company-modal-title">
+  <!-- Company Drawer -->
+  <div class="crm-form-backdrop" id="company-modal-backdrop" onclick="closeModal('company-modal')"></div>
+  <aside class="crm-form-drawer" id="company-modal" role="dialog" aria-labelledby="company-modal-title">
+    <div class="crm-form-drawer-header">
       <h3 id="company-modal-title">Add Company</h3>
+      <button class="btn-drawer-close" onclick="closeModal('company-modal')">&times;</button>
+    </div>
+    <div class="crm-form-drawer-body">
       <form id="company-form" onsubmit="event.preventDefault(); saveCompany();">
         <input type="hidden" id="company-edit-id">
         <div class="crm-form-group">
@@ -407,18 +415,22 @@
           <label for="company-notes">Notes</label>
           <textarea id="company-notes" placeholder="Additional notes..."></textarea>
         </div>
-        <div class="crm-modal-actions">
+        <div class="crm-form-drawer-actions">
           <button type="button" class="btn-modal secondary" onclick="closeModal('company-modal')">Cancel</button>
           <button type="submit" class="btn-modal primary">Save Company</button>
         </div>
       </form>
     </div>
-  </div>
+  </aside>
 
-  <!-- Deal Modal -->
-  <div class="crm-modal-overlay" id="deal-modal">
-    <div class="crm-modal" role="dialog" aria-labelledby="deal-modal-title">
+  <!-- Deal Drawer -->
+  <div class="crm-form-backdrop" id="deal-modal-backdrop" onclick="closeModal('deal-modal')"></div>
+  <aside class="crm-form-drawer" id="deal-modal" role="dialog" aria-labelledby="deal-modal-title">
+    <div class="crm-form-drawer-header">
       <h3 id="deal-modal-title">Add Deal</h3>
+      <button class="btn-drawer-close" onclick="closeModal('deal-modal')">&times;</button>
+    </div>
+    <div class="crm-form-drawer-body">
       <form id="deal-form" onsubmit="event.preventDefault(); saveDeal();">
         <input type="hidden" id="deal-edit-id">
         <div class="crm-form-group">
@@ -459,13 +471,13 @@
           <label for="deal-notes">Notes</label>
           <textarea id="deal-notes" placeholder="Deal details..."></textarea>
         </div>
-        <div class="crm-modal-actions">
+        <div class="crm-form-drawer-actions">
           <button type="button" class="btn-modal secondary" onclick="closeModal('deal-modal')">Cancel</button>
           <button type="submit" class="btn-modal primary">Save Deal</button>
         </div>
       </form>
     </div>
-  </div>
+  </aside>
 
   <!-- Import Modal -->
   <div class="io-modal-overlay" id="crm-import-modal">

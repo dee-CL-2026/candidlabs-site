@@ -427,40 +427,79 @@
   color: var(--color-error);
 }
 
-/* Modal */
-.crm-modal-overlay {
+/* Form Drawer — slides in from right for add/edit forms */
+.crm-form-backdrop {
   display: none;
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
   z-index: 2000;
-  align-items: center;
-  justify-content: center;
 }
+.crm-form-backdrop.active { display: block; }
 
-.crm-modal-overlay.active {
-  display: flex;
-}
-
-.crm-modal {
+.crm-form-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 480px;
+  max-width: 95vw;
+  height: 100vh;
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 28px;
-  width: 90%;
-  max-width: 540px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border-left: 1px solid var(--border-color);
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.25);
+}
+.crm-form-drawer.active { transform: translateX(0); }
+
+.crm-form-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
-.crm-modal h3 {
-  font-size: 1.25rem;
-  margin-bottom: 20px;
+.crm-form-drawer-header h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
   color: var(--text-primary);
+  margin: 0;
+}
+
+.btn-drawer-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.btn-drawer-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.crm-form-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.crm-form-drawer-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
 }
 
 .crm-form-group {

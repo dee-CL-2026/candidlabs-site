@@ -205,7 +205,7 @@ function openAddProject() {
   document.getElementById('project-form').reset();
   document.getElementById('project-edit-id').value = '';
   _resetCollaboratorCheckboxes();
-  document.getElementById('project-modal').classList.add('active');
+  pmOpenDrawer('project-modal');
 }
 
 function openEditProject(id) {
@@ -227,7 +227,7 @@ function openEditProject(id) {
   var collabs = meta.collaborators || [];
   _resetCollaboratorCheckboxes(collabs);
 
-  document.getElementById('project-modal').classList.add('active');
+  pmOpenDrawer('project-modal');
 }
 
 function _resetCollaboratorCheckboxes(selected) {
@@ -475,7 +475,7 @@ function openAddTask() {
   document.getElementById('task-edit-id').value = '';
   _pmShowBlockerNote(false);
   populateProjectSelect('task-project');
-  document.getElementById('task-modal').classList.add('active');
+  pmOpenDrawer('task-modal');
 }
 
 function openEditTask(id) {
@@ -494,7 +494,7 @@ function openEditTask(id) {
   document.getElementById('task-due-date').value = task.dueDate || '';
   document.getElementById('task-blocker-note').value = task.blockerNote || '';
   _pmShowBlockerNote(task.status === 'blocked');
-  document.getElementById('task-modal').classList.add('active');
+  pmOpenDrawer('task-modal');
 }
 
 function saveTask() {
@@ -708,6 +708,14 @@ function populateProjectSelect(selectId) {
 
 function pmCloseModal(modalId) {
   document.getElementById(modalId).classList.remove('active');
+  var backdrop = document.getElementById(modalId + '-backdrop');
+  if (backdrop) backdrop.classList.remove('active');
+}
+
+function pmOpenDrawer(modalId) {
+  document.getElementById(modalId).classList.add('active');
+  var backdrop = document.getElementById(modalId + '-backdrop');
+  if (backdrop) backdrop.classList.add('active');
 }
 
 // ============================================================

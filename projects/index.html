@@ -324,12 +324,16 @@
     </div>
   </aside>
 
-  <!-- MODALS -->
+  <!-- FORM DRAWERS -->
 
-  <!-- Project Modal -->
-  <div class="pm-modal-overlay" id="project-modal">
-    <div class="pm-modal" role="dialog" aria-labelledby="project-modal-title">
+  <!-- Project Drawer -->
+  <div class="pm-form-backdrop" id="project-modal-backdrop" onclick="pmCloseModal('project-modal')"></div>
+  <aside class="pm-form-drawer" id="project-modal" role="dialog" aria-labelledby="project-modal-title">
+    <div class="pm-form-drawer-header">
       <h3 id="project-modal-title">Add Project</h3>
+      <button class="btn-drawer-close" onclick="pmCloseModal('project-modal')">&times;</button>
+    </div>
+    <div class="pm-form-drawer-body">
       <form id="project-form" onsubmit="event.preventDefault(); saveProject();">
         <input type="hidden" id="project-edit-id">
         <div class="pm-form-group">
@@ -370,18 +374,22 @@
           <label>Collaborators</label>
           <div id="project-collaborators" class="pm-collab-grid"></div>
         </div>
-        <div class="pm-modal-actions">
+        <div class="pm-form-drawer-actions">
           <button type="button" class="btn-modal secondary" onclick="pmCloseModal('project-modal')">Cancel</button>
           <button type="submit" class="btn-modal primary">Save Project</button>
         </div>
       </form>
     </div>
-  </div>
+  </aside>
 
-  <!-- Task Modal -->
-  <div class="pm-modal-overlay" id="task-modal">
-    <div class="pm-modal" role="dialog" aria-labelledby="task-modal-title">
+  <!-- Task Drawer -->
+  <div class="pm-form-backdrop" id="task-modal-backdrop" onclick="pmCloseModal('task-modal')"></div>
+  <aside class="pm-form-drawer" id="task-modal" role="dialog" aria-labelledby="task-modal-title">
+    <div class="pm-form-drawer-header">
       <h3 id="task-modal-title">Add Task</h3>
+      <button class="btn-drawer-close" onclick="pmCloseModal('task-modal')">&times;</button>
+    </div>
+    <div class="pm-form-drawer-body">
       <form id="task-form" onsubmit="event.preventDefault(); saveTask();">
         <input type="hidden" id="task-edit-id">
         <div class="pm-form-group">
@@ -435,13 +443,13 @@
             </div>
           </div>
         </div>
-        <div class="pm-modal-actions">
+        <div class="pm-form-drawer-actions">
           <button type="button" class="btn-modal secondary" onclick="pmCloseModal('task-modal')">Cancel</button>
           <button type="submit" class="btn-modal primary">Save Task</button>
         </div>
       </form>
     </div>
-  </div>
+  </aside>
 
   <!-- Reassign Modal -->
   <div class="pm-modal-overlay" id="reassign-modal">
