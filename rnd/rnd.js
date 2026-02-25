@@ -26,6 +26,7 @@ var RND_STAGES = [
 var DOC_SCHEMAS = {
   concept_brief: {
     label: 'Concept Brief',
+    eventDateField: 'submit_date',
     fields: [
       { key: 'product_name',       label: 'Product Name',              type: 'text' },
       { key: 'product_category',   label: 'Product Category',          type: 'text' },
@@ -43,6 +44,7 @@ var DOC_SCHEMAS = {
   },
   feasibility: {
     label: 'Feasibility Document',
+    eventDateField: 'review_date',
     fields: [
       { key: 'ingredient_availability', label: 'Ingredient Availability',           type: 'textarea' },
       { key: 'regulatory',              label: 'Regulatory Considerations',         type: 'textarea' },
@@ -57,7 +59,9 @@ var DOC_SCHEMAS = {
   },
   trial_log: {
     label: 'R&D Trial Log',
+    eventDateField: 'tasting_date',
     fields: [
+      { key: 'tasting_date',      label: 'Tasting Date',                    type: 'date' },
       { key: 'target_flavour',    label: 'Target Flavour Profile',          type: 'textarea' },
       { key: 'base_recipe',       label: 'Base Recipe / Starting Formula',  type: 'textarea' },
       { key: 'final_recipe',      label: 'Final Approved Recipe',           type: 'textarea' },
@@ -67,6 +71,7 @@ var DOC_SCHEMAS = {
   },
   pdp: {
     label: 'Product Development Plan',
+    eventDateField: 'target_prod_date',
     fields: [
       { key: 'final_recipe',       label: 'Final Recipe / Formulation',  type: 'textarea' },
       { key: 'packaging_specs',    label: 'Packaging Specs',             type: 'textarea' },
@@ -99,6 +104,26 @@ var DOC_TYPE_LABELS = {
   pdp:           'PDP',
   gtm:           'GTM Plan'
 };
+
+// ============================================================
+// DATE UTILITIES
+// ============================================================
+
+function rndGetEventDate(doc) {
+  var schema = DOC_SCHEMAS[doc.docType];
+  if (!schema || !schema.eventDateField) return doc.createdAt || '';
+  var content = {};
+  try { content = typeof doc.content === 'string' ? JSON.parse(doc.content) : (doc.content || {}); } catch (e) {}
+  return content[schema.eventDateField] || doc.createdAt || '';
+}
+
+function rndFormatDate(dateStr) {
+  if (!dateStr) return '—';
+  var safe = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? dateStr + 'T00:00:00' : dateStr;
+  var d = new Date(safe);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 // ============================================================
 // GATE CRITERIA CONFIG — 5 criteria per stage transition
@@ -316,7 +341,7 @@ function rndRenderOverview() {
     items.push({ name: p.name, type: 'project', stage: p.stage, date: p.updatedAt || p.createdAt });
   });
   docs.forEach(function (d) {
-    items.push({ name: d.title, type: 'document', docType: d.docType, date: d.updatedAt || d.createdAt });
+    items.push({ name: d.title, type: 'document', docType: d.docType, date: rndGetEventDate(d) });
   });
   items.sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
   items = items.slice(0, 10);
@@ -332,7 +357,7 @@ function rndRenderOverview() {
     var badge = item.type === 'project'
       ? '<span class="rnd-stage ' + (item.stage || 'idea') + '">' + (item.stage || 'idea') + '</span>'
       : '<span class="rnd-doc-type ' + (item.docType || '') + '">' + (DOC_TYPE_LABELS[item.docType] || item.docType) + '</span>';
-    var dateStr = item.date ? new Date(item.date).toLocaleDateString() : '';
+    var dateStr = rndFormatDate(item.date);
     html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem;">'
       + '<span style="flex:1;color:var(--text-primary);">' + escHtml(item.name) + '</span>'
       + badge
@@ -438,7 +463,7 @@ function rndRenderPipelineList() {
       + '<td>' + escHtml(p.owner || '—') + '</td>'
       + '<td>' + escHtml(p.productCategory || '—') + '</td>'
       + '<td><span class="rnd-priority ' + (p.priority || 'medium') + '">' + (p.priority || 'medium') + '</span></td>'
-      + '<td>' + (p.targetLaunch ? new Date(p.targetLaunch).toLocaleDateString() : '—') + '</td>'
+      + '<td>' + rndFormatDate(p.targetLaunch) + '</td>'
       + '<td class="row-actions">'
       + '<button class="btn-row-action" onclick="rndOpenEditProject(\'' + p.id + '\')">Edit</button>'
       + '<button class="btn-row-action danger" onclick="rndDeleteProject(\'' + p.id + '\')">Del</button>'
@@ -484,13 +509,14 @@ function rndRenderDocuments() {
   var html = '';
   filtered.forEach(function (d) {
     html += '<tr>'
-      + '<td style="font-weight:500;color:var(--text-primary);cursor:pointer;" onclick="rndOpenEditDoc(\'' + d.id + '\')">' + escHtml(d.title) + '</td>'
+      + '<td style="font-weight:500;color:var(--text-primary);cursor:pointer;" onclick="rndOpenReadMode(\'' + d.id + '\')">' + escHtml(d.title) + '</td>'
       + '<td><span class="rnd-doc-type ' + (d.docType || '') + '">' + (DOC_TYPE_LABELS[d.docType] || d.docType) + '</span></td>'
       + '<td>' + escHtml(projectMap[d.rndProjectId] || '—') + '</td>'
       + '<td><span class="rnd-doc-status ' + (d.status || 'draft') + '">' + (d.status || 'draft') + '</span></td>'
       + '<td>' + escHtml(d.author || '—') + '</td>'
-      + '<td>' + (d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '—') + '</td>'
+      + '<td>' + rndFormatDate(rndGetEventDate(d)) + '</td>'
       + '<td class="row-actions">'
+      + '<button class="btn-row-action" onclick="rndOpenReadMode(\'' + d.id + '\')">Read</button>'
       + '<button class="btn-row-action" onclick="rndOpenEditDoc(\'' + d.id + '\')">Edit</button>'
       + '<button class="btn-row-action danger" onclick="rndDeleteDoc(\'' + d.id + '\')">Del</button>'
       + '</td></tr>';
@@ -676,7 +702,7 @@ function rndOpenDetail(id) {
   if (p.owner) metaHtml += '<span>Owner: <strong>' + escHtml(p.owner) + '</strong></span>';
   if (p.productCategory) metaHtml += '<span>Category: ' + escHtml(p.productCategory) + '</span>';
   if (p.targetMarket) metaHtml += '<span>Market: ' + escHtml(p.targetMarket) + '</span>';
-  if (p.targetLaunch) metaHtml += '<span>Launch: ' + new Date(p.targetLaunch).toLocaleDateString() + '</span>';
+  if (p.targetLaunch) metaHtml += '<span>Launch: ' + rndFormatDate(p.targetLaunch) + '</span>';
   if (p.priority) metaHtml += '<span class="rnd-priority ' + p.priority + '">' + p.priority + '</span>';
   document.getElementById('rnd-detail-meta').innerHTML = metaHtml;
 
@@ -697,13 +723,14 @@ function rndOpenDetail(id) {
     docsHtml = '<div class="rnd-empty" style="padding:16px;font-size:0.83rem;">No documents yet. Click + Add Doc to create one.</div>';
   } else {
     docs.forEach(function (d) {
-      docsHtml += '<div class="rnd-doc-card" onclick="rndOpenEditDoc(\'' + d.id + '\')">'
+      docsHtml += '<div class="rnd-doc-card" onclick="rndOpenReadMode(\'' + d.id + '\')">'
         + '<div class="rnd-doc-card-info">'
         + '<div class="rnd-doc-card-title">' + escHtml(d.title) + '</div>'
         + '<div class="rnd-doc-card-meta">'
         + '<span class="rnd-doc-type ' + (d.docType || '') + '">' + (DOC_TYPE_LABELS[d.docType] || d.docType) + '</span>'
         + ' &middot; <span class="rnd-doc-status ' + (d.status || 'draft') + '">' + (d.status || 'draft') + '</span>'
         + (d.author ? ' &middot; ' + escHtml(d.author) : '')
+        + ' &middot; ' + rndFormatDate(rndGetEventDate(d))
         + '</div></div></div>';
     });
   }
@@ -1060,7 +1087,18 @@ function rndCollectDocContent() {
 
 function rndSaveDoc() {
   var editId = document.getElementById('rnd-doc-edit-id').value;
-  var content = rndCollectDocContent();
+  var formContent = rndCollectDocContent();
+
+  // Preserve non-schema keys from original content (e.g. tasting_sessions)
+  var content = formContent;
+  if (editId) {
+    var existing = rndGetDocs().find(function (x) { return x.id === editId; });
+    if (existing) {
+      var original = {};
+      try { original = typeof existing.content === 'string' ? JSON.parse(existing.content) : (existing.content || {}); } catch (e) {}
+      content = Object.assign({}, original, formContent);
+    }
+  }
 
   var data = {
     rndProjectId: document.getElementById('rnd-doc-project-id').value,
@@ -1134,7 +1172,7 @@ function rndRenderTrialEntries(docId) {
   trials.forEach(function (t) {
     html += '<tr>'
       + '<td>' + (t.trialNumber || '—') + '</td>'
-      + '<td>' + (t.date ? new Date(t.date).toLocaleDateString() : '—') + '</td>'
+      + '<td>' + rndFormatDate(t.date) + '</td>'
       + '<td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escHtml(t.recipe || '—') + '</td>'
       + '<td>' + (t.result ? '<span class="rnd-trial-result ' + t.result + '">' + t.result + '</span>' : '—') + '</td>'
       + '<td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escHtml(t.tastingNotes || '—') + '</td>'
@@ -1492,6 +1530,139 @@ function rndLoadStageHistory(projectId) {
     }
     document.getElementById('rnd-detail-history-list').innerHTML = html;
   });
+}
+
+// ============================================================
+// READ MODE
+// ============================================================
+
+var _rndReadDocId = null;
+
+function rndOpenReadMode(docId) {
+  var doc = rndGetDocs().find(function (x) { return x.id === docId; });
+  if (!doc) return;
+  _rndReadDocId = docId;
+
+  var content = {};
+  try { content = typeof doc.content === 'string' ? JSON.parse(doc.content) : (doc.content || {}); } catch (e) {}
+
+  var schema = DOC_SCHEMAS[doc.docType];
+  var typeLabel = DOC_TYPE_LABELS[doc.docType] || doc.docType;
+
+  // Header
+  var html = '<div class="rnd-read-header">'
+    + '<div style="font-size:1.1rem;font-weight:600;color:var(--text-primary);">' + escHtml(doc.title) + '</div>'
+    + '<div class="rnd-read-meta">'
+    + '<span class="rnd-doc-type ' + (doc.docType || '') + '">' + typeLabel + '</span>'
+    + '<span class="rnd-doc-status ' + (doc.status || 'draft') + '">' + (doc.status || 'draft') + '</span>'
+    + (doc.author ? '<span>' + escHtml(doc.author) + '</span>' : '')
+    + '<span>' + rndFormatDate(rndGetEventDate(doc)) + '</span>'
+    + '</div></div>';
+
+  // Content fields
+  if (schema && schema.fields) {
+    schema.fields.forEach(function (field) {
+      var val = content[field.key];
+      if (val === undefined || val === null || val === '') return;
+      var display;
+      if (field.type === 'date') {
+        display = '<span>' + rndFormatDate(val) + '</span>';
+      } else if (field.type === 'textarea') {
+        display = '<div style="white-space:pre-wrap;">' + escHtml(val) + '</div>';
+      } else {
+        display = '<span>' + escHtml(String(val)) + '</span>';
+      }
+      html += '<div class="rnd-read-section">'
+        + '<div class="rnd-read-label">' + escHtml(field.label) + '</div>'
+        + '<div class="rnd-read-value">' + display + '</div>'
+        + '</div>';
+    });
+  }
+
+  // Notes
+  if (doc.notes) {
+    html += '<div class="rnd-read-section">'
+      + '<div class="rnd-read-label">Notes</div>'
+      + '<div class="rnd-read-value" style="white-space:pre-wrap;">' + escHtml(doc.notes) + '</div>'
+      + '</div>';
+  }
+
+  // Trial entries (for trial_log)
+  if (doc.docType === 'trial_log') {
+    html += rndRenderReadTrialEntries(docId);
+  }
+
+  // Tasting sessions
+  if (content.tasting_sessions && content.tasting_sessions.length > 0) {
+    html += rndRenderReadTastingSessions(content);
+  }
+
+  document.getElementById('rnd-read-modal-title').textContent = typeLabel;
+  document.getElementById('rnd-read-modal-body').innerHTML = html;
+  rndOpenDrawer('rnd-read-modal');
+}
+
+function rndRenderReadTrialEntries(docId) {
+  var trials = rndGetTrials().filter(function (t) { return t.rndDocumentId === docId; });
+  if (trials.length === 0) return '';
+  trials.sort(function (a, b) { return (a.trialNumber || 0) - (b.trialNumber || 0); });
+
+  var html = '<div class="rnd-read-section" style="margin-top:8px;">'
+    + '<div class="rnd-read-label">Trial Entries</div>'
+    + '<table class="rnd-trials-table"><thead><tr>'
+    + '<th>#</th><th>Date</th><th>Recipe</th><th>Result</th><th>Tasting Notes</th><th>Adjustments</th>'
+    + '</tr></thead><tbody>';
+
+  trials.forEach(function (t) {
+    html += '<tr>'
+      + '<td>' + (t.trialNumber || '—') + '</td>'
+      + '<td>' + rndFormatDate(t.date) + '</td>'
+      + '<td style="white-space:pre-wrap;max-width:180px;">' + escHtml(t.recipe || '—') + '</td>'
+      + '<td>' + (t.result ? '<span class="rnd-trial-result ' + t.result + '">' + t.result + '</span>' : '—') + '</td>'
+      + '<td style="white-space:pre-wrap;max-width:180px;">' + escHtml(t.tastingNotes || '—') + '</td>'
+      + '<td style="white-space:pre-wrap;max-width:180px;">' + escHtml(t.adjustments || '—') + '</td>'
+      + '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function rndRenderReadTastingSessions(content) {
+  var sessions = content.tasting_sessions;
+  if (!sessions || sessions.length === 0) return '';
+
+  var html = '<div class="rnd-read-section" style="margin-top:8px;">'
+    + '<div class="rnd-read-label">Tasting Sessions</div>';
+
+  sessions.forEach(function (s) {
+    html += '<div class="rnd-tasting-session">'
+      + '<div class="rnd-tasting-session-title">' + escHtml(s.session || 'Tasting Session') + '</div>';
+
+    if (s.tasters && s.tasters.length > 0) {
+      s.tasters.forEach(function (taster) {
+        html += '<div class="rnd-tasting-taster">'
+          + '<div class="rnd-tasting-taster-name">' + escHtml(taster.name || 'Taster') + '</div>'
+          + '<div class="rnd-tasting-taster-notes">' + escHtml(taster.notes || '—') + '</div>'
+          + '</div>';
+      });
+    }
+
+    html += '</div>';
+  });
+
+  html += '</div>';
+  return html;
+}
+
+function rndReadToEdit() {
+  if (!_rndReadDocId) return;
+  rndCloseModal('rnd-read-modal');
+  rndOpenEditDoc(_rndReadDocId);
+}
+
+function rndPrintReadMode() {
+  window.print();
 }
 
 // ============================================================

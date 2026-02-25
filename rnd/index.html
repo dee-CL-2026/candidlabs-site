@@ -685,6 +685,20 @@
     </div>
   </aside>
 
+  <!-- Read Mode Drawer -->
+  <div class="rnd-form-backdrop" id="rnd-read-modal-backdrop" onclick="rndCloseModal('rnd-read-modal')"></div>
+  <aside class="rnd-form-drawer rnd-read-drawer" id="rnd-read-modal" role="dialog">
+    <div class="rnd-form-drawer-header">
+      <h3 id="rnd-read-modal-title">Document</h3>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn-drawer-action" onclick="rndReadToEdit()">Edit</button>
+        <button class="btn-drawer-action" onclick="rndPrintReadMode()">Print</button>
+        <button class="btn-drawer-close" onclick="rndCloseModal('rnd-read-modal')">&times;</button>
+      </div>
+    </div>
+    <div class="rnd-form-drawer-body" id="rnd-read-modal-body"></div>
+  </aside>
+
   <!-- Footer -->
   <footer class="footer">
     <div class="container">

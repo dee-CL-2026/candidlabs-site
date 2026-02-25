@@ -1104,3 +1104,117 @@
 @media (max-width: 520px) {
   .rnd-gate-drawer { width: 100vw; }
 }
+
+/* ============================================================
+   READ MODE DRAWER
+   ============================================================ */
+
+.rnd-read-drawer { width: 640px; max-width: 95vw; }
+
+.rnd-read-section { margin-bottom: 20px; }
+.rnd-read-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.rnd-read-value {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+.rnd-read-header {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+.rnd-read-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* Tasting sessions */
+.rnd-tasting-session { margin-bottom: 16px; }
+.rnd-tasting-session-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.rnd-tasting-taster {
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.rnd-tasting-taster-name {
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.rnd-tasting-taster-notes {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+/* Header action buttons */
+.btn-drawer-action {
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+.btn-drawer-action:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Print styles */
+@media print {
+  body > *:not(.rnd-read-drawer) { display: none !important; }
+  .rnd-read-drawer {
+    position: static;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    transform: none;
+    box-shadow: none;
+    border: none;
+  }
+  .rnd-form-drawer-header button { display: none !important; }
+  .rnd-form-backdrop { display: none !important; }
+}
+
+/* Dark mode — read mode */
+[data-theme="dark"] .rnd-tasting-taster {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+[data-theme="dark"] .btn-drawer-action {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+[data-theme="dark"] .btn-drawer-action:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Responsive — read drawer full-width on small screens */
+@media (max-width: 640px) {
+  .rnd-read-drawer { width: 100vw; }
+}
