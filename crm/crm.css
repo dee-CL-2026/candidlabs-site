@@ -331,6 +331,11 @@
   color: #3b82f6;
 }
 
+.crm-status.prospect {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
 /* Deal stage badges */
 .crm-stage {
   display: inline-flex;

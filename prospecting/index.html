@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Prospecting Pipeline - AI-driven lead discovery and VA review queue for Candid Mixers.">
+  <title>Prospecting - Candidlabs</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="prospecting.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body data-auth-require="true">
+  <!-- Navigation -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-container">
+      <a href="../index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
+
+      <ul class="nav-menu" role="menubar">
+        <li role="none"><a href="../crm/index.html" class="nav-link" role="menuitem">CRM</a></li>
+        <li role="none"><a href="../prospecting/index.html" class="nav-link" role="menuitem">Prospecting</a></li>
+        <li role="none"><a href="../projects/index.html" class="nav-link" role="menuitem">Projects</a></li>
+        <li role="none"><a href="../reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none" class="nav-dropdown">
+              <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Tools ▾</button>
+              <ul class="nav-dropdown-menu">
+                <li><a href="https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform" class="nav-dropdown-item" target="_blank" rel="noopener">KAA Form</a></li>
+                <li><a href="https://docs.google.com/spreadsheets/d/19kDef25LdbvPssTkMusFGu8FmNbj2rWuF7NNF9SBSvs/edit" class="nav-dropdown-item" target="_blank" rel="noopener">Quote Generator</a></li>
+                <li><a href="https://xero.me" class="nav-dropdown-item" target="_blank" rel="noopener">Submit Expenses</a></li>
+              </ul>
+            </li>
+      </ul>
+
+      <div class="nav-actions">
+        <button
+          id="theme-toggle"
+          class="theme-toggle"
+          type="button"
+          aria-label="Switch to dark mode"
+        >
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+
+        <a href="../login.html" class="btn btn-primary btn-login" aria-label="Login">Login</a>
+
+        <button
+          id="mobile-menu-toggle"
+          class="mobile-menu-toggle"
+          type="button"
+          aria-label="Toggle navigation menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu" role="menu" aria-label="Mobile navigation">
+      <ul>
+        <li><a href="../crm/index.html" role="menuitem">CRM</a></li>
+        <li><a href="../prospecting/index.html" role="menuitem">Prospecting</a></li>
+        <li><a href="../projects/index.html" role="menuitem">Projects</a></li>
+        <li><a href="../reports.html" role="menuitem">Reports</a></li>
+        <li><a href="https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform" role="menuitem" target="_blank" rel="noopener">KAA Form</a></li>
+        <li><a href="https://docs.google.com/spreadsheets/d/19kDef25LdbvPssTkMusFGu8FmNbj2rWuF7NNF9SBSvs/edit" role="menuitem" target="_blank" rel="noopener">Quote Generator</a></li>
+        <li><a href="https://xero.me" role="menuitem" target="_blank" rel="noopener">Submit Expenses</a></li>
+        <li><a href="../login.html" role="menuitem">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="container">
+        <h1 class="page-title">Prospecting Pipeline</h1>
+        <p class="page-description">AI-driven lead discovery and VA review queue</p>
+      </div>
+    </header>
+
+    <section class="section" aria-label="Prospecting Pipeline">
+      <div class="container">
+
+        <!-- Stats Bar -->
+        <div class="prosp-stats" id="prosp-stats">
+          <div class="prosp-stat-card">
+            <div class="prosp-stat-number" id="stat-total">0</div>
+            <div class="prosp-stat-label">Discovered</div>
+          </div>
+          <div class="prosp-stat-card">
+            <div class="prosp-stat-number" id="stat-pending">0</div>
+            <div class="prosp-stat-label">Pending Review</div>
+          </div>
+          <div class="prosp-stat-card">
+            <div class="prosp-stat-number" id="stat-approved">0</div>
+            <div class="prosp-stat-label">Approved</div>
+          </div>
+          <div class="prosp-stat-card">
+            <div class="prosp-stat-number" id="stat-rejected">0</div>
+            <div class="prosp-stat-label">Rejected</div>
+          </div>
+          <div class="prosp-stat-card">
+            <div class="prosp-stat-number" id="stat-contacted">0</div>
+            <div class="prosp-stat-label">Contacted</div>
+          </div>
+          <div class="prosp-stat-card">
+            <div class="prosp-stat-number" id="stat-conversion">0%</div>
+            <div class="prosp-stat-label">Conversion</div>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="prosp-filter-bar">
+          <input type="text" class="crm-search" id="prosp-search" placeholder="Search prospects..." aria-label="Search prospects">
+          <select class="crm-filter-select" id="prosp-source-filter">
+            <option value="">All Sources</option>
+            <option value="ai_discovery">AI Discovery</option>
+            <option value="manual">Manual</option>
+          </select>
+          <select class="crm-filter-select" id="prosp-review-filter">
+            <option value="">All Review</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <select class="crm-filter-select" id="prosp-priority-filter">
+            <option value="">All Priority</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <select class="crm-filter-select" id="prosp-outreach-filter">
+            <option value="">All Outreach</option>
+            <option value="not_contacted">Not Contacted</option>
+            <option value="researched">Researched</option>
+            <option value="distributor_intro">Distributor Intro</option>
+            <option value="contacted">Contacted</option>
+            <option value="responded">Responded</option>
+            <option value="meeting_set">Meeting Set</option>
+            <option value="converted">Converted</option>
+          </select>
+          <button class="btn-add" data-auth-role="admin" onclick="openAddManual()">+ Add Manually</button>
+        </div>
+
+        <!-- Discovery Card Queue -->
+        <div class="prosp-queue" id="prosp-queue">
+          <div class="prosp-empty">
+            <div class="prosp-empty-icon">&#128270;</div>
+            <p>Loading prospects...</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Add Manual Prospect Modal -->
+  <div class="crm-modal-overlay" id="manual-modal">
+    <div class="crm-modal" role="dialog" aria-labelledby="manual-modal-title">
+      <h3 id="manual-modal-title">Add Prospect Manually</h3>
+      <form id="manual-form" onsubmit="event.preventDefault(); saveManual();">
+        <div class="crm-form-group">
+          <label for="manual-name">Venue / Company Name *</label>
+          <input type="text" id="manual-name" required placeholder="e.g. The Shady Pig">
+        </div>
+        <div class="crm-form-row">
+          <div class="crm-form-group">
+            <label for="manual-market">Market</label>
+            <input type="text" id="manual-market" placeholder="e.g. Bali, Jakarta">
+          </div>
+          <div class="crm-form-group">
+            <label for="manual-channel">Channel</label>
+            <select id="manual-channel">
+              <option value="">-- Select --</option>
+              <option value="Horeca">Horeca</option>
+              <option value="Modern Trade">Modern Trade</option>
+              <option value="Direct">Direct</option>
+              <option value="E-commerce">E-commerce</option>
+              <option value="Export">Export</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="crm-form-row">
+          <div class="crm-form-group">
+            <label for="manual-type">Type</label>
+            <select id="manual-type">
+              <option value="venue">Venue</option>
+              <option value="distributor">Distributor</option>
+              <option value="group">Group</option>
+              <option value="individual">Individual</option>
+              <option value="partner">Partner</option>
+            </select>
+          </div>
+          <div class="crm-form-group">
+            <label for="manual-priority">Priority</label>
+            <select id="manual-priority">
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </div>
+        <div class="crm-form-row">
+          <div class="crm-form-group">
+            <label for="manual-ig">Instagram Handle</label>
+            <input type="text" id="manual-ig" placeholder="@handle">
+          </div>
+          <div class="crm-form-group">
+            <label for="manual-wa">WhatsApp Number</label>
+            <input type="text" id="manual-wa" placeholder="+628...">
+          </div>
+        </div>
+        <div class="crm-form-row">
+          <div class="crm-form-group">
+            <label for="manual-landline">Landline</label>
+            <input type="text" id="manual-landline" placeholder="021-...">
+          </div>
+          <div class="crm-form-group">
+            <label for="manual-email">Email</label>
+            <input type="email" id="manual-email" placeholder="info@venue.com">
+          </div>
+        </div>
+        <div class="crm-form-group">
+          <label for="manual-notes">Notes</label>
+          <textarea id="manual-notes" placeholder="Instructions or context..."></textarea>
+        </div>
+        <div class="crm-modal-actions">
+          <button type="button" class="btn-modal secondary" onclick="closeModal('manual-modal')">Cancel</button>
+          <button type="submit" class="btn-modal primary">Save Prospect</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Reject Reason Modal -->
+  <div class="crm-modal-overlay" id="reject-modal">
+    <div class="crm-modal" role="dialog" aria-labelledby="reject-modal-title">
+      <h3 id="reject-modal-title">Reject Prospect</h3>
+      <form id="reject-form" onsubmit="event.preventDefault(); confirmReject();">
+        <input type="hidden" id="reject-id">
+        <div class="crm-form-group">
+          <label for="reject-reason">Reason for rejection</label>
+          <textarea id="reject-reason" placeholder="Why is this prospect not a good fit?" rows="3"></textarea>
+        </div>
+        <div class="crm-modal-actions">
+          <button type="button" class="btn-modal secondary" onclick="closeModal('reject-modal')">Cancel</button>
+          <button type="submit" class="btn-modal primary" style="background:var(--color-error);">Reject</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Distributor Intro Modal -->
+  <div class="crm-modal-overlay" id="intro-modal">
+    <div class="crm-modal" role="dialog" aria-labelledby="intro-modal-title">
+      <h3 id="intro-modal-title">Request Distributor Introduction</h3>
+      <form id="intro-form" onsubmit="event.preventDefault(); confirmIntroRequest();">
+        <input type="hidden" id="intro-id">
+        <p class="prosp-intro-desc">Request a warm introduction via Sukanda Djaya.</p>
+        <div class="crm-form-group">
+          <label for="intro-contact">Request intro from</label>
+          <select id="intro-contact" required>
+            <option value="">-- Select --</option>
+            <option value="Fannie">Fannie</option>
+            <option value="Nares">Nares</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="crm-form-group" id="intro-other-group" style="display:none;">
+          <label for="intro-other-name">Name</label>
+          <input type="text" id="intro-other-name" placeholder="Contact person name">
+        </div>
+        <div class="crm-form-group">
+          <label for="intro-message">Intro request message</label>
+          <textarea id="intro-message" rows="4" placeholder="Loading..."></textarea>
+        </div>
+        <div class="crm-modal-actions">
+          <button type="button" class="btn-modal secondary" onclick="closeModal('intro-modal')">Cancel</button>
+          <button type="button" class="btn-modal secondary" onclick="copyIntroMessage()">Copy Message</button>
+          <button type="submit" class="btn-modal primary">Mark Intro Requested</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Outreach Status Modal -->
+  <div class="crm-modal-overlay" id="outreach-modal">
+    <div class="crm-modal" role="dialog" aria-labelledby="outreach-modal-title">
+      <h3 id="outreach-modal-title">Update Outreach Status</h3>
+      <form id="outreach-form" onsubmit="event.preventDefault(); confirmOutreachUpdate();">
+        <input type="hidden" id="outreach-id">
+        <div class="crm-form-group">
+          <label for="outreach-status-select">New Status</label>
+          <select id="outreach-status-select">
+            <option value="not_contacted">Not Contacted</option>
+            <option value="researched">Researched</option>
+            <option value="distributor_intro">Distributor Intro</option>
+            <option value="contacted">Contacted</option>
+            <option value="responded">Responded</option>
+            <option value="meeting_set">Meeting Set</option>
+            <option value="converted">Converted</option>
+          </select>
+        </div>
+        <div class="crm-modal-actions">
+          <button type="button" class="btn-modal secondary" onclick="closeModal('outreach-modal')">Cancel</button>
+          <button type="submit" class="btn-modal primary">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="prosp-toast" id="prosp-toast"></div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-content">&copy; 2026 Candidlabs - Internal Use Only</p>
+    </div>
+  </footer>
+
+  <script src="../auth.js"></script>
+  <script src="../data-adapter.js"></script>
+  <script src="../script.js"></script>
+  <script src="prospecting.js"></script>
+</body>
+</html>

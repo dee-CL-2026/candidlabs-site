@@ -208,7 +208,7 @@ function switchTool(toolId) {
 
 function renderOverview() {
   var contacts = loadData('contacts');
-  var companies = loadData('companies');
+  var companies = loadData('companies').filter(function(c) { return c.status !== 'prospect'; });
   var deals = loadData('deals');
 
   document.getElementById('stat-contacts').textContent = contacts.length;
@@ -394,7 +394,7 @@ function renderCompanies(filter) {
   var query = (filter || '').toLowerCase();
   var typeFilter = (document.getElementById('companies-type-filter') || {}).value || '';
 
-  var companies = _applySorted(_companies, 'companies');
+  var companies = _applySorted(_companies.filter(function(c) { return c.status !== 'prospect'; }), 'companies');
 
   if (query) {
     companies = companies.filter(function(c) {
