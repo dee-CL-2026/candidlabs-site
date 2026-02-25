@@ -172,10 +172,19 @@
     </section>
   </main>
 
-  <!-- Add Manual Prospect Modal -->
-  <div class="crm-modal-overlay" id="manual-modal">
-    <div class="crm-modal" role="dialog" aria-labelledby="manual-modal-title">
-      <h3 id="manual-modal-title">Add Prospect Manually</h3>
+  <!-- Add Manual Prospect — Slide Drawer -->
+  <div class="crm-detail-backdrop" id="manual-backdrop" onclick="closeManualDrawer()"></div>
+  <aside class="crm-detail-drawer" id="manual-drawer" role="complementary" aria-label="Add prospect">
+    <div class="crm-detail-header">
+      <div class="crm-detail-header-left">
+        <h2>Add Prospect</h2>
+        <div class="crm-detail-meta"><span class="badge badge-type">Manual</span></div>
+      </div>
+      <div class="crm-detail-header-actions">
+        <button class="btn-detail-close" onclick="closeManualDrawer()" aria-label="Close">&#10005;</button>
+      </div>
+    </div>
+    <div class="prosp-drawer-form-body">
       <form id="manual-form" onsubmit="event.preventDefault(); saveManual();">
         <div class="crm-form-group">
           <label for="manual-name">Venue / Company Name *</label>
@@ -244,12 +253,12 @@
           <textarea id="manual-notes" placeholder="Instructions or context..."></textarea>
         </div>
         <div class="crm-modal-actions">
-          <button type="button" class="btn-modal secondary" onclick="closeModal('manual-modal')">Cancel</button>
+          <button type="button" class="btn-modal secondary" onclick="closeManualDrawer()">Cancel</button>
           <button type="submit" class="btn-modal primary">Save Prospect</button>
         </div>
       </form>
     </div>
-  </div>
+  </aside>
 
   <!-- Reject Reason Modal -->
   <div class="crm-modal-overlay" id="reject-modal">

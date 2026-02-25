@@ -539,7 +539,13 @@ function copyIntroMessage() {
 
 function openAddManual() {
   document.getElementById('manual-form').reset();
-  document.getElementById('manual-modal').classList.add('active');
+  document.getElementById('manual-drawer').classList.add('active');
+  document.getElementById('manual-backdrop').classList.add('active');
+}
+
+function closeManualDrawer() {
+  document.getElementById('manual-drawer').classList.remove('active');
+  document.getElementById('manual-backdrop').classList.remove('active');
 }
 
 function saveManual() {
@@ -577,7 +583,7 @@ function saveManual() {
   CandidStore.create('companies', record).then(function() {
     return initProspects();
   }).then(function() {
-    closeModal('manual-modal');
+    closeManualDrawer();
     renderQueue();
     renderStats();
     showToast('Prospect added manually');

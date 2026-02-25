@@ -607,6 +607,26 @@
 }
 
 /* ============================================================
+   DRAWER FORM BODY — scrollable form inside slide drawer
+   ============================================================ */
+
+.prosp-drawer-form-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-lg) var(--space-xl);
+}
+
+.prosp-drawer-form-body .crm-form-row {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 400px) {
+  .prosp-drawer-form-body .crm-form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 
