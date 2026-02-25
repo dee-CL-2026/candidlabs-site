@@ -300,6 +300,62 @@
   color: var(--color-error);
 }
 
+/* Reach Actions (Email / WhatsApp icons in table rows) */
+.reach-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.reach-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  transition: all 0.15s;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.reach-btn.reach-email:hover {
+  color: var(--color-primary);
+  background: rgba(27, 112, 139, 0.08);
+}
+
+.reach-btn.reach-wa:hover {
+  color: #25D366;
+  background: rgba(37, 211, 102, 0.08);
+}
+
+.reach-btn.reach-disabled {
+  opacity: 0.2;
+  cursor: default;
+}
+
+/* Inline reach button (detail drawer) */
+.reach-btn-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+
+.reach-btn-inline.reach-wa {
+  color: #25D366;
+}
+
+.reach-btn-inline.reach-wa:hover {
+  background: rgba(37, 211, 102, 0.12);
+}
+
 /* Status Badge (reuses site badge pattern) */
 .crm-status {
   display: inline-flex;
