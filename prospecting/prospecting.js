@@ -178,7 +178,7 @@ function renderCard(p) {
   // Header
   html += '<div class="prosp-card-header">';
   html += '<div class="prosp-card-title-row">';
-  html += '<h4 class="prosp-card-name">' + escapeHtml(p.name) + '</h4>';
+  html += '<h4 class="prosp-card-name"><button class="row-name-link" onclick="openDetail(\'' + p.id + '\')">' + escapeHtml(p.name) + '</button></h4>';
   html += '<div class="prosp-card-meta">';
   if (p.market) html += '<span>' + escapeHtml(p.market) + '</span>';
   if (p.channel) html += '<span>' + escapeHtml(p.channel) + '</span>';
@@ -583,6 +583,206 @@ function saveManual() {
     showToast('Prospect added manually');
   }).catch(function() {
     alert('Could not create prospect.');
+  });
+}
+
+// ============================================================
+// DETAIL DRAWER — slides in from right, shows prospect + comments
+// ============================================================
+
+var _detailState = { type: null, id: null };
+
+function openDetail(id) {
+  var prospect = _prospects.find(function(p) { return p.id === id; });
+  if (!prospect) return;
+
+  var meta = parseMeta(prospect);
+  _detailState = { type: 'company', id: id };
+
+  // Title
+  document.getElementById('detail-title').textContent = prospect.name;
+
+  // Meta badges
+  var source = meta.source || 'manual';
+  var reviewStatus = meta.review_status || 'pending';
+  var fitScore = meta.fit_score || 0;
+  var fitClass = fitScore >= 7 ? 'fit-high' : fitScore >= 4 ? 'fit-medium' : 'fit-low';
+
+  var metaHtml = '<span class="badge badge-type">Prospect</span>';
+  if (source === 'ai_discovery') {
+    metaHtml += '<span class="prosp-badge prosp-badge-ai">AI</span>';
+  }
+  metaHtml += '<span class="prosp-review-badge ' + escapeHtml(reviewStatus) + '">' + escapeHtml(reviewStatus) + '</span>';
+  if (fitScore > 0) {
+    metaHtml += '<span class="prosp-badge prosp-badge-fit ' + fitClass + '">' + fitScore + '/10</span>';
+  }
+  document.getElementById('detail-meta').innerHTML = metaHtml;
+
+  // Fields
+  var outreachStatus = (meta.outreach_status || 'not_contacted').replace(/_/g, ' ');
+  var contactScore = meta.contact_score || calcContactScore(meta);
+  var waLink = meta.wa_number ? 'https://wa.me/' + meta.wa_number.replace(/[^0-9]/g, '') : '';
+  var igLink = meta.ig_handle ? 'https://instagram.com/' + meta.ig_handle.replace('@', '') : '';
+
+  var fieldsHtml =
+    field('Market', prospect.market || '—') +
+    field('Channel', prospect.channel || '—') +
+    field('Type', prospect.type || '—') +
+    field('Priority', meta.priority || 'medium') +
+    field('Outreach', escapeHtml(outreachStatus)) +
+    field('Contact Score', contactScore + '/10') +
+    field('WhatsApp', meta.wa_number
+      ? '<a href="' + waLink + '" target="_blank" rel="noopener">' + escapeHtml(meta.wa_number) + '</a>'
+      : '—') +
+    field('Instagram', meta.ig_handle
+      ? '<a href="' + igLink + '" target="_blank" rel="noopener">' + escapeHtml(meta.ig_handle) + '</a>'
+      : '—') +
+    field('Landline', meta.landline || '—') +
+    field('Email', meta.email
+      ? '<a href="mailto:' + escapeHtml(meta.email) + '">' + escapeHtml(meta.email) + '</a>'
+      : '—') +
+    field('IG Followers', meta.ig_followers ? meta.ig_followers.toLocaleString() : '—') +
+    field('Added', formatDate(prospect.createdAt));
+
+  if (meta.fit_reason) {
+    fieldsHtml += '<div class="crm-detail-field full-width">' + fieldLabel('Fit Reason') +
+      '<div class="crm-detail-field-value">' + escapeHtml(meta.fit_reason) + '</div></div>';
+  }
+
+  if (meta.ig_bio) {
+    fieldsHtml += '<div class="crm-detail-field full-width">' + fieldLabel('IG Bio') +
+      '<div class="crm-detail-field-value">' + escapeHtml(meta.ig_bio) + '</div></div>';
+  }
+
+  if (meta.draft_message) {
+    fieldsHtml += '<div class="crm-detail-field full-width">' + fieldLabel('Draft Message') +
+      '<div class="crm-detail-field-value" style="font-family:var(--font-mono);font-size:0.82rem;white-space:pre-wrap;">' +
+      escapeHtml(meta.draft_message) + '</div></div>';
+  }
+
+  if (meta.intro_channel === 'distributor') {
+    fieldsHtml += '<div class="crm-detail-field full-width">' + fieldLabel('Distributor Intro') +
+      '<div class="crm-detail-field-value">Via ' + escapeHtml(meta.intro_requested_from || '?') +
+      ' — ' + escapeHtml((meta.intro_status || 'pending').replace(/_/g, ' ')) + '</div></div>';
+  }
+
+  if (meta.review_notes) {
+    fieldsHtml += '<div class="crm-detail-field full-width">' + fieldLabel('Review Notes') +
+      '<div class="crm-detail-field-value">' + escapeHtml(meta.review_notes) + '</div></div>';
+  }
+
+  if (prospect.notes) {
+    fieldsHtml += '<div class="crm-detail-field full-width">' + fieldLabel('Notes') +
+      '<div class="crm-detail-field-value">' + escapeHtml(prospect.notes) + '</div></div>';
+  }
+
+  document.getElementById('detail-fields').innerHTML = fieldsHtml;
+
+  // Open drawer
+  document.getElementById('detail-drawer').classList.add('active');
+  document.getElementById('detail-backdrop').classList.add('active');
+  document.getElementById('detail-comment-input').value = '';
+  loadDetailComments('company', id);
+}
+
+function field(label, valueHtml) {
+  return '<div class="crm-detail-field">' + fieldLabel(label) + '<div class="crm-detail-field-value">' + valueHtml + '</div></div>';
+}
+
+function fieldLabel(label) {
+  return '<div class="crm-detail-field-label">' + escapeHtml(label) + '</div>';
+}
+
+function closeDetail() {
+  document.getElementById('detail-drawer').classList.remove('active');
+  document.getElementById('detail-backdrop').classList.remove('active');
+  _detailState = { type: null, id: null };
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  var d = new Date(dateStr);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// ============================================================
+// COMMENTS — same pattern as CRM detail drawer
+// ============================================================
+
+function loadDetailComments(type, id) {
+  var list = document.getElementById('detail-comments-list');
+  list.innerHTML = '<p class="crm-comment-empty">Loading…</p>';
+  if (typeof CandidStore === 'undefined' || !CandidStore.loadComments) {
+    list.innerHTML = '<p class="crm-comment-empty">Comments require the API.</p>';
+    return;
+  }
+  CandidStore.loadComments(type, id).then(function(comments) {
+    renderDetailComments(comments, type, id);
+  }).catch(function() {
+    list.innerHTML = '<p class="crm-comment-empty">Could not load comments.</p>';
+  });
+}
+
+function renderDetailComments(comments, type, id) {
+  var list = document.getElementById('detail-comments-list');
+  if (!comments || comments.length === 0) {
+    list.innerHTML = '<p class="crm-comment-empty">No comments yet — be the first.</p>';
+    return;
+  }
+  var userAuth = null;
+  try { userAuth = JSON.parse(localStorage.getItem('candidlabs_auth')); } catch(e) {}
+  var isAdmin = userAuth && userAuth.role === 'admin';
+
+  list.innerHTML = comments.map(function(c) {
+    var initials = (c.authorName || c.authorEmail || '?').split(' ').map(function(w) { return w[0]; }).slice(0,2).join('').toUpperCase();
+    var canDelete = isAdmin || (userAuth && userAuth.email === c.authorEmail);
+    return '<div class="crm-comment-item">' +
+      '<div class="crm-comment-avatar">' + escapeHtml(initials) + '</div>' +
+      '<div class="crm-comment-body">' +
+        '<div class="crm-comment-byline">' +
+          '<span class="crm-comment-author">' + escapeHtml(c.authorName || c.authorEmail) + '</span>' +
+          '<span class="crm-comment-time">' + formatCommentTime(c.createdAt) + '</span>' +
+        '</div>' +
+        '<div class="crm-comment-text">' + escapeHtml(c.body) + '</div>' +
+      '</div>' +
+      (canDelete ? '<button class="crm-comment-delete" onclick="deleteDetailComment(\'' + c.id + '\',\'' + type + '\',\'' + id + '\')" title="Delete">&#10005;</button>' : '') +
+    '</div>';
+  }).join('');
+  list.scrollTop = list.scrollHeight;
+}
+
+function formatCommentTime(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  var now = new Date();
+  var diffMs = now - d;
+  var diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return diffMin + 'm ago';
+  var diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return diffHr + 'h ago';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+function submitDetailComment() {
+  var input = document.getElementById('detail-comment-input');
+  var text = input.value.trim();
+  if (!text || !_detailState.type || !_detailState.id) return;
+  var btn = document.getElementById('detail-comment-submit');
+  btn.disabled = true;
+  CandidStore.postComment(_detailState.type, _detailState.id, text)
+    .then(function() {
+      input.value = '';
+      loadDetailComments(_detailState.type, _detailState.id);
+    })
+    .catch(function() { alert('Could not post comment.'); })
+    .finally(function() { btn.disabled = false; });
+}
+
+function deleteDetailComment(commentId, type, recordId) {
+  if (!confirm('Delete this comment?')) return;
+  CandidStore.removeComment(commentId).then(function() {
+    loadDetailComments(type, recordId);
   });
 }
 
