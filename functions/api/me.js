@@ -22,6 +22,7 @@ const TEAM = [
   { email: 'anders@candidmixers.com', displayName: 'Anders', role: 'partner' },
   { email: 'jay@candidmixers.com', displayName: 'Jay', role: 'partner' },
   { email: 'partnerships@candidmixers.com', displayName: 'Alistair', role: 'partner' },
+  { email: 'torqueassistant@gmail.com', displayName: 'Test Partner', role: 'partner' },
 ];
 
 const ALLOWED_DOMAINS = ['candidmixers.com', 'candidlabs.com'];
