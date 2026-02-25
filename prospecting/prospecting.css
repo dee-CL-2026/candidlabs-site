@@ -627,6 +627,172 @@
 }
 
 /* ============================================================
+   WA VERIFICATION
+   ============================================================ */
+
+/* Channel group wrapper for WA + verify button */
+.prosp-channel-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Verification icon inline with WA link */
+.wa-verified-icon {
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.wa-verified-icon.verified {
+  color: var(--color-success);
+}
+
+.wa-verified-icon.invalid {
+  color: var(--color-error);
+}
+
+.wa-verified-icon.unchecked {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+
+/* WA channel link overrides for verified/invalid state */
+.prosp-channel-link.wa-ok {
+  border-color: rgba(16, 185, 129, 0.4);
+  color: var(--color-success);
+}
+
+.prosp-channel-link.wa-bad {
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--color-error);
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* Small verify button on card */
+.prosp-wa-verify-btn {
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  color: var(--color-primary);
+  background: rgba(27, 112, 139, 0.08);
+  border: 1px solid rgba(27, 112, 139, 0.25);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.prosp-wa-verify-btn:hover {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.prosp-wa-verify-btn.recheck {
+  opacity: 0.5;
+  font-size: 0.62rem;
+}
+
+.prosp-wa-verify-btn.recheck:hover {
+  opacity: 1;
+}
+
+/* Inline link-style button (used in detail drawer) */
+.prosp-link-btn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.prosp-link-btn:hover {
+  color: var(--color-primary-dark, #14859a);
+}
+
+/* WA Verify Modal Styles */
+.wa-verify-number-display {
+  font-size: 0.9rem;
+  margin-bottom: var(--space-md);
+  color: var(--text-primary);
+}
+
+.wa-verify-section {
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+}
+
+.wa-verify-section-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0 var(--space-xs);
+  color: var(--text-primary);
+}
+
+.wa-verify-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-sm);
+}
+
+.wa-verify-open-link {
+  display: inline-block;
+  margin-bottom: var(--space-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+.wa-verify-actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.wa-verify-divider {
+  text-align: center;
+  position: relative;
+  margin: var(--space-sm) 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.wa-verify-divider::before,
+.wa-verify-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: calc(50% - 20px);
+  height: 1px;
+  background: var(--border-color);
+}
+
+.wa-verify-divider::before { left: 0; }
+.wa-verify-divider::after { right: 0; }
+
+.wa-verify-api-status {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  min-height: 20px;
+}
+
+.wa-api-not-configured {
+  color: var(--color-warning);
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 

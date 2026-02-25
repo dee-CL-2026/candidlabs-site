@@ -62,12 +62,30 @@ function buildContactChannels(meta) {
 }
 
 // ============================================================
+// WA VERIFICATION HELPERS
+// ============================================================
+
+function getWaVerifiedIcon(meta) {
+  if (!meta.wa_number) return '';
+  if (meta.wa_verified === true) return '<span class="wa-verified-icon verified" title="Verified on WhatsApp">&#10003;</span>';
+  if (meta.wa_verified === false) return '<span class="wa-verified-icon invalid" title="Not on WhatsApp">&#10007;</span>';
+  return '<span class="wa-verified-icon unchecked" title="Not yet verified">?</span>';
+}
+
+function getWaVerifiedLabel(meta) {
+  if (!meta.wa_number) return 'No number';
+  if (meta.wa_verified === true) return 'Verified (' + (meta.wa_verified_method || 'manual') + ')';
+  if (meta.wa_verified === false) return 'Not on WA (' + (meta.wa_verified_method || 'manual') + ')';
+  return 'Not verified';
+}
+
+// ============================================================
 // RENDER — Stats Bar
 // ============================================================
 
 function renderStats() {
   var total = _prospects.length;
-  var pending = 0, approved = 0, rejected = 0, contacted = 0, converted = 0;
+  var pending = 0, approved = 0, rejected = 0, contacted = 0, converted = 0, waVerified = 0;
 
   _prospects.forEach(function(p) {
     var meta = parseMeta(p);
@@ -80,6 +98,8 @@ function renderStats() {
 
     if (outreach === 'contacted' || outreach === 'responded' || outreach === 'meeting_set' || outreach === 'converted') contacted++;
     if (outreach === 'converted') converted++;
+
+    if (meta.wa_verified === true) waVerified++;
   });
 
   document.getElementById('stat-total').textContent = total;
@@ -87,6 +107,7 @@ function renderStats() {
   document.getElementById('stat-approved').textContent = approved;
   document.getElementById('stat-rejected').textContent = rejected;
   document.getElementById('stat-contacted').textContent = contacted;
+  document.getElementById('stat-wa-verified').textContent = waVerified;
   document.getElementById('stat-conversion').textContent = total > 0 ? Math.round((converted / total) * 100) + '%' : '0%';
 }
 
@@ -215,10 +236,20 @@ function renderCard(p) {
   }
 
   // Contact channels
+  var waVerifiedClass = meta.wa_verified === true ? 'wa-ok' : meta.wa_verified === false ? 'wa-bad' : '';
   html += '<div class="prosp-channels">';
-  html += '<a class="prosp-channel-link ' + (meta.wa_number ? 'available' : 'unavailable') + '"' +
+  html += '<span class="prosp-channel-group">';
+  html += '<a class="prosp-channel-link ' + (meta.wa_number ? 'available' : 'unavailable') + ' ' + waVerifiedClass + '"' +
     (waLink ? ' href="' + waLink + '" target="_blank" rel="noopener"' : '') +
-    '><span class="prosp-channel-icon">&#128172;</span>WA</a>';
+    '><span class="prosp-channel-icon">&#128172;</span>WA' + getWaVerifiedIcon(meta) + '</a>';
+  if (meta.wa_number) {
+    if (meta.wa_verified !== true && meta.wa_verified !== false) {
+      html += '<button class="prosp-wa-verify-btn" onclick="event.stopPropagation();openWaVerify(\'' + p.id + '\')" title="Verify this WA number">Verify</button>';
+    } else {
+      html += '<button class="prosp-wa-verify-btn recheck" onclick="event.stopPropagation();openWaVerify(\'' + p.id + '\')" title="Re-check verification">Re-check</button>';
+    }
+  }
+  html += '</span>';
   html += '<a class="prosp-channel-link ' + (meta.ig_handle ? 'available' : 'unavailable') + '"' +
     (igLink ? ' href="' + igLink + '" target="_blank" rel="noopener"' : '') +
     '><span class="prosp-channel-icon">&#128247;</span>IG</a>';
@@ -534,6 +565,118 @@ function copyIntroMessage() {
 }
 
 // ============================================================
+// WA NUMBER VERIFICATION
+// ============================================================
+
+function openWaVerify(id) {
+  var prospect = _prospects.find(function(p) { return p.id === id; });
+  if (!prospect) return;
+  var meta = parseMeta(prospect);
+  if (!meta.wa_number) return;
+
+  var cleanNum = meta.wa_number.replace(/[^0-9]/g, '');
+  document.getElementById('wa-verify-id').value = id;
+  document.getElementById('wa-verify-number').textContent = meta.wa_number;
+  document.getElementById('wa-verify-link').href = 'https://wa.me/' + cleanNum;
+  document.getElementById('wa-verify-result').style.display = 'none';
+  document.getElementById('wa-verify-api-status').textContent = '';
+  document.getElementById('wa-verify-modal').classList.add('active');
+}
+
+function waVerifyManual(isValid) {
+  var id = document.getElementById('wa-verify-id').value;
+  markWaVerified(id, isValid, 'manual');
+}
+
+function waVerifyApi() {
+  var id = document.getElementById('wa-verify-id').value;
+  var prospect = _prospects.find(function(p) { return p.id === id; });
+  if (!prospect) return;
+  var meta = parseMeta(prospect);
+  var statusEl = document.getElementById('wa-verify-api-status');
+
+  // Check if WA Business API is configured
+  var waApiToken = localStorage.getItem('candidlabs_wa_api_token');
+  var waPhoneId = localStorage.getItem('candidlabs_wa_phone_id');
+
+  if (!waApiToken || !waPhoneId) {
+    statusEl.innerHTML = '<span class="wa-api-not-configured">WA Business API not configured. <button class="prosp-link-btn" onclick="openWaApiSetup()">Set up now</button></span>';
+    return;
+  }
+
+  statusEl.textContent = 'Checking via WA Business API...';
+
+  // WhatsApp Cloud API — POST /v17.0/{phone-id}/contacts
+  fetch('https://graph.facebook.com/v17.0/' + waPhoneId + '/contacts', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + waApiToken,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      blocking: 'wait',
+      contacts: [meta.wa_number],
+      force_check: true
+    })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (data.contacts && data.contacts.length > 0) {
+      var contact = data.contacts[0];
+      var isValid = contact.status === 'valid';
+      statusEl.textContent = isValid ? 'Number is on WhatsApp!' : 'Number is NOT on WhatsApp.';
+      markWaVerified(id, isValid, 'api');
+    } else if (data.error) {
+      statusEl.textContent = 'API error: ' + (data.error.message || 'Unknown error');
+    } else {
+      statusEl.textContent = 'Unexpected response from API.';
+    }
+  })
+  .catch(function(err) {
+    statusEl.textContent = 'API call failed: ' + err.message;
+  });
+}
+
+function markWaVerified(id, isValid, method) {
+  var prospect = _prospects.find(function(p) { return p.id === id; });
+  if (!prospect) return;
+
+  var meta = mergeProspectMeta(prospect.meta, {
+    wa_verified: isValid,
+    wa_verified_method: method,
+    wa_verified_at: new Date().toISOString()
+  });
+
+  CandidStore.update('companies', id, { meta: serializeMeta(meta) }).then(function() {
+    prospect.meta = serializeMeta(meta);
+    closeModal('wa-verify-modal');
+    renderQueue();
+    showToast(isValid ? 'WA number verified' : 'WA number marked as invalid');
+    // Refresh detail drawer if open
+    if (_detailState.id === id) openDetail(id);
+  }).catch(function() {
+    alert('Could not save verification status.');
+  });
+}
+
+function openWaApiSetup() {
+  document.getElementById('wa-api-token').value = localStorage.getItem('candidlabs_wa_api_token') || '';
+  document.getElementById('wa-api-phone-id').value = localStorage.getItem('candidlabs_wa_phone_id') || '';
+  document.getElementById('wa-api-setup-modal').classList.add('active');
+}
+
+function saveWaApiSetup() {
+  var token = document.getElementById('wa-api-token').value.trim();
+  var phoneId = document.getElementById('wa-api-phone-id').value.trim();
+  if (token) localStorage.setItem('candidlabs_wa_api_token', token);
+  else localStorage.removeItem('candidlabs_wa_api_token');
+  if (phoneId) localStorage.setItem('candidlabs_wa_phone_id', phoneId);
+  else localStorage.removeItem('candidlabs_wa_phone_id');
+  closeModal('wa-api-setup-modal');
+  showToast('WA Business API settings saved');
+}
+
+// ============================================================
 // MANUAL PROSPECT
 // ============================================================
 
@@ -638,7 +781,9 @@ function openDetail(id) {
     field('Outreach', escapeHtml(outreachStatus)) +
     field('Contact Score', contactScore + '/10') +
     field('WhatsApp', meta.wa_number
-      ? '<a href="' + waLink + '" target="_blank" rel="noopener">' + escapeHtml(meta.wa_number) + '</a>'
+      ? '<a href="' + waLink + '" target="_blank" rel="noopener">' + escapeHtml(meta.wa_number) + '</a> ' +
+        getWaVerifiedIcon(meta) + ' <span style="font-size:0.75rem;color:var(--text-secondary);">' + getWaVerifiedLabel(meta) + '</span>' +
+        (meta.wa_verified !== true && meta.wa_verified !== false ? ' <button class="prosp-link-btn" onclick="openWaVerify(\'' + id + '\')">Verify</button>' : '')
       : '—') +
     field('Instagram', meta.ig_handle
       ? '<a href="' + igLink + '" target="_blank" rel="noopener">' + escapeHtml(meta.ig_handle) + '</a>'

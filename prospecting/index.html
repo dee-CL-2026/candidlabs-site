@@ -122,6 +122,10 @@
             <div class="prosp-stat-label">Contacted</div>
           </div>
           <div class="prosp-stat-card">
+            <div class="prosp-stat-number" id="stat-wa-verified">0</div>
+            <div class="prosp-stat-label">WA Verified</div>
+          </div>
+          <div class="prosp-stat-card">
             <div class="prosp-stat-number" id="stat-conversion">0%</div>
             <div class="prosp-stat-label">Conversion</div>
           </div>
@@ -332,6 +336,62 @@
         <div class="crm-modal-actions">
           <button type="button" class="btn-modal secondary" onclick="closeModal('outreach-modal')">Cancel</button>
           <button type="submit" class="btn-modal primary">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- WA Verification Modal -->
+  <div class="crm-modal-overlay" id="wa-verify-modal">
+    <div class="crm-modal" role="dialog" aria-labelledby="wa-verify-title">
+      <h3 id="wa-verify-title">Verify WhatsApp Number</h3>
+      <input type="hidden" id="wa-verify-id">
+      <p class="wa-verify-number-display">Number: <strong id="wa-verify-number"></strong></p>
+
+      <div class="wa-verify-section">
+        <h4 class="wa-verify-section-title">Manual Check</h4>
+        <p class="wa-verify-desc">Open the wa.me link below. If WhatsApp shows "Message" or opens a chat, the number is valid. If it shows an error, the number is not on WhatsApp.</p>
+        <a id="wa-verify-link" href="#" target="_blank" rel="noopener" class="wa-verify-open-link">Open wa.me link &rarr;</a>
+        <div class="wa-verify-actions">
+          <button class="prosp-btn prosp-btn-approve" onclick="waVerifyManual(true)">Valid — On WhatsApp</button>
+          <button class="prosp-btn prosp-btn-reject" onclick="waVerifyManual(false)">Invalid — Not on WA</button>
+        </div>
+      </div>
+
+      <div class="wa-verify-divider"><span>or</span></div>
+
+      <div class="wa-verify-section">
+        <h4 class="wa-verify-section-title">Automated Check (WA Business API)</h4>
+        <p class="wa-verify-desc">Uses the WhatsApp Business Cloud API to automatically verify if the number is registered on WhatsApp.</p>
+        <button class="prosp-btn prosp-btn-secondary" onclick="waVerifyApi()" style="margin-bottom:8px;">Check via API</button>
+        <div id="wa-verify-api-status" class="wa-verify-api-status"></div>
+      </div>
+
+      <div id="wa-verify-result" class="wa-verify-result" style="display:none;"></div>
+
+      <div class="crm-modal-actions">
+        <button type="button" class="btn-modal secondary" onclick="closeModal('wa-verify-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WA Business API Setup Modal -->
+  <div class="crm-modal-overlay" id="wa-api-setup-modal">
+    <div class="crm-modal" role="dialog" aria-labelledby="wa-api-setup-title">
+      <h3 id="wa-api-setup-title">WA Business API Setup</h3>
+      <p class="wa-verify-desc">Enter your WhatsApp Business Cloud API credentials. These are stored locally in your browser.</p>
+      <form onsubmit="event.preventDefault(); saveWaApiSetup();">
+        <div class="crm-form-group">
+          <label for="wa-api-token">Access Token</label>
+          <input type="password" id="wa-api-token" placeholder="EAAxxxxxxx...">
+        </div>
+        <div class="crm-form-group">
+          <label for="wa-api-phone-id">Phone Number ID</label>
+          <input type="text" id="wa-api-phone-id" placeholder="1234567890">
+        </div>
+        <div class="crm-modal-actions">
+          <button type="button" class="btn-modal secondary" onclick="closeModal('wa-api-setup-modal')">Cancel</button>
+          <button type="submit" class="btn-modal primary">Save</button>
         </div>
       </form>
     </div>
