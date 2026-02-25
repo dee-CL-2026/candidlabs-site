@@ -31,19 +31,23 @@ function isMyProject(project, userName) {
 function scopedProjects(allProjects) {
   var user = (typeof CandidAuth !== 'undefined') ? CandidAuth.getUser() : null;
   if (!user) return allProjects;
-  if (typeof CandidAuth !== 'undefined' && CandidAuth.hasRole('partner')) return allProjects;
+  // Admins see everything
+  if (typeof CandidAuth !== 'undefined' && CandidAuth.hasRole('admin')) return allProjects;
+  // Partners and team members only see projects they own or collaborate on
   return allProjects.filter(function(p) { return isMyProject(p, user.name); });
 }
 
 function scopedTasks(allTasks, allProjects) {
   var user = (typeof CandidAuth !== 'undefined') ? CandidAuth.getUser() : null;
   if (!user) return allTasks;
-  if (typeof CandidAuth !== 'undefined' && CandidAuth.hasRole('partner')) return allTasks;
-  // Build set of project IDs I collaborate on
+  // Admins see everything
+  if (typeof CandidAuth !== 'undefined' && CandidAuth.hasRole('admin')) return allTasks;
+  // Build set of project IDs I own/collaborate on
   var myProjectIds = {};
   allProjects.forEach(function(p) {
     if (isMyProject(p, user.name)) myProjectIds[p.id] = true;
   });
+  // Partners and team members see tasks in their projects or assigned to them
   return allTasks.filter(function(t) {
     return myProjectIds[t.projectId] || t.assignee === user.name;
   });
