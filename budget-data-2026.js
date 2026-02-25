@@ -497,7 +497,7 @@ const productionTargets_2026 = {
 const headcountPlan_2026 = {
   current: {
     founders: 2,      // Dieter, Anders
-    operations: 2,    // Ferry, Felicia
+    operations: 2,    // Fery, Felicia
     sales: 2,         // Mirzan, Jules
     marketing: 1,     // Ryan (contractor)
     total: 7

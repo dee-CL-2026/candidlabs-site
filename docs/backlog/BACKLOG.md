@@ -96,3 +96,47 @@ Template:
   - Updates on init/load and after create/edit/delete/status changes.
 - Notes:
   - Current KPI label is “Active Projects” (id stat-projects). Keep as-is until this item is implemented.
+
+## [CL-PROSP-0001] Prospecting scoring methodology — fit_score + contact_score criteria
+- Area: Prospecting / AI Pipeline
+- Priority: High (discuss before OpenClaw agent build)
+- Status: Open
+- Owner: TBD
+- Source: Chat — 2026-02-25
+- Summary: Define the scoring rubric for AI-discovered prospects. Two scores need agreed criteria and weights before the OpenClaw agent can be built.
+- Acceptance Criteria:
+  - **Contact Score** — current weights: WA=4, IG DM=3, landline=2, email=1 (max 10). Decide if these weights reflect actual outreach success rates in Indonesia. Should WA be weighted even higher?
+  - **Fit Score (1-10)** — the AI agent's quality assessment of a venue. Needs defined rubric with weighted criteria. Candidates include:
+    - Premium positioning (cocktails, craft, upscale dining vs. casual warung)
+    - Location tier (Seminyak/Canggu/SCBD = high vs. suburban/rural)
+    - Social proof (follower count, engagement rate, review scores)
+    - Reachability (contact_score as an input factor)
+    - Category match (bar/restaurant/hotel vs. gym/salon/unrelated)
+    - Competitor presence (already serving competitor RTD brands?)
+    - Volume potential (group/chain vs. single outlet)
+  - Rubric documented and codified so the OpenClaw agent produces consistent, explainable scores.
+  - Scoring logic testable — given a mock IG profile, the rubric produces a predictable score.
+- Notes:
+  - Fit score currently hardcoded in test data (8, 6, 9). No rubric yet.
+  - Contact score is auto-calculated in `prospecting.js:calcContactScore()`.
+  - Scoring will be implemented as an LLM prompt in the OpenClaw agent (Step 3: SCORE).
+  - Consider whether scores should be recalculated when VA edits contact details (e.g. adding a WA number should bump contact_score automatically — this already works).
+
+## [CL-CORE-0005] Centralize team roster — single source of truth for team members
+- Area: Core / Config
+- Priority: Low (do when next adding/removing a team member)
+- Status: Open
+- Owner: TBD
+- Source: Chat — 2026-02-25
+- Summary: Team member names, emails, and roles are hardcoded in multiple places. Create a single shared `team.js` config that all modules reference, so adding/removing people requires one edit.
+- Acceptance Criteria:
+  - Single `team.js` file exporting the roster (name, email, role).
+  - `functions/api/me.js` derives its TEAM array from this config (or a shared constant).
+  - `projects/projects.js` PM_TEAM_MEMBERS derived from the roster, not hardcoded.
+  - Collaborator checkboxes, assignee dropdowns, and any future @mention autocomplete all pull from the same source.
+  - Adding or removing a team member requires editing only `team.js`.
+- Notes:
+  - Current hardcoded locations: `functions/api/me.js` (TEAM), `projects/projects.js` (PM_TEAM_MEMBERS), `seed-data.js` (one-time, less critical).
+  - Current team: Dieter (admin), Anders/Jay/Alistair (partner), Jules/Mirzan/Fery (team).
+  - Could evolve into a full HR module later (onboarding, offboarding, permissions) but a simple JS config is sufficient for now.
+  - Note: Fery is spelled with one "r".

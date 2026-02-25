@@ -214,7 +214,7 @@ FY2026 represents a critical growth year for Candid. After the turbulence of FY2
 1. **SKD Acceleration** — Push for dedicated BD calls, not just monthly reviews
 2. **Holywings Launch** — Target February go-live, 1,000 cases/month baseline
 3. **Modern Trade Expansion** — Complete remaining chain onboarding
-4. **Team Building** — Add 1-2 field sales, onboard Ferry to all operations
+4. **Team Building** — Add 1-2 field sales, onboard Fery to all operations
 5. **30K Production Run** — Execute first 30,000-case soda production
 
 ### H2 (Jul-Dec)

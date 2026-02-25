@@ -19,7 +19,7 @@ function pmApplyAuthVisibility() {
 
 // ---- Data scoping ----
 
-var PM_TEAM_MEMBERS = ['Dieter', 'Jules', 'Mirzan', 'Ferry', 'Anders', 'Jay', 'Alistair'];
+var PM_TEAM_MEMBERS = ['Dieter', 'Jules', 'Mirzan', 'Fery', 'Anders', 'Jay', 'Alistair'];
 
 function isMyProject(project, userName) {
   if (project.owner === userName) return true;

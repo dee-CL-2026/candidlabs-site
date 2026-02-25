@@ -24,7 +24,7 @@
   // ---- Projects ----
   var projects = [
     { name: 'Holywings Group Account', owner: 'Jules', status: 'active', description: 'Major hospitality group — recently signed, 150 cases/mo min, 11+ outlets', start_date: '2026-02-10', meta: JSON.stringify({ collaborators: ['Dieter', 'Mirzan', 'Anders'] }) },
-    { name: 'SKD Partnership & Distribution', owner: 'Dieter', status: 'active', description: 'Core distributor — monthly alignment, rebates, event planning', start_date: '2026-01-05', meta: JSON.stringify({ collaborators: ['Jules', 'Mirzan', 'Ferry'] }) },
+    { name: 'SKD Partnership & Distribution', owner: 'Dieter', status: 'active', description: 'Core distributor — monthly alignment, rebates, event planning', start_date: '2026-01-05', meta: JSON.stringify({ collaborators: ['Jules', 'Mirzan', 'Fery'] }) },
     { name: 'Jakarta Account Recovery', owner: 'Jules', status: 'active', description: 'Rebuilding lost accounts: CJ\'s, Hotel Mulia, Basque, Swill Farm', start_date: '2026-01-12', meta: JSON.stringify({ collaborators: ['Alistair', 'Mirzan'] }) },
     { name: 'Indonesia Regional Expansion', owner: 'Jules', status: 'active', description: 'Branch visits (Bandung, Makassar, Malang), post-Ramadan roadshows', start_date: '2026-01-20', meta: JSON.stringify({ collaborators: ['Mirzan', 'Dieter'] }) },
     { name: 'New SKU Development', owner: 'Jay', status: 'active', description: 'Green tea (4 variants) + lime soda (4 variants), launch Q2-Q3', start_date: '2026-01-15', meta: JSON.stringify({ collaborators: ['Dieter', 'Jules'] }) },
@@ -32,10 +32,10 @@
     { name: 'Investment & Fundraising', owner: 'Dieter', status: 'active', description: 'Pitch deck, Merrick buyout, 6-month timeline to funding', start_date: '2026-01-05', meta: JSON.stringify({ collaborators: ['Anders', 'Alistair'] }) },
     { name: 'CEO Recruitment', owner: 'Dieter', status: 'active', description: 'CEO candidate (Elliot) — face-to-face mid-late March', start_date: '2026-02-01', meta: JSON.stringify({ collaborators: ['Anders', 'Alistair'] }) },
     { name: 'PT Unisoda Governance', owner: 'Dieter', status: 'active', description: 'Commissioner replacement, Ministry formalization', start_date: '2026-01-05', meta: JSON.stringify({ collaborators: ['Anders', 'Alistair'] }) },
-    { name: 'Financial Planning & Budget', owner: 'Dieter', status: 'active', description: '2026 budget (10-12B target), Xero reconciliation', start_date: '2026-01-05', meta: JSON.stringify({ collaborators: ['Anders', 'Ferry'] }) },
+    { name: 'Financial Planning & Budget', owner: 'Dieter', status: 'active', description: '2026 budget (10-12B target), Xero reconciliation', start_date: '2026-01-05', meta: JSON.stringify({ collaborators: ['Anders', 'Fery'] }) },
     { name: 'Vietnam Market Expansion', owner: 'Anders', status: 'active', description: 'Alchemy Group partnership, budget trip planned', start_date: '2026-02-01', meta: JSON.stringify({ collaborators: ['Dieter'] }) },
-    { name: 'CRM & Database Building', owner: 'Ferry', status: 'active', description: 'Contact database across all accounts, SKD branches, PICs', start_date: '2026-01-20', meta: JSON.stringify({ collaborators: ['Jules', 'Mirzan', 'Dieter'] }) },
-    { name: 'Candidlabs Platform', owner: 'Dieter', status: 'active', description: 'Internal ops platform — CRM, Projects, Prospecting, Dashboards', start_date: '2026-02-01', meta: JSON.stringify({ collaborators: ['Ferry'] }) }
+    { name: 'CRM & Database Building', owner: 'Fery', status: 'active', description: 'Contact database across all accounts, SKD branches, PICs', start_date: '2026-01-20', meta: JSON.stringify({ collaborators: ['Jules', 'Mirzan', 'Dieter'] }) },
+    { name: 'Candidlabs Platform', owner: 'Dieter', status: 'active', description: 'Internal ops platform — CRM, Projects, Prospecting, Dashboards', start_date: '2026-02-01', meta: JSON.stringify({ collaborators: ['Fery'] }) }
   ];
 
   // ---- Tasks (keyed by project name) ----
@@ -92,8 +92,8 @@
     ],
     'Financial Planning & Budget': [
       { title: 'Send 2024/2025 financial data to Anders', assignee: 'Dieter', priority: 'high', status: 'to-do' },
-      { title: 'Follow up with PKF on subscription recording', assignee: 'Ferry', priority: 'high', status: 'to-do' },
-      { title: 'Review all petty cash transactions and attach missing invoices', assignee: 'Ferry', priority: 'high', status: 'to-do' },
+      { title: 'Follow up with PKF on subscription recording', assignee: 'Fery', priority: 'high', status: 'to-do' },
+      { title: 'Review all petty cash transactions and attach missing invoices', assignee: 'Fery', priority: 'high', status: 'to-do' },
       { title: 'Write and implement expenses policy', assignee: 'Dieter', priority: 'medium', status: 'to-do' }
     ],
     'CRM & Database Building': [
