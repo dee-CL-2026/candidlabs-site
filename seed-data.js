@@ -23,10 +23,10 @@
 
   // ---- Projects ----
   var projects = [
-    { name: 'Holywings Group Account', owner: 'Jules', status: 'active', description: 'Major hospitality group — recently signed, 150 cases/mo min, 11+ outlets', start_date: '2026-02-10', meta: JSON.stringify({ collaborators: ['Dieter', 'Muhammad', 'Anders'] }) },
-    { name: 'SKD Partnership & Distribution', owner: 'Dieter', status: 'active', description: 'Core distributor — monthly alignment, rebates, event planning', start_date: '2026-01-05', meta: JSON.stringify({ collaborators: ['Jules', 'Muhammad', 'Ferry'] }) },
-    { name: 'Jakarta Account Recovery', owner: 'Jules', status: 'active', description: 'Rebuilding lost accounts: CJ\'s, Hotel Mulia, Basque, Swill Farm', start_date: '2026-01-12', meta: JSON.stringify({ collaborators: ['Alistair', 'Muhammad'] }) },
-    { name: 'Indonesia Regional Expansion', owner: 'Jules', status: 'active', description: 'Branch visits (Bandung, Makassar, Malang), post-Ramadan roadshows', start_date: '2026-01-20', meta: JSON.stringify({ collaborators: ['Muhammad', 'Dieter'] }) },
+    { name: 'Holywings Group Account', owner: 'Jules', status: 'active', description: 'Major hospitality group — recently signed, 150 cases/mo min, 11+ outlets', start_date: '2026-02-10', meta: JSON.stringify({ collaborators: ['Dieter', 'Mirzan', 'Anders'] }) },
+    { name: 'SKD Partnership & Distribution', owner: 'Dieter', status: 'active', description: 'Core distributor — monthly alignment, rebates, event planning', start_date: '2026-01-05', meta: JSON.stringify({ collaborators: ['Jules', 'Mirzan', 'Ferry'] }) },
+    { name: 'Jakarta Account Recovery', owner: 'Jules', status: 'active', description: 'Rebuilding lost accounts: CJ\'s, Hotel Mulia, Basque, Swill Farm', start_date: '2026-01-12', meta: JSON.stringify({ collaborators: ['Alistair', 'Mirzan'] }) },
+    { name: 'Indonesia Regional Expansion', owner: 'Jules', status: 'active', description: 'Branch visits (Bandung, Makassar, Malang), post-Ramadan roadshows', start_date: '2026-01-20', meta: JSON.stringify({ collaborators: ['Mirzan', 'Dieter'] }) },
     { name: 'New SKU Development', owner: 'Jay', status: 'active', description: 'Green tea (4 variants) + lime soda (4 variants), launch Q2-Q3', start_date: '2026-01-15', meta: JSON.stringify({ collaborators: ['Dieter', 'Jules'] }) },
     { name: 'KMI Production Contract', owner: 'Dieter', status: 'active', description: '2026 agreement revision — payment terms, volume commitments', start_date: '2026-01-08', meta: JSON.stringify({ collaborators: ['Jay'] }) },
     { name: 'Investment & Fundraising', owner: 'Dieter', status: 'active', description: 'Pitch deck, Merrick buyout, 6-month timeline to funding', start_date: '2026-01-05', meta: JSON.stringify({ collaborators: ['Anders', 'Alistair'] }) },
@@ -34,7 +34,7 @@
     { name: 'PT Unisoda Governance', owner: 'Dieter', status: 'active', description: 'Commissioner replacement, Ministry formalization', start_date: '2026-01-05', meta: JSON.stringify({ collaborators: ['Anders', 'Alistair'] }) },
     { name: 'Financial Planning & Budget', owner: 'Dieter', status: 'active', description: '2026 budget (10-12B target), Xero reconciliation', start_date: '2026-01-05', meta: JSON.stringify({ collaborators: ['Anders', 'Ferry'] }) },
     { name: 'Vietnam Market Expansion', owner: 'Anders', status: 'active', description: 'Alchemy Group partnership, budget trip planned', start_date: '2026-02-01', meta: JSON.stringify({ collaborators: ['Dieter'] }) },
-    { name: 'CRM & Database Building', owner: 'Ferry', status: 'active', description: 'Contact database across all accounts, SKD branches, PICs', start_date: '2026-01-20', meta: JSON.stringify({ collaborators: ['Jules', 'Muhammad', 'Dieter'] }) },
+    { name: 'CRM & Database Building', owner: 'Ferry', status: 'active', description: 'Contact database across all accounts, SKD branches, PICs', start_date: '2026-01-20', meta: JSON.stringify({ collaborators: ['Jules', 'Mirzan', 'Dieter'] }) },
     { name: 'Candidlabs Platform', owner: 'Dieter', status: 'active', description: 'Internal ops platform — CRM, Projects, Prospecting, Dashboards', start_date: '2026-02-01', meta: JSON.stringify({ collaborators: ['Ferry'] }) }
   ];
 
@@ -51,7 +51,7 @@
       { title: 'Push SKD for detailed branch data and sales projections', assignee: 'Jules', priority: 'high', status: 'to-do' },
       { title: 'Arrange monthly meeting with Sukanda Jakarta team', assignee: 'Jules', priority: 'medium', status: 'to-do' },
       { title: 'Coordinate PMB/FOC 3-month depletion plan with Nares', assignee: 'Jules', priority: 'high', status: 'to-do' },
-      { title: 'Get written policy from SKD on expired product returns', assignee: 'Muhammad', priority: 'medium', status: 'to-do' },
+      { title: 'Get written policy from SKD on expired product returns', assignee: 'Mirzan', priority: 'medium', status: 'to-do' },
       { title: 'Raise product recall stock replacement with Mirzan', assignee: 'Dieter', priority: 'medium', status: 'to-do' }
     ],
     'Jakarta Account Recovery': [
@@ -99,7 +99,7 @@
     'CRM & Database Building': [
       { title: 'Collect and share contact details from all SKD interactions', assignee: 'Jules', priority: 'high', status: 'in-progress' },
       { title: 'Start building database of contacts (names, numbers, positions)', assignee: 'Jules', priority: 'high', status: 'in-progress' },
-      { title: 'Share existing SKD org chart and continue updating', assignee: 'Muhammad', priority: 'medium', status: 'to-do' },
+      { title: 'Share existing SKD org chart and continue updating', assignee: 'Mirzan', priority: 'medium', status: 'to-do' },
       { title: 'Incentivize SKD staff to collect account contact details', assignee: 'Dieter', priority: 'medium', status: 'to-do' }
     ],
     'Candidlabs Platform': [
