@@ -409,11 +409,12 @@
   </footer>
 
   <script src="auth.js"></script>
+  <script src="data-adapter.js"></script>
   <script src="script.js"></script>
   <script>
     /**
      * Homepage dynamic content — populates stats and activity feed
-     * from localStorage data (same source as CRM + Projects modules).
+     * from CandidStore (D1 API) for projects/tasks and CRM data.
      */
     (function () {
       'use strict';
@@ -443,50 +444,32 @@
         d.appendChild(document.createTextNode(s));
         return d.innerHTML;
       }
-      function loadLS(key) {
-        try { var r = localStorage.getItem(key); return r ? JSON.parse(r) : null; }
-        catch(e) { return null; }
+
+      // ---- Load all data from D1 ----
+      function loadAllData() {
+        if (typeof CandidStore === 'undefined') return Promise.resolve({});
+        return Promise.all([
+          CandidStore.load('deals'),
+          CandidStore.load('projects'),
+          CandidStore.load('tasks'),
+          CandidStore.load('contacts'),
+          CandidStore.load('companies')
+        ]).then(function(results) {
+          return {
+            deals: results[0] || [],
+            projects: results[1] || [],
+            tasks: results[2] || [],
+            contacts: results[3] || [],
+            companies: results[4] || []
+          };
+        });
       }
 
-      // Default seed data (mirrors CRM + Projects seed for first-visit stats)
-      var SEED_DEALS = [
-        { title: 'SK Distribution Q1 2026 Order', value: 450000000, stage: 'negotiation', createdAt: '2026-01-20' },
-        { title: 'Grand Hotel Trial Program', value: 85000000, stage: 'proposal', createdAt: '2026-02-01' },
-        { title: 'Mandiri Bali Expansion', value: 275000000, stage: 'prospecting', createdAt: '2026-02-10' }
-      ];
-      var SEED_PROJECTS = [
-        { name: 'Looker Dashboard Rollout', status: 'active', createdAt: '2026-01-10' },
-        { name: 'candidlabs Platform Build', status: 'active', createdAt: '2026-02-01' },
-        { name: 'Q1 2026 Sales Push', status: 'active', createdAt: '2025-12-20' }
-      ];
-      var SEED_TASKS = [
-        { title: 'Define exec dashboard KPIs', status: 'done', createdAt: '2026-01-10' },
-        { title: 'Build Sales_Looker data source', status: 'in-progress', createdAt: '2026-01-15' },
-        { title: 'Build Finance_Looker data source', status: 'to-do', createdAt: '2026-01-15' },
-        { title: 'Deploy Production_Looker views', status: 'to-do', createdAt: '2026-01-15' },
-        { title: 'Build CRM module', status: 'done', createdAt: '2026-02-01' },
-        { title: 'Build PM module', status: 'in-progress', createdAt: '2026-02-01' },
-        { title: 'Implement auth system', status: 'in-progress', createdAt: '2026-02-01' },
-        { title: 'Wire dashboard with live data', status: 'to-do', createdAt: '2026-02-01' },
-        { title: 'Onboard 3 new Jakarta accounts', status: 'in-progress', createdAt: '2025-12-20' },
-        { title: 'Launch Bali hotel trial program', status: 'to-do', createdAt: '2025-12-20' }
-      ];
-      var SEED_CONTACTS = [
-        { name: 'Sarah Chen', createdAt: '2025-09-15' },
-        { name: 'Budi Santoso', createdAt: '2025-11-02' },
-        { name: 'Lisa Wong', createdAt: '2026-01-10' }
-      ];
-      var SEED_COMPANIES = [
-        { name: 'SK Distribution', createdAt: '2025-09-01' },
-        { name: 'PT Mandiri Beverages', createdAt: '2025-10-15' },
-        { name: 'Grand Hotel Group', createdAt: '2026-01-08' }
-      ];
-
       // ---- Populate Stats ----
-      function populateStats() {
-        var deals = loadLS('crm_deals') || SEED_DEALS;
-        var projects = loadLS('pm_projects') || SEED_PROJECTS;
-        var tasks = loadLS('pm_tasks') || SEED_TASKS;
+      function populateStats(data) {
+        var deals = data.deals || [];
+        var projects = data.projects || [];
+        var tasks = data.tasks || [];
 
         var pipelineValue = deals
           .filter(function(d) { return d.stage !== 'closed-lost'; })
@@ -509,40 +492,52 @@
       }
 
       // ---- Build Activity Feed ----
-      function buildActivityFeed() {
+      function buildActivityFeed(data) {
         var feed = document.getElementById('activity-feed');
         if (!feed) return;
 
         var events = [];
-        var contacts = loadLS('crm_contacts') || SEED_CONTACTS;
-        var companies = loadLS('crm_companies') || SEED_COMPANIES;
-        var deals = loadLS('crm_deals') || SEED_DEALS;
-        var projects = loadLS('pm_projects') || SEED_PROJECTS;
-        var tasks = loadLS('pm_tasks') || SEED_TASKS;
+        var contacts = data.contacts || [];
+        var companies = data.companies || [];
+        var deals = data.deals || [];
+        var projects = data.projects || [];
+        var tasks = data.tasks || [];
 
-        contacts.forEach(function(c) {
-          events.push({ type: 'contact', text: 'Contact <strong>' + escHtml(c.name) + '</strong> added', date: c.createdAt });
+        // Recent tasks (updated or created)
+        tasks.forEach(function(t) {
+          var date = t.updatedAt || t.createdAt;
+          var statusLabel = t.status ? t.status.replace(/-/g, ' ') : '';
+          var assignee = t.assignee ? ' (' + escHtml(t.assignee) + ')' : '';
+          events.push({ type: 'task', text: 'Task <strong>' + escHtml(t.title) + '</strong> &mdash; ' + escHtml(statusLabel) + assignee, date: date });
         });
+
+        // Recent projects
+        projects.forEach(function(p) {
+          var date = p.updatedAt || p.createdAt;
+          events.push({ type: 'project', text: 'Project <strong>' + escHtml(p.name) + '</strong> &mdash; ' + escHtml(p.status || 'active'), date: date });
+        });
+
+        // Deals
+        deals.forEach(function(d) {
+          var label = d.stage ? d.stage.replace(/-/g, ' ') : '';
+          events.push({ type: 'deal', text: 'Deal <strong>' + escHtml(d.title) + '</strong> &mdash; ' + escHtml(label), date: d.updatedAt || d.createdAt });
+        });
+
+        // Companies
         companies.forEach(function(c) {
           events.push({ type: 'company', text: 'Company <strong>' + escHtml(c.name) + '</strong> created', date: c.createdAt });
         });
-        deals.forEach(function(d) {
-          var label = d.stage ? d.stage.replace('-', ' ') : '';
-          events.push({ type: 'deal', text: 'Deal <strong>' + escHtml(d.title) + '</strong> &mdash; ' + escHtml(label), date: d.createdAt });
-        });
-        projects.forEach(function(p) {
-          events.push({ type: 'project', text: 'Project <strong>' + escHtml(p.name) + '</strong> created', date: p.createdAt });
-        });
-        tasks.forEach(function(t) {
-          var statusLabel = t.status ? t.status.replace('-', ' ') : '';
-          events.push({ type: 'task', text: 'Task <strong>' + escHtml(t.title) + '</strong> &mdash; ' + escHtml(statusLabel), date: t.createdAt });
+
+        // Contacts
+        contacts.forEach(function(c) {
+          events.push({ type: 'contact', text: 'Contact <strong>' + escHtml(c.name) + '</strong> added', date: c.createdAt });
         });
 
-        // Sort newest first, take top 12
+        // Sort newest first, take top 15
         events.sort(function(a, b) {
           return new Date(b.date || 0) - new Date(a.date || 0);
         });
-        events = events.slice(0, 12);
+        events = events.slice(0, 15);
 
         if (!events.length) {
           feed.innerHTML = '<div class="activity-empty">No activity yet. Start by adding contacts, deals, or projects.</div>';
@@ -587,10 +582,12 @@
       function init() {
         setGreeting();
         if (typeof CandidAuth !== 'undefined' && CandidAuth.isSignedIn()) {
-          populateStats();
-          if (CandidAuth.hasRole('team')) {
-            buildActivityFeed();
-          }
+          loadAllData().then(function(data) {
+            populateStats(data);
+            if (CandidAuth.hasRole('team')) {
+              buildActivityFeed(data);
+            }
+          });
         }
       }
 

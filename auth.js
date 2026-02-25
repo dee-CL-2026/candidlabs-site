@@ -11,7 +11,7 @@
  *   2. Caches the result in localStorage for fast subsequent page loads
  *   3. Exposes the same public API as before (getUser, hasRole, etc.)
  *
- * Roles: 'admin' | 'team' | 'viewer'
+ * Roles: 'admin' | 'partner' | 'team' | 'viewer'
  *
  * Sign-out: redirects to CF Access logout which clears the Access cookie.
  */
@@ -136,11 +136,13 @@ var CandidAuth = (function () {
     return currentUser ? currentUser.role : null;
   }
 
-  /** Returns true if the current user has at least the given role. */
+  /** Returns true if the current user has at least the given role.
+   *  Hierarchy: admin > partner > team > viewer */
   function hasRole(role) {
     if (!currentUser) return false;
     if (role === 'admin') return currentUser.role === 'admin';
-    if (role === 'team') return currentUser.role === 'admin' || currentUser.role === 'team';
+    if (role === 'partner') return currentUser.role === 'admin' || currentUser.role === 'partner';
+    if (role === 'team') return currentUser.role === 'admin' || currentUser.role === 'partner' || currentUser.role === 'team';
     if (role === 'viewer') return true; // any authenticated user
     return false;
   }

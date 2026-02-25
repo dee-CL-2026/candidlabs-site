@@ -1178,3 +1178,24 @@
 @media (max-width: 520px) {
   .pm-drawer { width: 100vw; }
 }
+
+/* Collaborator checkboxes grid */
+.pm-collab-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 8px 0;
+}
+.pm-collab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.pm-collab-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}

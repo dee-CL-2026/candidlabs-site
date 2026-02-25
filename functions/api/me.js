@@ -16,10 +16,12 @@
  */
 
 // Team roster — add members here as the team grows.
-// role: 'admin' | 'team' | 'viewer'
+// role: 'admin' | 'partner' | 'team' | 'viewer'
 const TEAM = [
   { email: 'dee@candidmixers.com', displayName: 'Dee', role: 'admin' },
-  // { email: 'member@candidmixers.com', displayName: 'First Name', role: 'team' },
+  { email: 'anders@candidmixers.com', displayName: 'Anders', role: 'partner' },
+  { email: 'jay@candidmixers.com', displayName: 'Jay', role: 'partner' },
+  { email: 'partnerships@candidmixers.com', displayName: 'Alistair', role: 'partner' },
 ];
 
 const ALLOWED_DOMAINS = ['candidmixers.com', 'candidlabs.com'];

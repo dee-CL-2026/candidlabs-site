@@ -1,94 +1,74 @@
 // Project Management Module - Data & Logic Engine
-// Storage: localStorage with JSON.
+// Storage: CandidStore (D1 via API) with localStorage fallback.
 // Pattern: matches budget.js switchTool() sidebar navigation and crm.js CRUD conventions.
 
 // ============================================================
-// DATA LAYER - localStorage backed
+// DATA LAYER — CandidStore backed (async)
 // ============================================================
 
-var PM_STORAGE_KEYS = {
-  projects: 'pm_projects',
-  tasks: 'pm_tasks'
-};
+// Cached data — loaded once from API, kept in sync on mutations
+var _pmProjects = null;
+var _pmTasks = null;
+var _pmDataReady = false;
+
 function pmApplyAuthVisibility() {
   if (typeof CandidAuth !== 'undefined') {
     CandidAuth.applyRoleVisibility();
   }
 }
 
-// Seed data reflecting real Candid Labs operational projects
-function getPMDefaultData() {
-  return {
-    projects: [
-      {
-        id: 'PRJ-001',
-        name: 'Looker Dashboard Rollout',
-        description: 'Build and deploy Looker dashboards for exec, sales, ops, and finance views.',
-        owner: 'Dieter',
-        status: 'active',
-        startDate: '2026-01-15',
-        dueDate: '2026-04-30',
-        createdAt: '2026-01-10'
-      },
-      {
-        id: 'PRJ-002',
-        name: 'candidlabs Platform Build',
-        description: 'Build the internal candidlabs web platform with tools, CRM, PM, and dashboards.',
-        owner: 'Dieter',
-        status: 'active',
-        startDate: '2026-02-01',
-        dueDate: '2026-06-30',
-        createdAt: '2026-02-01'
-      },
-      {
-        id: 'PRJ-003',
-        name: 'Q1 2026 Sales Push',
-        description: 'Expand Jakarta and Bali distribution with 5 new accounts targeted.',
-        owner: 'Sales Team',
-        status: 'active',
-        startDate: '2026-01-01',
-        dueDate: '2026-03-31',
-        createdAt: '2025-12-20'
-      }
-    ],
-    tasks: [
-      { id: 'TSK-001', projectId: 'PRJ-001', title: 'Define exec dashboard KPIs', assignee: 'Dieter', status: 'done', priority: 'high', dueDate: '2026-02-01', createdAt: '2026-01-10' },
-      { id: 'TSK-002', projectId: 'PRJ-001', title: 'Build Sales_Looker data source', assignee: 'Dieter', status: 'in-progress', priority: 'high', dueDate: '2026-02-28', createdAt: '2026-01-15' },
-      { id: 'TSK-003', projectId: 'PRJ-001', title: 'Build Finance_Looker data source', assignee: 'Dieter', status: 'to-do', priority: 'medium', dueDate: '2026-03-15', createdAt: '2026-01-15' },
-      { id: 'TSK-004', projectId: 'PRJ-001', title: 'Deploy Production_Looker views', assignee: 'Dieter', status: 'to-do', priority: 'medium', dueDate: '2026-03-31', createdAt: '2026-01-15' },
-      { id: 'TSK-005', projectId: 'PRJ-002', title: 'Build CRM module', assignee: 'Dieter', status: 'done', priority: 'high', dueDate: '2026-02-17', createdAt: '2026-02-01' },
-      { id: 'TSK-006', projectId: 'PRJ-002', title: 'Build PM module', assignee: 'Dieter', status: 'in-progress', priority: 'high', dueDate: '2026-02-17', createdAt: '2026-02-01' },
-      { id: 'TSK-007', projectId: 'PRJ-002', title: 'Implement auth system', assignee: 'Dieter', status: 'in-progress', priority: 'high', dueDate: '2026-02-28', createdAt: '2026-02-01' },
-      { id: 'TSK-008', projectId: 'PRJ-002', title: 'Wire dashboard with live data', assignee: 'Dieter', status: 'to-do', priority: 'medium', dueDate: '2026-03-15', createdAt: '2026-02-01' },
-      { id: 'TSK-009', projectId: 'PRJ-003', title: 'Onboard 3 new Jakarta accounts', assignee: 'Sales Team', status: 'in-progress', priority: 'high', dueDate: '2026-02-28', createdAt: '2025-12-20' },
-      { id: 'TSK-010', projectId: 'PRJ-003', title: 'Launch Bali hotel trial program', assignee: 'Sales Team', status: 'to-do', priority: 'medium', dueDate: '2026-03-15', createdAt: '2025-12-20' }
-    ]
-  };
+// ---- Data scoping ----
+
+var PM_TEAM_MEMBERS = ['Dieter', 'Jules', 'Muhammad', 'Ferry', 'Anders', 'Jay', 'Alistair'];
+
+function isMyProject(project, userName) {
+  if (project.owner === userName) return true;
+  var meta = project.meta ? (typeof project.meta === 'string' ? JSON.parse(project.meta) : project.meta) : {};
+  var collabs = meta.collaborators || [];
+  return collabs.indexOf(userName) !== -1;
 }
 
-function pmLoadData(key) {
-  var raw = localStorage.getItem(PM_STORAGE_KEYS[key]);
-  if (raw) {
-    try { return JSON.parse(raw); }
-    catch (e) { return []; }
+function scopedProjects(allProjects) {
+  var user = (typeof CandidAuth !== 'undefined') ? CandidAuth.getUser() : null;
+  if (!user) return allProjects;
+  if (typeof CandidAuth !== 'undefined' && CandidAuth.hasRole('partner')) return allProjects;
+  return allProjects.filter(function(p) { return isMyProject(p, user.name); });
+}
+
+function scopedTasks(allTasks, allProjects) {
+  var user = (typeof CandidAuth !== 'undefined') ? CandidAuth.getUser() : null;
+  if (!user) return allTasks;
+  if (typeof CandidAuth !== 'undefined' && CandidAuth.hasRole('partner')) return allTasks;
+  // Build set of project IDs I collaborate on
+  var myProjectIds = {};
+  allProjects.forEach(function(p) {
+    if (isMyProject(p, user.name)) myProjectIds[p.id] = true;
+  });
+  return allTasks.filter(function(t) {
+    return myProjectIds[t.projectId] || t.assignee === user.name;
+  });
+}
+
+// ---- Load all data from CandidStore ----
+
+function pmLoadAll() {
+  if (typeof CandidStore === 'undefined') {
+    return Promise.resolve({ projects: [], tasks: [] });
   }
-  var defaults = getPMDefaultData();
-  localStorage.setItem(PM_STORAGE_KEYS[key], JSON.stringify(defaults[key]));
-  return defaults[key];
+  return Promise.all([
+    CandidStore.load('projects'),
+    CandidStore.load('tasks')
+  ]).then(function(results) {
+    _pmProjects = results[0] || [];
+    _pmTasks = results[1] || [];
+    _pmDataReady = true;
+    return { projects: _pmProjects, tasks: _pmTasks };
+  });
 }
 
-function pmSaveData(key, data) {
-  localStorage.setItem(PM_STORAGE_KEYS[key], JSON.stringify(data));
-  // Mirror to CandidStore if available (async, fire-and-forget)
-  if (typeof CandidStore !== 'undefined') {
-    CandidStore.save(key, data);
-  }
-}
-
-function pmGenerateId(prefix) {
-  var num = Date.now().toString(36).slice(-4).toUpperCase();
-  return prefix + '-' + num;
-}
+// Sync access to cached data (use after pmLoadAll resolves)
+function pmGetProjects() { return _pmProjects || []; }
+function pmGetTasks() { return _pmTasks || []; }
 
 // ============================================================
 // FORMAT HELPERS
@@ -131,8 +111,8 @@ function switchTool(toolId) {
 // ============================================================
 
 function renderPMOverview() {
-  var projects = pmLoadData('projects');
-  var tasks = pmLoadData('tasks');
+  var projects = scopedProjects(pmGetProjects());
+  var tasks = scopedTasks(pmGetTasks(), pmGetProjects());
 
   var activeProjects = projects.filter(function(p) { return p.status === 'active'; });
   var totalTasks = tasks.length;
@@ -178,8 +158,8 @@ function renderPMOverview() {
 // ============================================================
 
 function renderProjects(filter) {
-  var projects = pmLoadData('projects');
-  var tasks = pmLoadData('tasks');
+  var projects = scopedProjects(pmGetProjects());
+  var tasks = scopedTasks(pmGetTasks(), pmGetProjects());
   var query = (filter || '').toLowerCase();
 
   if (query) {
@@ -224,11 +204,12 @@ function openAddProject() {
   document.getElementById('project-modal-title').textContent = 'Add Project';
   document.getElementById('project-form').reset();
   document.getElementById('project-edit-id').value = '';
+  _resetCollaboratorCheckboxes();
   document.getElementById('project-modal').classList.add('active');
 }
 
 function openEditProject(id) {
-  var projects = pmLoadData('projects');
+  var projects = pmGetProjects();
   var project = projects.find(function(p) { return p.id === id; });
   if (!project) return;
 
@@ -240,47 +221,81 @@ function openEditProject(id) {
   document.getElementById('project-status').value = project.status || 'active';
   document.getElementById('project-start-date').value = project.startDate || '';
   document.getElementById('project-due-date').value = project.dueDate || '';
+
+  // Populate collaborator checkboxes
+  var meta = project.meta ? (typeof project.meta === 'string' ? JSON.parse(project.meta) : project.meta) : {};
+  var collabs = meta.collaborators || [];
+  _resetCollaboratorCheckboxes(collabs);
+
   document.getElementById('project-modal').classList.add('active');
+}
+
+function _resetCollaboratorCheckboxes(selected) {
+  var container = document.getElementById('project-collaborators');
+  if (!container) return;
+  var sel = selected || [];
+  container.innerHTML = PM_TEAM_MEMBERS.map(function(name) {
+    var checked = sel.indexOf(name) !== -1 ? ' checked' : '';
+    return '<label class="pm-collab-label"><input type="checkbox" value="' + pmEscapeHtml(name) + '"' + checked + '> ' + pmEscapeHtml(name) + '</label>';
+  }).join('');
+}
+
+function _getSelectedCollaborators() {
+  var container = document.getElementById('project-collaborators');
+  if (!container) return [];
+  var boxes = container.querySelectorAll('input[type="checkbox"]:checked');
+  var result = [];
+  boxes.forEach(function(cb) { result.push(cb.value); });
+  return result;
 }
 
 function saveProject() {
   var editId = document.getElementById('project-edit-id').value;
-  var projects = pmLoadData('projects');
+  var collaborators = _getSelectedCollaborators();
+  var metaObj = { collaborators: collaborators };
 
   var record = {
-    id: editId || pmGenerateId('PRJ'),
     name: document.getElementById('project-name').value.trim(),
     description: document.getElementById('project-description').value.trim(),
     owner: document.getElementById('project-owner').value.trim(),
     status: document.getElementById('project-status').value,
     startDate: document.getElementById('project-start-date').value,
     dueDate: document.getElementById('project-due-date').value,
-    createdAt: editId ? (projects.find(function(p) { return p.id === editId; }) || {}).createdAt : new Date().toISOString().split('T')[0]
+    meta: JSON.stringify(metaObj)
   };
 
   if (!record.name) return;
 
+  var promise;
   if (editId) {
-    projects = projects.map(function(p) { return p.id === editId ? record : p; });
+    promise = CandidStore.update('projects', editId, record);
   } else {
-    projects.push(record);
+    promise = CandidStore.create('projects', record);
   }
 
-  pmSaveData('projects', projects);
-  pmCloseModal('project-modal');
-  renderProjects();
-  renderPMOverview();
-  refreshProjectDrawer();
+  promise.then(function() {
+    return pmLoadAll();
+  }).then(function() {
+    pmCloseModal('project-modal');
+    renderProjects();
+    renderPMOverview();
+    refreshProjectDrawer();
+  });
 }
 
 function deleteProject(id) {
   if (!confirm('Delete this project and all its tasks?')) return;
-  var projects = pmLoadData('projects').filter(function(p) { return p.id !== id; });
-  var tasks = pmLoadData('tasks').filter(function(t) { return t.projectId !== id; });
-  pmSaveData('projects', projects);
-  pmSaveData('tasks', tasks);
-  renderProjects();
-  renderPMOverview();
+  // Delete associated tasks first
+  var projectTasks = pmGetTasks().filter(function(t) { return t.projectId === id; });
+  var deletePromises = projectTasks.map(function(t) { return CandidStore.remove('tasks', t.id); });
+  deletePromises.push(CandidStore.remove('projects', id));
+
+  Promise.all(deletePromises).then(function() {
+    return pmLoadAll();
+  }).then(function() {
+    renderProjects();
+    renderPMOverview();
+  });
 }
 
 // ============================================================
@@ -304,7 +319,7 @@ function _updateTaskSortArrows() {
     var arrow = btn.querySelector('.sort-arrow');
     if (!arrow) return;
     if (btn.dataset.col === _taskSort.col) {
-      arrow.textContent = _taskSort.dir === 1 ? ' ↑' : ' ↓';
+      arrow.textContent = _taskSort.dir === 1 ? ' \u2191' : ' \u2193';
     } else {
       arrow.textContent = '';
     }
@@ -348,8 +363,8 @@ function filterTasksByAssignee() {
 }
 
 function renderTasks(filter) {
-  var tasks = pmLoadData('tasks');
-  var projects = pmLoadData('projects');
+  var tasks = scopedTasks(pmGetTasks(), pmGetProjects());
+  var projects = scopedProjects(pmGetProjects());
   var query = (filter || '').toLowerCase();
 
   if (query) {
@@ -387,7 +402,7 @@ function renderTasks(filter) {
   // Populate assignee filter dropdown from all tasks (not filtered)
   var assigneeSelect = document.getElementById('tasks-assignee-filter');
   if (assigneeSelect) {
-    var allTasks = pmLoadData('tasks');
+    var allTasks = scopedTasks(pmGetTasks(), pmGetProjects());
     var assignees = [];
     allTasks.forEach(function(t) {
       if (t.assignee && assignees.indexOf(t.assignee) === -1) assignees.push(t.assignee);
@@ -414,7 +429,7 @@ function renderTasks(filter) {
     var statusLabel = t.status ? t.status.replace(/-/g, ' ') : 'to do';
     var priorityClass = (t.priority || 'medium').toLowerCase();
     var blockerHtml = (t.status === 'blocked' && t.blockerNote)
-      ? ' <span class="blocker-indicator" title="' + pmEscapeHtml(t.blockerNote) + '">⚠</span>'
+      ? ' <span class="blocker-indicator" title="' + pmEscapeHtml(t.blockerNote) + '">\u26A0</span>'
       : '';
 
     return '<tr>' +
@@ -464,7 +479,7 @@ function openAddTask() {
 }
 
 function openEditTask(id) {
-  var tasks = pmLoadData('tasks');
+  var tasks = pmGetTasks();
   var task = tasks.find(function(t) { return t.id === id; });
   if (!task) return;
 
@@ -484,56 +499,52 @@ function openEditTask(id) {
 
 function saveTask() {
   var editId = document.getElementById('task-edit-id').value;
-  var tasks = pmLoadData('tasks');
 
   var newStatus = document.getElementById('task-task-status').value;
   var record = {
-    id: editId || pmGenerateId('TSK'),
     projectId: document.getElementById('task-project').value,
     title: document.getElementById('task-title').value.trim(),
     assignee: document.getElementById('task-assignee').value.trim(),
     status: newStatus,
     priority: document.getElementById('task-priority').value,
     dueDate: document.getElementById('task-due-date').value,
-    blockerNote: newStatus === 'blocked' ? (document.getElementById('task-blocker-note').value.trim()) : '',
-    createdAt: editId ? (tasks.find(function(t) { return t.id === editId; }) || {}).createdAt : new Date().toISOString().split('T')[0]
+    blockerNote: newStatus === 'blocked' ? (document.getElementById('task-blocker-note').value.trim()) : ''
   };
 
   if (!record.title) return;
 
+  var promise;
   if (editId) {
-    tasks = tasks.map(function(t) { return t.id === editId ? record : t; });
+    promise = CandidStore.update('tasks', editId, record);
   } else {
-    tasks.push(record);
+    promise = CandidStore.create('tasks', record);
   }
 
-  pmSaveData('tasks', tasks);
-
-  // If blocked + follow-up task requested, create it now
-  var createFollowup = document.getElementById('task-blocker-create-followup');
-  if (newStatus === 'blocked' && createFollowup && createFollowup.checked) {
-    var followupTitle = (document.getElementById('task-blocker-followup-title').value || '').trim();
-    if (followupTitle) {
-      var followupTasks = pmLoadData('tasks');
-      followupTasks.push({
-        id: pmGenerateId('TSK'),
-        projectId: record.projectId,
-        title: followupTitle,
-        assignee: record.assignee,
-        status: 'to-do',
-        priority: record.priority,
-        dueDate: '',
-        blockerNote: '',
-        createdAt: new Date().toISOString().split('T')[0]
-      });
-      pmSaveData('tasks', followupTasks);
+  promise.then(function() {
+    // If blocked + follow-up task requested, create it now
+    var createFollowup = document.getElementById('task-blocker-create-followup');
+    if (newStatus === 'blocked' && createFollowup && createFollowup.checked) {
+      var followupTitle = (document.getElementById('task-blocker-followup-title').value || '').trim();
+      if (followupTitle) {
+        return CandidStore.create('tasks', {
+          projectId: record.projectId,
+          title: followupTitle,
+          assignee: record.assignee,
+          status: 'to-do',
+          priority: record.priority,
+          dueDate: '',
+          blockerNote: ''
+        });
+      }
     }
-  }
-
-  pmCloseModal('task-modal');
-  renderTasks();
-  renderPMOverview();
-  refreshProjectDrawer();
+  }).then(function() {
+    return pmLoadAll();
+  }).then(function() {
+    pmCloseModal('task-modal');
+    renderTasks();
+    renderPMOverview();
+    refreshProjectDrawer();
+  });
 }
 
 // ============================================================
@@ -541,7 +552,7 @@ function saveTask() {
 // ============================================================
 
 function openReassignModal(taskId) {
-  var tasks = pmLoadData('tasks');
+  var tasks = pmGetTasks();
   var task = tasks.find(function(t) { return t.id === taskId; });
   if (!task) return;
 
@@ -566,27 +577,24 @@ function saveReassign() {
   var newAssignee = document.getElementById('reassign-assignee').value.trim();
   if (!id || !newAssignee) return;
 
-  var tasks = pmLoadData('tasks');
-  tasks = tasks.map(function(t) {
-    if (t.id !== id) return t;
-    var updated = {};
-    for (var k in t) { if (t.hasOwnProperty(k)) updated[k] = t[k]; }
-    updated.assignee = newAssignee;
-    return updated;
+  CandidStore.update('tasks', id, { assignee: newAssignee }).then(function() {
+    return pmLoadAll();
+  }).then(function() {
+    pmCloseModal('reassign-modal');
+    renderTasks();
+    refreshProjectDrawer();
   });
-  pmSaveData('tasks', tasks);
-  pmCloseModal('reassign-modal');
-  renderTasks();
-  refreshProjectDrawer();
 }
 
 function deleteTask(id) {
   if (!confirm('Delete this task?')) return;
-  var tasks = pmLoadData('tasks').filter(function(t) { return t.id !== id; });
-  pmSaveData('tasks', tasks);
-  renderTasks();
-  renderPMOverview();
-  refreshProjectDrawer();
+  CandidStore.remove('tasks', id).then(function() {
+    return pmLoadAll();
+  }).then(function() {
+    renderTasks();
+    renderPMOverview();
+    refreshProjectDrawer();
+  });
 }
 
 // ============================================================
@@ -615,7 +623,7 @@ function setTaskView(view) {
 }
 
 function populateKanbanProjectFilter() {
-  var projects = pmLoadData('projects');
+  var projects = scopedProjects(pmGetProjects());
   var select = document.getElementById('kanban-project-filter');
   if (!select) return;
   var current = select.value;
@@ -627,8 +635,8 @@ function populateKanbanProjectFilter() {
 }
 
 function renderTasksKanban() {
-  var tasks = pmLoadData('tasks');
-  var projects = pmLoadData('projects');
+  var tasks = scopedTasks(pmGetTasks(), pmGetProjects());
+  var projects = scopedProjects(pmGetProjects());
   var board = document.getElementById('kanban-board');
   if (!board) return;
 
@@ -686,7 +694,7 @@ function formatKanbanDate(dateStr) {
 // ============================================================
 
 function populateProjectSelect(selectId) {
-  var projects = pmLoadData('projects');
+  var projects = scopedProjects(pmGetProjects());
   var select = document.getElementById(selectId);
   select.innerHTML = '<option value="">-- Select Project --</option>' +
     projects.map(function(p) {
@@ -766,8 +774,8 @@ function _populateProjectDrawer(project, allTasks) {
 }
 
 function openProjectDrawer(projectId) {
-  var projects = pmLoadData('projects');
-  var tasks    = pmLoadData('tasks');
+  var projects = pmGetProjects();
+  var tasks    = pmGetTasks();
   var project  = projects.find(function(p) { return p.id === projectId; });
   if (!project) return;
 
@@ -789,8 +797,8 @@ function closeProjectDrawer() {
 /** Call after any save/delete to keep the open drawer in sync */
 function refreshProjectDrawer() {
   if (!_drawerProjectId) return;
-  var projects = pmLoadData('projects');
-  var tasks    = pmLoadData('tasks');
+  var projects = pmGetProjects();
+  var tasks    = pmGetTasks();
   var project  = projects.find(function(p) { return p.id === _drawerProjectId; });
   if (!project) { closeProjectDrawer(); return; }
   _populateProjectDrawer(project, tasks);
@@ -836,38 +844,33 @@ function renderDrawerTasks(projectId, projectTasks) {
 }
 
 function quickEditTaskStatus(taskId, newStatus, selectEl) {
-  var tasks = pmLoadData('tasks');
-  tasks = tasks.map(function(t) {
-    if (t.id !== taskId) return t;
-    var upd = {};
-    for (var k in t) { if (t.hasOwnProperty(k)) upd[k] = t[k]; }
-    upd.status = newStatus;
-    return upd;
+  CandidStore.update('tasks', taskId, { status: newStatus }).then(function() {
+    return pmLoadAll();
+  }).then(function() {
+    // Update select colour class
+    if (selectEl) selectEl.className = 'drawer-task-status-select ' + newStatus.toLowerCase();
+
+    // Refresh metrics in drawer header without re-rendering task list (avoids focus loss)
+    if (_drawerProjectId) {
+      var tasks = pmGetTasks();
+      var projectTasks = tasks.filter(function(t) { return t.projectId === _drawerProjectId; });
+      var done    = projectTasks.filter(function(t) { return t.status === 'done'; }).length;
+      var total   = projectTasks.length;
+      var open    = projectTasks.filter(function(t) { return t.status !== 'done'; }).length;
+      var overdue = projectTasks.filter(function(t) {
+        return t.status !== 'done' && t.dueDate && new Date(t.dueDate) < new Date();
+      }).length;
+      var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+      document.getElementById('drawer-pct').textContent = pct + '%';
+      document.getElementById('drawer-open-tasks').textContent = open;
+      document.getElementById('drawer-done-tasks').textContent = done;
+      document.getElementById('drawer-overdue-tasks').textContent = overdue;
+      document.getElementById('drawer-progress-fill').style.width = pct + '%';
+    }
+
+    renderProjects();
+    renderPMOverview();
   });
-  pmSaveData('tasks', tasks);
-
-  // Update select colour class
-  if (selectEl) selectEl.className = 'drawer-task-status-select ' + newStatus.toLowerCase();
-
-  // Refresh metrics in drawer header without re-rendering task list (avoids focus loss)
-  if (_drawerProjectId) {
-    var projectTasks = tasks.filter(function(t) { return t.projectId === _drawerProjectId; });
-    var done    = projectTasks.filter(function(t) { return t.status === 'done'; }).length;
-    var total   = projectTasks.length;
-    var open    = projectTasks.filter(function(t) { return t.status !== 'done'; }).length;
-    var overdue = projectTasks.filter(function(t) {
-      return t.status !== 'done' && t.dueDate && new Date(t.dueDate) < new Date();
-    }).length;
-    var pct = total > 0 ? Math.round((done / total) * 100) : 0;
-    document.getElementById('drawer-pct').textContent = pct + '%';
-    document.getElementById('drawer-open-tasks').textContent = open;
-    document.getElementById('drawer-done-tasks').textContent = done;
-    document.getElementById('drawer-overdue-tasks').textContent = overdue;
-    document.getElementById('drawer-progress-fill').style.width = pct + '%';
-  }
-
-  renderProjects();
-  renderPMOverview();
 }
 
 function openAddTaskForProject() {
@@ -926,7 +929,7 @@ function saveDrawerNote() {
 
   var notes = pmLoadNotes();
   notes.push({
-    id: pmGenerateId('NOTE'),
+    id: 'NOTE-' + Date.now().toString(36).slice(-4).toUpperCase(),
     projectId: _drawerProjectId,
     text: text,
     createdAt: new Date().toISOString()
@@ -952,7 +955,19 @@ document.addEventListener('DOMContentLoaded', function() {
     CandidAuth.requireAuth();
   }
 
-  renderPMOverview();
+  // Load data from D1 via CandidStore, then render
+  pmLoadAll().then(function() {
+    renderPMOverview();
+  });
+
+  // Re-render when auth state changes (e.g. user identity resolved)
+  if (typeof CandidAuth !== 'undefined' && CandidAuth.onAuthChange) {
+    CandidAuth.onAuthChange(function() {
+      if (_pmDataReady) {
+        renderPMOverview();
+      }
+    });
+  }
 
   var projectsSearch = document.getElementById('projects-search');
   if (projectsSearch) {

@@ -57,7 +57,7 @@ const COLLECTIONS = {
     prefix: 'TSK',
     required: ['title'],
     columns: ['id', 'title', 'project_id', 'assignee', 'status', 'priority', 'due_date',
-              'owner_team', 'visible_to_roles', 'visible_to_teams', 'meta', 'created_at', 'updated_at'],
+              'blocker_note', 'owner_team', 'visible_to_roles', 'visible_to_teams', 'meta', 'created_at', 'updated_at'],
     searchable: ['title', 'assignee']
   }
 };
