@@ -152,7 +152,7 @@
 
               <div class="pm-action-bar">
                 <input type="text" class="pm-search" id="projects-search" placeholder="Search projects..." aria-label="Search projects">
-                <div class="io-actions">
+                <div class="io-actions" data-auth-role="admin">
                   <button class="btn-io" onclick="pmExport('projects')">Export CSV</button>
                   <button class="btn-io" onclick="CandidIO.downloadTemplate('projects')">Template</button>
                   <button class="btn-io primary" onclick="pmOpenImport('projects')">Import CSV</button>
@@ -209,7 +209,7 @@
                   <select class="pm-search" id="tasks-assignee-filter" aria-label="Filter by assignee" style="flex:0 0 auto; min-width:150px;" onchange="filterTasksByAssignee()">
                     <option value="all">All Assignees</option>
                   </select>
-                  <div class="io-actions">
+                  <div class="io-actions" data-auth-role="admin">
                     <button class="btn-io" onclick="pmExport('tasks')">Export CSV</button>
                     <button class="btn-io" onclick="CandidIO.downloadTemplate('tasks')">Template</button>
                     <button class="btn-io" onclick="pmFindDupes('tasks')">Find Duplicates</button>

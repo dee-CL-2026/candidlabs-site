@@ -154,7 +154,7 @@
                 <select class="crm-filter-select" id="contacts-company-filter" onchange="renderContacts(document.getElementById('contacts-search').value)">
                   <option value="">All Companies</option>
                 </select>
-                <div class="io-actions">
+                <div class="io-actions" data-auth-role="admin">
                   <button class="btn-io" onclick="crmExport('contacts')">Export CSV</button>
                   <button class="btn-io" onclick="CandidIO.downloadTemplate('contacts')">Template</button>
                   <button class="btn-io" onclick="crmFindDupes('contacts')">Find Duplicates</button>
@@ -198,7 +198,7 @@
                   <option value="individual">Individual</option>
                   <option value="partner">Partner</option>
                 </select>
-                <div class="io-actions">
+                <div class="io-actions" data-auth-role="admin">
                   <button class="btn-io" onclick="crmExport('companies')">Export CSV</button>
                   <button class="btn-io" onclick="CandidIO.downloadTemplate('companies')">Template</button>
                   <button class="btn-io" onclick="crmFindDupes('companies')">Find Duplicates</button>
