@@ -531,6 +531,39 @@ async function adapterInvoke(req, env, adapterType) {
 }
 
 // ============================================================
+// Webhook receiver handler
+// ============================================================
+
+async function webhookReceive(req, env, webhookType) {
+  const body = await req.json().catch(() => ({}));
+  const { job_id, status, result } = body;
+
+  if (!job_id) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'job_id is required' } }, 400);
+  }
+
+  const existing = await env.DB.prepare('SELECT id FROM jobs WHERE id = ?').bind(job_id).first();
+  if (!existing) {
+    return json({ ok: false, error: { code: 'NOT_FOUND', message: `Job ${job_id} not found` } }, 404);
+  }
+
+  const now = new Date().toISOString();
+
+  // Update the job record
+  await env.DB.prepare(
+    'UPDATE jobs SET status = ?, result = ?, finished_at = ?, updated_at = ? WHERE id = ?'
+  ).bind(status || 'completed', result ? JSON.stringify(result) : null, now, now, job_id).run();
+
+  // Create a job_log entry recording the callback
+  const logId = generateId('JLG');
+  await env.DB.prepare(
+    'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(logId, job_id, `webhook_${webhookType}`, status || 'completed', result ? JSON.stringify(result) : null, now, now).run();
+
+  return json({ ok: true });
+}
+
+// ============================================================
 // Router
 // ============================================================
 
@@ -558,6 +591,14 @@ async function handleApi(req, env, url) {
     const authError = validateApiKey(req, env);
     if (authError) return authError;
     return adapterInvoke(req, env, adapterMatch[1]);
+  }
+
+  // Webhook receiver: POST /api/webhook/:type
+  const webhookMatch = path.match(/^\/api\/webhook\/([^/]+)$/);
+  if (webhookMatch && req.method === 'POST') {
+    const authError = validateApiKey(req, env);
+    if (authError) return authError;
+    return webhookReceive(req, env, webhookMatch[1]);
   }
 
   // Bulk import: /api/{collection}/import
