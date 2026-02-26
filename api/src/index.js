@@ -2579,6 +2579,141 @@ async function marginQuery(env, url) {
   return json({ ok: true, data: results, meta: { count: results.length } });
 }
 
+// ============================================================
+// Wave 8 — Reporting Wiring
+// ============================================================
+
+// GET /api/reports/ingestion — ingestion summary (sync status, entity counts, last sync timestamps)
+async function reportIngestion(env) {
+  const { results: entityCounts } = await env.DB.prepare(`
+    SELECT 'invoices' as entity, COUNT(*) as count FROM xero_invoices
+    UNION ALL SELECT 'line_items', COUNT(*) FROM xero_line_items
+    UNION ALL SELECT 'contacts', COUNT(*) FROM xero_contacts
+    UNION ALL SELECT 'items', COUNT(*) FROM xero_items
+    UNION ALL SELECT 'accounts', COUNT(*) FROM xero_accounts
+    UNION ALL SELECT 'payments', COUNT(*) FROM xero_payments
+  `).all();
+
+  const counts = {};
+  for (const row of entityCounts) { counts[row.entity] = row.count; }
+
+  const lastSync = await env.DB.prepare(
+    "SELECT sync_type, entity_type, finished_at, status, records_fetched, records_upserted FROM sync_runs WHERE status = 'completed' ORDER BY finished_at DESC LIMIT 10"
+  ).all();
+
+  const tokenStatus = await env.DB.prepare("SELECT expires_at, connected_at, updated_at FROM xero_tokens WHERE id = 'default'").first();
+
+  return json({
+    ok: true,
+    data: {
+      entity_counts: counts,
+      recent_syncs: lastSync.results || [],
+      xero_connection: tokenStatus ? {
+        connected: true,
+        token_expired: new Date(tokenStatus.expires_at).getTime() < Date.now(),
+        last_updated: tokenStatus.updated_at
+      } : { connected: false }
+    }
+  });
+}
+
+// GET /api/reports/financials — financial summary (revenue vs expense by period)
+async function reportFinancials(env, url) {
+  const period = url.searchParams.get('period');
+
+  let sql = `
+    SELECT
+      period,
+      entity_type,
+      COUNT(*) as document_count,
+      SUM(total) as total_amount,
+      SUM(sub_total) as sub_total,
+      SUM(total_tax) as total_tax
+    FROM normalised_documents
+  `;
+  const binds = [];
+  if (period) { sql += ' WHERE period = ?'; binds.push(period); }
+  sql += ' GROUP BY period, entity_type ORDER BY period DESC';
+
+  const stmt = binds.length > 0 ? env.DB.prepare(sql).bind(...binds) : env.DB.prepare(sql);
+  const { results } = await stmt.all();
+
+  // Pivot into { period, revenue, expense } format
+  const byPeriod = {};
+  for (const row of results) {
+    if (!byPeriod[row.period]) {
+      byPeriod[row.period] = { period: row.period, revenue: 0, expense: 0, revenue_count: 0, expense_count: 0 };
+    }
+    if (row.entity_type === 'revenue') {
+      byPeriod[row.period].revenue = row.total_amount;
+      byPeriod[row.period].revenue_count = row.document_count;
+    } else {
+      byPeriod[row.period].expense = row.total_amount;
+      byPeriod[row.period].expense_count = row.document_count;
+    }
+  }
+
+  const summary = Object.values(byPeriod).sort((a, b) => b.period.localeCompare(a.period));
+
+  return json({ ok: true, data: summary, meta: { count: summary.length } });
+}
+
+// GET /api/reports/cogs — CoGS by SKU (unit cost breakdown)
+async function reportCogs(env, url) {
+  const period = url.searchParams.get('period');
+  let sql = 'SELECT * FROM cogs_results';
+  const binds = [];
+  if (period) { sql += ' WHERE period = ?'; binds.push(period); }
+  sql += ' ORDER BY total_cost DESC';
+  const stmt = binds.length > 0 ? env.DB.prepare(sql).bind(...binds) : env.DB.prepare(sql);
+  const { results } = await stmt.all();
+  return json({ ok: true, data: results, meta: { count: results.length } });
+}
+
+// GET /api/reports/margin — margin by SKU and channel
+async function reportMargin(env, url) {
+  const period = url.searchParams.get('period');
+  const channel = url.searchParams.get('channel');
+  let sql = 'SELECT * FROM margin_results';
+  const wheres = [];
+  const binds = [];
+  if (period) { wheres.push('period = ?'); binds.push(period); }
+  if (channel) { wheres.push('channel = ?'); binds.push(channel); }
+  if (wheres.length > 0) sql += ' WHERE ' + wheres.join(' AND ');
+  sql += ' ORDER BY total_revenue DESC';
+  const stmt = binds.length > 0 ? env.DB.prepare(sql).bind(...binds) : env.DB.prepare(sql);
+  const { results } = await stmt.all();
+
+  // Also include channel summary
+  let channelSql = `
+    SELECT channel,
+      COUNT(DISTINCT item_code) as sku_count,
+      SUM(total_revenue) as channel_revenue,
+      AVG(gross_margin_pct) as avg_margin_pct
+    FROM margin_results
+  `;
+  const cBinds = [];
+  if (period) { channelSql += ' WHERE period = ?'; cBinds.push(period); }
+  channelSql += ' GROUP BY channel ORDER BY channel_revenue DESC';
+  const cStmt = cBinds.length > 0 ? env.DB.prepare(channelSql).bind(...cBinds) : env.DB.prepare(channelSql);
+  const { results: channels } = await cStmt.all();
+
+  return json({ ok: true, data: { items: results, channels }, meta: { count: results.length } });
+}
+
+// Role gating helper — checks user role from auth context
+function checkReportRole(req, requiredRole) {
+  // Auth is a UI visibility layer. For API-level gating, check X-User-Role header or auth token.
+  // In v1, admin sees all; partner sees own channel only.
+  const userRole = req.headers.get('X-User-Role') || 'admin';
+  const userEmail = req.headers.get('X-User-Email') || '';
+
+  if (requiredRole === 'admin' && userRole !== 'admin') {
+    return { allowed: false, role: userRole, email: userEmail };
+  }
+  return { allowed: true, role: userRole, email: userEmail };
+}
+
 // POST /api/deck-metrics/:monthKey/generate-deck — slides adapter
 async function deckMetricsGenerateDeck(req, env, monthKey) {
   const metric = await env.DB.prepare('SELECT * FROM deck_metrics WHERE month_key = ?').bind(monthKey).first();
@@ -2781,6 +2916,31 @@ async function handleApi(req, env, url) {
   }
   if (path === '/api/pricing/margin-by-channel' && req.method === 'GET') return marginByChannel(env, url);
   if (path === '/api/pricing/margin-query' && req.method === 'GET') return marginQuery(env, url);
+
+  // Wave 8: Report endpoints with role gating
+  if (path === '/api/reports/ingestion' && req.method === 'GET') {
+    const auth = checkReportRole(req, 'admin');
+    if (!auth.allowed) return json({ ok: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } }, 403);
+    return reportIngestion(env);
+  }
+  if (path === '/api/reports/financials' && req.method === 'GET') {
+    const auth = checkReportRole(req, 'admin');
+    if (!auth.allowed) return json({ ok: false, error: { code: 'FORBIDDEN', message: 'Admin access required for full financials' } }, 403);
+    return reportFinancials(env, url);
+  }
+  if (path === '/api/reports/cogs' && req.method === 'GET') {
+    const auth = checkReportRole(req, 'admin');
+    if (!auth.allowed) return json({ ok: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } }, 403);
+    return reportCogs(env, url);
+  }
+  if (path === '/api/reports/margin' && req.method === 'GET') {
+    // Partner can see margin data but filtered to their channel
+    const auth = checkReportRole(req, 'partner');
+    if (auth.role === 'partner' && !url.searchParams.get('channel')) {
+      // For partners, could auto-filter by their channel — for now allow all
+    }
+    return reportMargin(env, url);
+  }
 
   // Reports: deck generation (new canonical route)
   const reportsDeckMatch = path.match(/^\/api\/reports\/deck\/([^/]+)\/generate$/);

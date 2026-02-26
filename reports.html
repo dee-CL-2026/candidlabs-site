@@ -9,80 +9,72 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <style>
+    .rpt-section { margin-bottom: 2rem; }
+    .rpt-section h3 { font-size: 1.1rem; margin-bottom: 0.75rem; }
+    .rpt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .rpt-stat { background: var(--bg-card, #fff); border: 1px solid var(--border-color, #e5e7eb); border-radius: 8px; padding: 1rem; text-align: center; }
+    .rpt-stat-value { font-size: 1.5rem; font-weight: 700; color: var(--color-primary, #1b708b); }
+    .rpt-stat-label { font-size: 0.75rem; color: var(--text-secondary, #6b7280); text-transform: uppercase; margin-top: 0.25rem; }
+    .rpt-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .rpt-table th, .rpt-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border-color, #e5e7eb); text-align: left; }
+    .rpt-table th { background: var(--bg-secondary, #f8f9fa); font-weight: 600; }
+    .rpt-table td.num { text-align: right; font-family: monospace; }
+    .rpt-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .rpt-tab { padding: 0.4rem 1rem; border: 1px solid var(--border-color, #e5e7eb); border-radius: 6px; cursor: pointer; font-size: 0.85rem; background: var(--bg-card, #fff); }
+    .rpt-tab.active { background: var(--color-primary, #1b708b); color: #fff; border-color: var(--color-primary, #1b708b); }
+    .rpt-loading { text-align: center; padding: 2rem; color: var(--text-secondary, #6b7280); }
+    .rpt-period-filter { margin-bottom: 1rem; }
+    .rpt-period-filter label { font-size: 0.85rem; font-weight: 500; }
+    .rpt-period-filter input { padding: 6px 10px; border: 1px solid var(--border-color, #e5e7eb); border-radius: 4px; background: var(--bg-card, #fff); color: var(--text-primary); font-size: 0.85rem; }
+  </style>
 </head>
 <body data-auth-require="true">
   <!-- Navigation -->
   <nav class="navbar" role="navigation" aria-label="Main navigation">
     <div class="container navbar-container">
       <a href="index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
-
       <ul class="nav-menu" role="menubar">
         <li role="none" class="nav-dropdown">
-          <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Sales ▾</button>
+          <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Sales &#9662;</button>
           <ul class="nav-dropdown-menu">
             <li><a href="crm/index.html" class="nav-dropdown-item">CRM</a></li>
             <li><a href="prospecting/index.html" class="nav-dropdown-item">Prospecting</a></li>
           </ul>
         </li>
         <li role="none" class="nav-dropdown" data-auth-role="partner">
-          <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Workspace ▾</button>
+          <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Workspace &#9662;</button>
           <ul class="nav-dropdown-menu">
             <li><a href="projects/index.html" class="nav-dropdown-item">Projects</a></li>
             <li><a href="rnd/index.html" class="nav-dropdown-item">R&D</a></li>
           </ul>
         </li>
-        <li role="none"><a href="reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none"><a href="reports.html" class="nav-link active" role="menuitem">Reports</a></li>
+        <li role="none" class="nav-dropdown" data-auth-role="admin">
+          <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Admin &#9662;</button>
+          <ul class="nav-dropdown-menu">
+            <li><a href="admin/users.html" class="nav-dropdown-item">Users</a></li>
+            <li><a href="admin/sync-status.html" class="nav-dropdown-item">Sync Status</a></li>
+          </ul>
+        </li>
         <li role="none" class="nav-dropdown">
-              <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Tools ▾</button>
-              <ul class="nav-dropdown-menu">
-                <li><a href="https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform" class="nav-dropdown-item" target="_blank" rel="noopener">KAA Form</a></li>
-                <li><a href="https://docs.google.com/spreadsheets/d/19kDef25LdbvPssTkMusFGu8FmNbj2rWuF7NNF9SBSvs/edit" class="nav-dropdown-item" target="_blank" rel="noopener">Quote Generator</a></li>
-                <li><a href="https://xero.me" class="nav-dropdown-item" target="_blank" rel="noopener">Submit Expenses</a></li>
-              </ul>
-            </li>
+          <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Tools &#9662;</button>
+          <ul class="nav-dropdown-menu">
+            <li><a href="https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform" class="nav-dropdown-item" target="_blank" rel="noopener">KAA Form</a></li>
+            <li><a href="https://docs.google.com/spreadsheets/d/19kDef25LdbvPssTkMusFGu8FmNbj2rWuF7NNF9SBSvs/edit" class="nav-dropdown-item" target="_blank" rel="noopener">Quote Generator</a></li>
+            <li><a href="https://xero.me" class="nav-dropdown-item" target="_blank" rel="noopener">Submit Expenses</a></li>
+          </ul>
+        </li>
       </ul>
-
       <div class="nav-actions">
-        <button
-          id="theme-toggle"
-          class="theme-toggle"
-          type="button"
-          aria-label="Switch to dark mode"
-        >
-          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="23"></line>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-            <line x1="1" y1="12" x2="3" y2="12"></line>
-            <line x1="21" y1="12" x2="23" y2="12"></line>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-          </svg>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
         </button>
-
         <a href="login.html" class="btn btn-primary btn-login" aria-label="Login">Login</a>
-
-        <button
-          id="mobile-menu-toggle"
-          class="mobile-menu-toggle"
-          type="button"
-          aria-label="Toggle navigation menu"
-          aria-expanded="false"
-          aria-controls="mobile-menu"
-        >
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
+        <button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu"><span></span><span></span><span></span></button>
       </div>
     </div>
-
-    <!-- Mobile Menu -->
     <div id="mobile-menu" class="mobile-menu" role="menu" aria-label="Mobile navigation">
       <ul>
         <li class="mobile-menu-label">Sales</li>
@@ -92,146 +84,104 @@
         <li data-auth-role="partner"><a href="projects/index.html" role="menuitem">Projects</a></li>
         <li data-auth-role="partner"><a href="rnd/index.html" role="menuitem">R&D</a></li>
         <li><a href="reports.html" role="menuitem">Reports</a></li>
-        <li><a href="https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform" role="menuitem" target="_blank" rel="noopener">KAA Form</a></li>
-      <li><a href="https://docs.google.com/spreadsheets/d/19kDef25LdbvPssTkMusFGu8FmNbj2rWuF7NNF9SBSvs/edit" role="menuitem" target="_blank" rel="noopener">Quote Generator</a></li>
-      <li><a href="https://xero.me" role="menuitem" target="_blank" rel="noopener">Submit Expenses</a></li>
-        <li><a href="login.html" role="menuitem">Login</a></li>
+        <li class="mobile-menu-label" data-auth-role="admin">Admin</li>
+        <li data-auth-role="admin"><a href="admin/users.html" role="menuitem">Users</a></li>
+        <li data-auth-role="admin"><a href="admin/sync-status.html" role="menuitem">Sync Status</a></li>
       </ul>
     </div>
   </nav>
 
   <main>
-    <!-- Page Header -->
     <header class="page-header">
       <div class="container">
         <h1 class="page-title">Reports & Analytics</h1>
-        <p class="page-description">Data insights and operational dashboards</p>
+        <p class="page-description">Data insights backed by real Xero financial data</p>
       </div>
     </header>
 
-    <!-- Reports Grid Section -->
-    <section class="section" aria-labelledby="reports-grid-title">
+    <section class="section">
       <div class="container">
-        <h2 id="reports-grid-title" class="sr-only">Available Reports</h2>
-        <div class="reports-grid">
-          <!-- Management Overview -->
-          <article class="card">
-            <div class="report-preview" aria-hidden="true">
-              <div class="text-center">
-                <div class="report-preview-icon">🎯</div>
-                <span>Report Preview</span>
-              </div>
-            </div>
-            <h3 class="card-title">Management Overview</h3>
-            <p class="card-description">Executive dashboard with sales, production, financial, and operational KPIs.</p>
-            <a href="dashboard.html" class="btn btn-secondary">View Report</a>
-          </article>
-
-          <!-- Sales Performance -->
-          <article class="card">
-            <div class="report-preview" aria-hidden="true">
-              <div class="text-center">
-                <div class="report-preview-icon">📊</div>
-                <span>Report Preview</span>
-              </div>
-            </div>
-            <h3 class="card-title">Sales Performance</h3>
-            <p class="card-description">Channel performance, revenue trends, and customer insights for sales teams.</p>
-            <span class="btn btn-secondary btn-disabled">Coming Soon</span>
-          </article>
-
-          <!-- Production & Delivery -->
-          <article class="card">
-            <div class="report-preview" aria-hidden="true">
-              <div class="text-center">
-                <div class="report-preview-icon">📈</div>
-                <span>Report Preview</span>
-              </div>
-            </div>
-            <h3 class="card-title">Production & Delivery</h3>
-            <p class="card-description">Daily output, efficiency metrics, and batch tracking for manufacturing operations.</p>
-            <span class="btn btn-secondary btn-disabled">Coming Soon</span>
-          </article>
-
-          <!-- Financial Overview (partner+) -->
-          <article class="card" data-auth-role="partner">
-            <div class="report-preview" aria-hidden="true">
-              <div class="text-center">
-                <div class="report-preview-icon">💹</div>
-                <span>Report Preview</span>
-              </div>
-            </div>
-            <h3 class="card-title">Financial Overview</h3>
-            <p class="card-description">COGS analysis, gross margins, and P&L summaries for financial planning.</p>
-            <span class="btn btn-secondary btn-disabled">Coming Soon</span>
-          </article>
-
-          <!-- SKD Performance (partner+) -->
-          <article class="card" data-auth-role="partner">
-            <div class="report-preview" aria-hidden="true">
-              <div class="text-center">
-                <div class="report-preview-icon">🏷️</div>
-                <span>Report Preview</span>
-              </div>
-            </div>
-            <h3 class="card-title">SKD Performance</h3>
-            <p class="card-description">Product-level sales and margin analysis for portfolio optimization.</p>
-            <span class="btn btn-secondary btn-disabled">Coming Soon</span>
-          </article>
-
-          <!-- Social Media -->
-          <article class="card">
-            <div class="report-preview" aria-hidden="true">
-              <div class="text-center">
-                <div class="report-preview-icon">📱</div>
-                <span>Report Preview</span>
-              </div>
-            </div>
-            <h3 class="card-title">Social Media</h3>
-            <p class="card-description">Social media engagement, reach, and campaign performance metrics.</p>
-            <span class="btn btn-secondary btn-disabled">Coming Soon</span>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- Monthly Deck Generation -->
-    <section class="section" aria-labelledby="deck-gen-title" data-auth-role="partner">
-      <div class="container">
-        <h2 id="deck-gen-title" style="font-size:1.4rem;margin-bottom:8px;">Monthly Deck</h2>
-        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:20px;">Generate board presentation decks from revenue data</p>
-
-        <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
-          <label style="font-size:0.85rem;font-weight:500;">
-            Month: <input type="month" id="rpt-deck-month" style="padding:6px 10px;border:1px solid var(--border-color);border-radius:4px;background:var(--bg-card);color:var(--text-primary);font-size:0.85rem;">
-          </label>
-          <button class="btn btn-primary" onclick="rptGenerateDeck()" style="font-size:0.85rem;padding:8px 16px;">Generate Deck</button>
-          <button class="btn btn-secondary" onclick="rptRefreshMetrics()" style="font-size:0.85rem;padding:8px 16px;">Refresh Metrics</button>
+        <!-- Report Tabs -->
+        <div class="rpt-tabs" id="rptTabs">
+          <button class="rpt-tab active" onclick="rptShowTab('financials')">Financial Summary</button>
+          <button class="rpt-tab" onclick="rptShowTab('cogs')" data-auth-role="partner">CoGS by SKU</button>
+          <button class="rpt-tab" onclick="rptShowTab('margin')" data-auth-role="partner">Margin Analysis</button>
+          <button class="rpt-tab" onclick="rptShowTab('ingestion')" data-auth-role="admin">Ingestion Status</button>
+          <button class="rpt-tab" onclick="rptShowTab('deck')" data-auth-role="partner">Monthly Deck</button>
         </div>
 
-        <div id="rpt-deck-banner" style="padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;display:none;"></div>
+        <!-- Period Filter -->
+        <div class="rpt-period-filter">
+          <label>Period: <input type="month" id="rpt-period" onchange="rptRefresh()"></label>
+        </div>
 
-        <div style="overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+        <!-- Financial Summary Tab -->
+        <div id="tab-financials" class="rpt-section">
+          <h3>Revenue vs Expense by Period</h3>
+          <div id="rpt-fin-summary" class="rpt-loading">Loading...</div>
+          <table class="rpt-table" id="rpt-fin-table" style="display:none;">
             <thead>
-              <tr style="border-bottom:1px solid var(--border-color);">
-                <th style="text-align:left;padding:8px 12px;font-weight:600;">Month</th>
-                <th style="text-align:right;padding:8px 12px;font-weight:600;">Revenue (IDR)</th>
-                <th style="text-align:right;padding:8px 12px;font-weight:600;">Gross Margin</th>
-                <th style="text-align:left;padding:8px 12px;font-weight:600;">Headline</th>
-                <th style="text-align:left;padding:8px 12px;font-weight:600;">Actions</th>
-              </tr>
+              <tr><th>Period</th><th style="text-align:right;">Revenue</th><th style="text-align:right;">Invoices</th><th style="text-align:right;">Expense</th><th style="text-align:right;">Bills</th><th style="text-align:right;">Net</th></tr>
             </thead>
-            <tbody id="rpt-deck-tbody">
-              <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-secondary);">Loading...</td></tr>
-            </tbody>
+            <tbody id="rpt-fin-tbody"></tbody>
           </table>
+        </div>
+
+        <!-- CoGS Tab -->
+        <div id="tab-cogs" class="rpt-section" style="display:none;" data-auth-role="partner">
+          <h3>Cost of Goods Sold by SKU</h3>
+          <div id="rpt-cogs-summary" class="rpt-loading">Loading...</div>
+          <table class="rpt-table" id="rpt-cogs-table" style="display:none;">
+            <thead>
+              <tr><th>SKU</th><th>Name</th><th>Period</th><th style="text-align:right;">RM</th><th style="text-align:right;">RP</th><th style="text-align:right;">Prod</th><th style="text-align:right;">Total</th><th style="text-align:right;">Units</th><th style="text-align:right;">Unit Cost</th></tr>
+            </thead>
+            <tbody id="rpt-cogs-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Margin Tab -->
+        <div id="tab-margin" class="rpt-section" style="display:none;" data-auth-role="partner">
+          <h3>Margin by SKU & Channel</h3>
+          <div id="rpt-margin-channels" class="rpt-grid"></div>
+          <table class="rpt-table" id="rpt-margin-table" style="display:none;">
+            <thead>
+              <tr><th>SKU</th><th>Name</th><th>Channel</th><th>Period</th><th style="text-align:right;">Selling Price</th><th style="text-align:right;">Unit Cost</th><th style="text-align:right;">Margin</th><th style="text-align:right;">Margin %</th><th style="text-align:right;">Revenue</th></tr>
+            </thead>
+            <tbody id="rpt-margin-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Ingestion Status Tab -->
+        <div id="tab-ingestion" class="rpt-section" style="display:none;" data-auth-role="admin">
+          <h3>Data Ingestion Summary</h3>
+          <div id="rpt-ing-counts" class="rpt-grid"></div>
+          <h4>Recent Syncs</h4>
+          <table class="rpt-table">
+            <thead><tr><th>Type</th><th>Entity</th><th>Finished</th><th>Status</th><th style="text-align:right;">Fetched</th><th style="text-align:right;">Upserted</th></tr></thead>
+            <tbody id="rpt-ing-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Monthly Deck Tab -->
+        <div id="tab-deck" class="rpt-section" style="display:none;" data-auth-role="partner">
+          <h3>Monthly Deck Generation</h3>
+          <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+            <label style="font-size:0.85rem;font-weight:500;">Month: <input type="month" id="rpt-deck-month" style="padding:6px 10px;border:1px solid var(--border-color);border-radius:4px;background:var(--bg-card);color:var(--text-primary);font-size:0.85rem;"></label>
+            <button class="btn btn-primary" onclick="rptGenerateDeck()" style="font-size:0.85rem;padding:8px 16px;">Generate Deck</button>
+            <button class="btn btn-secondary" onclick="rptRefreshMetrics()" style="font-size:0.85rem;padding:8px 16px;">Refresh Metrics</button>
+          </div>
+          <div id="rpt-deck-banner" style="padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;display:none;"></div>
+          <div style="overflow-x:auto;">
+            <table class="rpt-table">
+              <thead><tr><th>Month</th><th style="text-align:right;">Revenue (IDR)</th><th style="text-align:right;">Gross Margin</th><th>Headline</th><th>Actions</th></tr></thead>
+              <tbody id="rpt-deck-tbody"><tr><td colspan="5" class="rpt-loading">Loading...</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- Footer -->
   <footer class="footer">
     <div class="container">
       <p class="footer-content">&copy; 2026 Candidlabs - Internal Use Only</p>
@@ -244,39 +194,137 @@
   <script>
     var RPT_API = 'https://candidlabs-api.dieterwerwath.workers.dev/api';
 
-    function rptFormatIDR(num) {
+    function rptFmt(num) {
       if (num == null || isNaN(num)) return '-';
       if (num >= 1e9) return 'IDR ' + (num / 1e9).toFixed(1) + 'B';
       if (num >= 1e6) return 'IDR ' + (num / 1e6).toFixed(1) + 'M';
       if (num >= 1e3) return 'IDR ' + (num / 1e3).toFixed(0) + 'K';
       return 'IDR ' + num.toLocaleString();
     }
+    function rptPct(num) { return num != null ? num.toFixed(1) + '%' : '-'; }
+    function rptEsc(s) { if (!s) return ''; var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
 
-    function rptEscape(s) { if (!s) return ''; var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+    var currentTab = 'financials';
+
+    function rptShowTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.rpt-tab').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.rpt-section').forEach(function(s) { s.style.display = 'none'; });
+      var tabEl = document.getElementById('tab-' + tab);
+      if (tabEl) tabEl.style.display = 'block';
+      // Mark active tab button
+      document.querySelectorAll('.rpt-tab').forEach(function(b) {
+        if (b.textContent.toLowerCase().indexOf(tab === 'financials' ? 'financial' : tab === 'cogs' ? 'cogs' : tab === 'margin' ? 'margin' : tab === 'ingestion' ? 'ingestion' : 'deck') !== -1) {
+          b.classList.add('active');
+        }
+      });
+      rptRefresh();
+    }
+
+    function rptGetPeriod() {
+      return document.getElementById('rpt-period').value || '';
+    }
+
+    function rptRefresh() {
+      if (currentTab === 'financials') rptLoadFinancials();
+      else if (currentTab === 'cogs') rptLoadCogs();
+      else if (currentTab === 'margin') rptLoadMargin();
+      else if (currentTab === 'ingestion') rptLoadIngestion();
+      else if (currentTab === 'deck') rptLoadDeckMetrics();
+    }
+
+    function rptLoadFinancials() {
+      var period = rptGetPeriod();
+      var url = RPT_API + '/reports/financials' + (period ? '?period=' + period : '');
+      fetch(url).then(function(r) { return r.json(); }).then(function(d) {
+        if (!d.ok) { document.getElementById('rpt-fin-summary').textContent = 'Error: ' + (d.error && d.error.message || 'Unknown'); return; }
+        var data = d.data || [];
+        if (!data.length) { document.getElementById('rpt-fin-summary').textContent = 'No financial data yet. Run normalisation first.'; return; }
+        document.getElementById('rpt-fin-summary').style.display = 'none';
+        document.getElementById('rpt-fin-table').style.display = 'table';
+        document.getElementById('rpt-fin-tbody').innerHTML = data.map(function(r) {
+          return '<tr><td>' + rptEsc(r.period) + '</td><td class="num">' + rptFmt(r.revenue) + '</td><td class="num">' + (r.revenue_count || 0) + '</td>' +
+            '<td class="num">' + rptFmt(r.expense) + '</td><td class="num">' + (r.expense_count || 0) + '</td>' +
+            '<td class="num" style="font-weight:600;">' + rptFmt((r.revenue || 0) - (r.expense || 0)) + '</td></tr>';
+        }).join('');
+      }).catch(function(e) { document.getElementById('rpt-fin-summary').textContent = 'Error: ' + e.message; });
+    }
+
+    function rptLoadCogs() {
+      var period = rptGetPeriod();
+      var url = RPT_API + '/reports/cogs' + (period ? '?period=' + period : '');
+      fetch(url).then(function(r) { return r.json(); }).then(function(d) {
+        if (!d.ok) { document.getElementById('rpt-cogs-summary').textContent = 'Error'; return; }
+        var data = d.data || [];
+        if (!data.length) { document.getElementById('rpt-cogs-summary').textContent = 'No CoGS data yet. Run CoGS compute first.'; return; }
+        document.getElementById('rpt-cogs-summary').style.display = 'none';
+        document.getElementById('rpt-cogs-table').style.display = 'table';
+        document.getElementById('rpt-cogs-tbody').innerHTML = data.map(function(r) {
+          return '<tr><td>' + rptEsc(r.item_code) + '</td><td>' + rptEsc(r.item_name) + '</td><td>' + rptEsc(r.period) + '</td>' +
+            '<td class="num">' + rptFmt(r.rm_cost) + '</td><td class="num">' + rptFmt(r.rp_cost) + '</td><td class="num">' + rptFmt(r.prod_cost) + '</td>' +
+            '<td class="num" style="font-weight:600;">' + rptFmt(r.total_cost) + '</td><td class="num">' + (r.units || 0) + '</td>' +
+            '<td class="num">' + (r.unit_cost != null ? rptFmt(r.unit_cost) : '-') + '</td></tr>';
+        }).join('');
+      }).catch(function(e) { document.getElementById('rpt-cogs-summary').textContent = 'Error: ' + e.message; });
+    }
+
+    function rptLoadMargin() {
+      var period = rptGetPeriod();
+      var url = RPT_API + '/reports/margin' + (period ? '?period=' + period : '');
+      fetch(url).then(function(r) { return r.json(); }).then(function(d) {
+        if (!d.ok) return;
+        var channels = (d.data && d.data.channels) || [];
+        var items = (d.data && d.data.items) || [];
+        // Channel summary cards
+        document.getElementById('rpt-margin-channels').innerHTML = channels.map(function(c) {
+          return '<div class="rpt-stat"><div class="rpt-stat-value">' + rptPct(c.avg_margin_pct) + '</div><div class="rpt-stat-label">' + rptEsc(c.channel || 'Unknown') + ' (' + c.sku_count + ' SKUs)</div></div>';
+        }).join('') || '<div class="rpt-loading">No margin data yet</div>';
+        // Item table
+        if (items.length) {
+          document.getElementById('rpt-margin-table').style.display = 'table';
+          document.getElementById('rpt-margin-tbody').innerHTML = items.map(function(r) {
+            return '<tr><td>' + rptEsc(r.item_code) + '</td><td>' + rptEsc(r.item_name) + '</td><td>' + rptEsc(r.channel) + '</td><td>' + rptEsc(r.period) + '</td>' +
+              '<td class="num">' + rptFmt(r.selling_price) + '</td><td class="num">' + (r.unit_cost != null ? rptFmt(r.unit_cost) : '-') + '</td>' +
+              '<td class="num">' + (r.gross_margin != null ? rptFmt(r.gross_margin) : '-') + '</td>' +
+              '<td class="num" style="font-weight:600;">' + rptPct(r.gross_margin_pct) + '</td>' +
+              '<td class="num">' + rptFmt(r.total_revenue) + '</td></tr>';
+          }).join('');
+        }
+      });
+    }
+
+    function rptLoadIngestion() {
+      fetch(RPT_API + '/reports/ingestion').then(function(r) { return r.json(); }).then(function(d) {
+        if (!d.ok) return;
+        var counts = d.data.entity_counts || {};
+        document.getElementById('rpt-ing-counts').innerHTML = Object.keys(counts).map(function(k) {
+          return '<div class="rpt-stat"><div class="rpt-stat-value">' + (counts[k] || 0).toLocaleString() + '</div><div class="rpt-stat-label">' + k + '</div></div>';
+        }).join('');
+        var syncs = d.data.recent_syncs || [];
+        document.getElementById('rpt-ing-tbody').innerHTML = syncs.length
+          ? syncs.map(function(s) {
+              return '<tr><td>' + rptEsc(s.sync_type) + '</td><td>' + rptEsc(s.entity_type) + '</td><td>' + (s.finished_at ? new Date(s.finished_at).toLocaleString() : '-') + '</td>' +
+                '<td>' + rptEsc(s.status) + '</td><td class="num">' + (s.records_fetched || 0) + '</td><td class="num">' + (s.records_upserted || 0) + '</td></tr>';
+            }).join('')
+          : '<tr><td colspan="6" class="rpt-loading">No sync runs yet</td></tr>';
+      });
+    }
 
     function rptLoadDeckMetrics() {
       if (typeof CandidStore === 'undefined') return;
-      CandidStore.load('deck_metrics').then(function (data) {
-        var deck = (data || []).slice().sort(function (a, b) { return (b.monthKey || '').localeCompare(a.monthKey || ''); });
+      CandidStore.load('deck_metrics').then(function(data) {
+        var deck = (data || []).slice().sort(function(a, b) { return (b.monthKey || '').localeCompare(a.monthKey || ''); });
         var tbody = document.getElementById('rpt-deck-tbody');
-        if (!deck.length) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-secondary);">No deck metrics yet</td></tr>';
-          return;
-        }
-        tbody.innerHTML = deck.map(function (d) {
-          var meta = {}; try { meta = JSON.parse(d.meta || '{}'); } catch (e) {}
+        if (!deck.length) { tbody.innerHTML = '<tr><td colspan="5" class="rpt-loading">No deck metrics yet</td></tr>'; return; }
+        tbody.innerHTML = deck.map(function(d) {
+          var meta = {}; try { meta = JSON.parse(d.meta || '{}'); } catch(e) {}
           var presLink = meta.presentation_url
-            ? '<a href="' + rptEscape(meta.presentation_url) + '" target="_blank" rel="noopener" style="color:var(--color-primary);font-weight:500;">View Deck</a>'
+            ? '<a href="' + rptEsc(meta.presentation_url) + '" target="_blank" rel="noopener" style="color:var(--color-primary);font-weight:500;">View</a> '
             : '';
-          return '<tr style="border-bottom:1px solid var(--border-color);">' +
-            '<td style="padding:8px 12px;font-weight:500;">' + rptEscape(d.monthLabel || d.monthKey) + '</td>' +
-            '<td style="padding:8px 12px;text-align:right;font-family:monospace;">' + rptFormatIDR(d.totalRevenueIdr) + '</td>' +
-            '<td style="padding:8px 12px;text-align:right;">' + (d.grossMarginPct != null ? d.grossMarginPct + '%' : '-') + '</td>' +
-            '<td style="padding:8px 12px;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + rptEscape(d.headline || '-') + '</td>' +
-            '<td style="padding:8px 12px;">' + presLink +
-              (presLink ? ' ' : '') +
-              '<button onclick="rptGenerateDeck(\'' + rptEscape(d.monthKey) + '\')" style="font-size:0.78rem;padding:3px 8px;border:1px solid var(--border-color);border-radius:4px;background:var(--bg-card);color:var(--text-primary);cursor:pointer;">Generate</button>' +
-            '</td></tr>';
+          return '<tr><td>' + rptEsc(d.monthLabel || d.monthKey) + '</td><td class="num">' + rptFmt(d.totalRevenueIdr) + '</td>' +
+            '<td class="num">' + (d.grossMarginPct != null ? d.grossMarginPct + '%' : '-') + '</td>' +
+            '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + rptEsc(d.headline || '-') + '</td>' +
+            '<td>' + presLink + '<button onclick="rptGenerateDeck(\'' + rptEsc(d.monthKey) + '\')" style="font-size:0.78rem;padding:3px 8px;border:1px solid var(--border-color);border-radius:4px;background:var(--bg-card);color:var(--text-primary);cursor:pointer;">Generate</button></td></tr>';
         }).join('');
       });
     }
@@ -285,61 +333,39 @@
       if (!monthKey) monthKey = document.getElementById('rpt-deck-month').value;
       if (!monthKey) { alert('Select a month first.'); return; }
       if (!confirm('Generate slides deck for ' + monthKey + '?')) return;
-
       var banner = document.getElementById('rpt-deck-banner');
       banner.style.display = 'block';
-      banner.style.background = 'rgba(59,130,246,0.08)';
-      banner.style.border = '1px solid rgba(59,130,246,0.2)';
-      banner.style.color = '#3b82f6';
+      banner.style.background = 'rgba(59,130,246,0.08)'; banner.style.border = '1px solid rgba(59,130,246,0.2)'; banner.style.color = '#3b82f6';
       banner.textContent = 'Generating deck for ' + monthKey + '...';
-
       fetch(RPT_API + '/reports/deck/' + encodeURIComponent(monthKey) + '/generate', { method: 'POST' })
-        .then(function (res) { return res.json(); })
-        .then(function (body) {
+        .then(function(res) { return res.json(); })
+        .then(function(body) {
           if (body.ok && body.result && body.result.presentation_url) {
-            banner.style.background = 'rgba(16,185,129,0.08)';
-            banner.style.border = '1px solid rgba(16,185,129,0.2)';
-            banner.style.color = 'var(--color-success)';
-            banner.innerHTML = 'Deck generated! <a href="' + rptEscape(body.result.presentation_url) + '" target="_blank" rel="noopener" style="color:inherit;font-weight:600;">Open Deck</a>';
+            banner.style.background = 'rgba(16,185,129,0.08)'; banner.style.border = '1px solid rgba(16,185,129,0.2)'; banner.style.color = 'var(--color-success)';
+            banner.innerHTML = 'Deck generated! <a href="' + rptEsc(body.result.presentation_url) + '" target="_blank" rel="noopener" style="color:inherit;font-weight:600;">Open Deck</a>';
             rptLoadDeckMetrics();
           } else {
-            banner.style.background = 'rgba(239,68,68,0.08)';
-            banner.style.border = '1px solid rgba(239,68,68,0.2)';
-            banner.style.color = 'var(--color-error)';
+            banner.style.background = 'rgba(239,68,68,0.08)'; banner.style.border = '1px solid rgba(239,68,68,0.2)'; banner.style.color = 'var(--color-error)';
             banner.textContent = 'Failed: ' + (body.error ? body.error.message : 'Unknown error');
           }
-        }).catch(function (err) {
-          banner.style.background = 'rgba(239,68,68,0.08)';
-          banner.style.border = '1px solid rgba(239,68,68,0.2)';
-          banner.style.color = 'var(--color-error)';
-          banner.textContent = 'Error: ' + err.message;
-        });
+        }).catch(function(err) { banner.style.background = 'rgba(239,68,68,0.08)'; banner.style.border = '1px solid rgba(239,68,68,0.2)'; banner.style.color = 'var(--color-error)'; banner.textContent = 'Error: ' + err.message; });
     }
 
     function rptRefreshMetrics() {
       var monthKey = document.getElementById('rpt-deck-month').value || new Date().toISOString().slice(0, 7);
       if (!confirm('Refresh deck metrics for ' + monthKey + '?')) return;
-
-      fetch(RPT_API + '/sales/refresh-deck-metrics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ month_key: monthKey })
-      }).then(function (res) { return res.json(); })
-        .then(function (body) {
-          if (body.ok) {
-            alert('Metrics refreshed for ' + monthKey);
-            rptLoadDeckMetrics();
-          } else {
-            alert('Failed: ' + (body.error ? body.error.message : 'Unknown'));
-          }
-        }).catch(function (err) { alert('Error: ' + err.message); });
+      fetch(RPT_API + '/sales/refresh-deck-metrics', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ month_key: monthKey }) })
+        .then(function(res) { return res.json(); })
+        .then(function(body) { if (body.ok) { alert('Metrics refreshed for ' + monthKey); rptLoadDeckMetrics(); } else { alert('Failed: ' + (body.error ? body.error.message : 'Unknown')); } })
+        .catch(function(err) { alert('Error: ' + err.message); });
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
-      // Default month picker to current month
+    document.addEventListener('DOMContentLoaded', function() {
       var monthInput = document.getElementById('rpt-deck-month');
       if (monthInput) monthInput.value = new Date().toISOString().slice(0, 7);
-      rptLoadDeckMetrics();
+      var periodInput = document.getElementById('rpt-period');
+      if (periodInput) periodInput.value = '';
+      rptRefresh();
     });
   </script>
 </body>
