@@ -210,6 +210,26 @@ const COLLECTIONS = {
               'is_supplier', 'contact_status', 'meta', 'synced_at'],
     searchable: ['name', 'email'],
     orderBy: 'name'
+  },
+  xero_accounts: {
+    table: 'xero_accounts',
+    prefix: 'XAC',
+    required: ['xero_account_id', 'name'],
+    columns: ['id', 'xero_account_id', 'code', 'name', 'type', 'bank_account_type',
+              'status', 'description', 'currency_code', 'tax_type', 'enable_payments',
+              'class', 'system_account', 'meta', 'synced_at'],
+    searchable: ['code', 'name', 'type'],
+    orderBy: 'code'
+  },
+  xero_payments: {
+    table: 'xero_payments',
+    prefix: 'XPY',
+    required: ['xero_payment_id'],
+    columns: ['id', 'xero_payment_id', 'xero_invoice_id', 'invoice_number', 'payment_type',
+              'status', 'date', 'amount', 'currency_code', 'reference', 'is_reconciled',
+              'account_code', 'account_name', 'meta', 'synced_at'],
+    searchable: ['invoice_number', 'status'],
+    orderBy: 'date'
   }
 };
 
@@ -1634,6 +1654,517 @@ async function xeroBackfillHandler(req, env, url) {
   return json({ ok: true, backfill: { from, to, months: results.length }, results });
 }
 
+// ============================================================
+// Wave 4 — Canonical Financial Ingestion: Accounts, Payments, Backfill, Incremental
+// ============================================================
+
+// POST /api/xero/sync-accounts — sync Xero chart of accounts
+async function xeroSyncAccounts(env) {
+  const syncId = generateId('SYN');
+  const now = new Date().toISOString();
+  await env.DB.prepare(
+    'INSERT INTO sync_runs (id, sync_type, entity_type, started_at, status) VALUES (?, ?, ?, ?, ?)'
+  ).bind(syncId, 'xero_accounts', 'accounts', now, 'running').run();
+
+  try {
+    const tokenData = await getXeroAccessToken(env);
+    if (!tokenData) throw new Error('Xero not connected — no tokens found');
+    const { access_token, tenant_id } = tokenData;
+
+    const resp = await fetch('https://api.xero.com/api.xro/2.0/Accounts', {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+        'Xero-Tenant-Id': tenant_id,
+        Accept: 'application/json'
+      }
+    });
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`Xero Accounts API error (${resp.status}): ${errText}`);
+    }
+    const data = await resp.json();
+    const accounts = data.Accounts || [];
+
+    let upserted = 0;
+    for (const a of accounts) {
+      const id = generateId('XAC');
+      await env.DB.prepare(
+        `INSERT INTO xero_accounts (id, xero_account_id, code, name, type, bank_account_type, status,
+           description, currency_code, tax_type, enable_payments, class, system_account, meta, synced_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(xero_account_id) DO UPDATE SET code=excluded.code, name=excluded.name, type=excluded.type,
+           bank_account_type=excluded.bank_account_type, status=excluded.status, description=excluded.description,
+           currency_code=excluded.currency_code, tax_type=excluded.tax_type, enable_payments=excluded.enable_payments,
+           class=excluded.class, system_account=excluded.system_account, meta=excluded.meta, synced_at=excluded.synced_at`
+      ).bind(id, a.AccountID, a.Code ?? null, a.Name ?? '', a.Type ?? null,
+             a.BankAccountType ?? null, a.Status ?? null, a.Description ?? null,
+             a.CurrencyCode ?? 'IDR', a.TaxType ?? null, a.EnablePaymentsToAccount ? 1 : 0,
+             a.Class ?? null, a.SystemAccount ?? null,
+             JSON.stringify(a), now).run();
+      upserted++;
+    }
+
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE sync_runs SET status = ?, finished_at = ?, records_fetched = ?, records_upserted = ? WHERE id = ?'
+    ).bind('completed', finishedAt, accounts.length, upserted, syncId).run();
+
+    return { ok: true, sync_id: syncId, entity: 'accounts', fetched: accounts.length, upserted };
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE sync_runs SET status = ?, finished_at = ?, error = ? WHERE id = ?'
+    ).bind('failed', finishedAt, err.message, syncId).run();
+    throw err;
+  }
+}
+
+// POST /api/xero/sync-payments — sync Xero payments
+async function xeroSyncPayments(env) {
+  const syncId = generateId('SYN');
+  const now = new Date().toISOString();
+  await env.DB.prepare(
+    'INSERT INTO sync_runs (id, sync_type, entity_type, started_at, status) VALUES (?, ?, ?, ?, ?)'
+  ).bind(syncId, 'xero_payments', 'payments', now, 'running').run();
+
+  try {
+    const tokenData = await getXeroAccessToken(env);
+    if (!tokenData) throw new Error('Xero not connected — no tokens found');
+    const { access_token, tenant_id } = tokenData;
+
+    let allPayments = [];
+    let page = 1;
+    while (true) {
+      const resp = await fetch(`https://api.xero.com/api.xro/2.0/Payments?page=${page}`, {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          'Xero-Tenant-Id': tenant_id,
+          Accept: 'application/json'
+        }
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`Xero Payments API error (${resp.status}): ${errText}`);
+      }
+      const data = await resp.json();
+      const payments = data.Payments || [];
+      if (payments.length === 0) break;
+      allPayments = allPayments.concat(payments);
+      if (payments.length < 100) break;
+      page++;
+    }
+
+    let upserted = 0;
+    for (const p of allPayments) {
+      const id = generateId('XPY');
+      await env.DB.prepare(
+        `INSERT INTO xero_payments (id, xero_payment_id, xero_invoice_id, invoice_number, payment_type,
+           status, date, amount, currency_code, reference, is_reconciled, account_code, account_name, meta, synced_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(xero_payment_id) DO UPDATE SET xero_invoice_id=excluded.xero_invoice_id,
+           invoice_number=excluded.invoice_number, payment_type=excluded.payment_type, status=excluded.status,
+           date=excluded.date, amount=excluded.amount, reference=excluded.reference,
+           is_reconciled=excluded.is_reconciled, account_code=excluded.account_code,
+           account_name=excluded.account_name, meta=excluded.meta, synced_at=excluded.synced_at`
+      ).bind(id, p.PaymentID, p.Invoice ? (p.Invoice.InvoiceID ?? null) : null,
+             p.Invoice ? (p.Invoice.InvoiceNumber ?? null) : null,
+             p.PaymentType ?? null, p.Status ?? null, p.Date ? p.Date.split('T')[0] : null,
+             p.Amount ?? 0, p.CurrencyCode ?? 'IDR', p.Reference ?? null,
+             p.IsReconciled ? 1 : 0,
+             p.Account ? (p.Account.Code ?? null) : null,
+             p.Account ? (p.Account.Name ?? null) : null,
+             JSON.stringify(p), now).run();
+      upserted++;
+    }
+
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE sync_runs SET status = ?, finished_at = ?, records_fetched = ?, records_upserted = ? WHERE id = ?'
+    ).bind('completed', finishedAt, allPayments.length, upserted, syncId).run();
+
+    return { ok: true, sync_id: syncId, entity: 'payments', fetched: allPayments.length, upserted };
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE sync_runs SET status = ?, finished_at = ?, error = ? WHERE id = ?'
+    ).bind('failed', finishedAt, err.message, syncId).run();
+    throw err;
+  }
+}
+
+// POST /api/xero/backfill — full historical pull for all entity types
+async function xeroFullBackfill(req, env, url) {
+  const from = url.searchParams.get('from') || '2024-01';
+  const to = url.searchParams.get('to') || new Date().toISOString().slice(0, 7);
+  const results = { invoices: [], contacts: null, accounts: null, payments: null };
+
+  // 1. Sync accounts (non-month-based)
+  try {
+    results.accounts = await xeroSyncAccounts(env);
+  } catch (err) {
+    results.accounts = { ok: false, error: err.message };
+  }
+
+  // 2. Sync payments (non-month-based)
+  try {
+    results.payments = await xeroSyncPayments(env);
+  } catch (err) {
+    results.payments = { ok: false, error: err.message };
+  }
+
+  // 3. Sync invoices + contacts month by month (existing logic handles both ACCREC; we also fetch ACCPAY)
+  const [fromY, fromM] = from.split('-').map(Number);
+  const [toY, toM] = to.split('-').map(Number);
+  let y = fromY, m = fromM;
+
+  while (y < toY || (y === toY && m <= toM)) {
+    const mk = `${y}-${String(m).padStart(2, '0')}`;
+    try {
+      const result = await xeroSyncMonthAll(env, mk);
+      results.invoices.push(result);
+    } catch (err) {
+      results.invoices.push({ ok: false, month_key: mk, error: err.message });
+    }
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+
+  return json({ ok: true, backfill: { from, to }, results });
+}
+
+// Extended month sync: fetch BOTH ACCREC and ACCPAY invoices
+async function xeroSyncMonthAll(env, monthKey) {
+  const syncId = generateId('SYN');
+  const now = new Date().toISOString();
+  await env.DB.prepare(
+    'INSERT INTO sync_runs (id, sync_type, entity_type, month_key, started_at, status) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(syncId, 'xero_invoices_all', 'invoices', monthKey, now, 'running').run();
+
+  try {
+    const tokenData = await getXeroAccessToken(env);
+    if (!tokenData) throw new Error('Xero not connected — no tokens found');
+    const { access_token, tenant_id } = tokenData;
+    const [year, month] = monthKey.split('-').map(Number);
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+
+    let allInvoices = [];
+
+    // Fetch both ACCREC and ACCPAY
+    for (const invType of ['ACCREC', 'ACCPAY']) {
+      let page = 1;
+      const whereClause = `Type=="${invType}" AND Date >= DateTime(${year},${month},1) AND Date < DateTime(${nextYear},${nextMonth},1)`;
+      while (true) {
+        const apiUrl = `https://api.xero.com/api.xro/2.0/Invoices?where=${encodeURIComponent(whereClause)}&page=${page}`;
+        const resp = await fetch(apiUrl, {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Xero-Tenant-Id': tenant_id,
+            Accept: 'application/json'
+          }
+        });
+        if (!resp.ok) {
+          const errText = await resp.text();
+          throw new Error(`Xero API error (${resp.status}): ${errText}`);
+        }
+        const data = await resp.json();
+        const invoices = data.Invoices || [];
+        if (invoices.length === 0) break;
+        allInvoices = allInvoices.concat(invoices);
+        if (invoices.length < 100) break;
+        page++;
+      }
+    }
+
+    // Also fetch contacts
+    let allContacts = [];
+    let contactPage = 1;
+    while (true) {
+      const contactUrl = `https://api.xero.com/api.xro/2.0/Contacts?page=${contactPage}`;
+      const resp = await fetch(contactUrl, {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          'Xero-Tenant-Id': tenant_id,
+          Accept: 'application/json'
+        }
+      });
+      if (!resp.ok) break;
+      const data = await resp.json();
+      const contacts = data.Contacts || [];
+      if (contacts.length === 0) break;
+      allContacts = allContacts.concat(contacts);
+      if (contacts.length < 100) break;
+      contactPage++;
+    }
+
+    // Upsert contacts
+    for (const c of allContacts) {
+      const cId = generateId('XCT');
+      await env.DB.prepare(
+        `INSERT INTO xero_contacts (id, xero_contact_id, name, email, phone, is_customer, is_supplier, contact_status, meta, synced_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(xero_contact_id) DO UPDATE SET name=excluded.name, email=excluded.email, phone=excluded.phone,
+           is_customer=excluded.is_customer, is_supplier=excluded.is_supplier, contact_status=excluded.contact_status, meta=excluded.meta, synced_at=excluded.synced_at`
+      ).bind(cId, c.ContactID || '', c.Name || '', c.EmailAddress ?? null,
+             (c.Phones && c.Phones[0] && c.Phones[0].PhoneNumber) || null,
+             c.IsCustomer ? 1 : 0, c.IsSupplier ? 1 : 0, c.ContactStatus ?? null,
+             JSON.stringify(c), now).run();
+    }
+
+    // Also fetch and sync items (product catalogue)
+    let allItems = [];
+    let itemPage = 1;
+    while (true) {
+      const itemUrl = `https://api.xero.com/api.xro/2.0/Items?page=${itemPage}`;
+      const resp = await fetch(itemUrl, {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          'Xero-Tenant-Id': tenant_id,
+          Accept: 'application/json'
+        }
+      });
+      if (!resp.ok) break;
+      const data = await resp.json();
+      const items = data.Items || [];
+      if (items.length === 0) break;
+      allItems = allItems.concat(items);
+      if (items.length < 100) break;
+      itemPage++;
+    }
+
+    for (const item of allItems) {
+      const iId = generateId('XIT');
+      await env.DB.prepare(
+        `INSERT INTO xero_items (id, xero_item_id, code, name, purchase_cost, sales_price, is_tracked, meta, synced_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(xero_item_id) DO UPDATE SET code=excluded.code, name=excluded.name,
+           purchase_cost=excluded.purchase_cost, sales_price=excluded.sales_price,
+           is_tracked=excluded.is_tracked, meta=excluded.meta, synced_at=excluded.synced_at`
+      ).bind(iId, item.ItemID, item.Code ?? null, item.Name ?? null,
+             item.PurchaseDetails ? (item.PurchaseDetails.UnitPrice ?? null) : null,
+             item.SalesDetails ? (item.SalesDetails.UnitPrice ?? null) : null,
+             item.IsTrackedAsInventory ? 1 : 0,
+             JSON.stringify(item), now).run();
+    }
+
+    let recordsUpserted = 0;
+    // Upsert invoices + line items
+    for (const inv of allInvoices) {
+      const invId = generateId('XIV');
+      await env.DB.prepare(
+        `INSERT INTO xero_invoices (id, xero_invoice_id, invoice_number, type, status, contact_name, xero_contact_id,
+           invoice_date, due_date, currency_code, sub_total, total_tax, total, amount_due, amount_paid,
+           reference, updated_date_utc, meta, synced_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(xero_invoice_id) DO UPDATE SET invoice_number=excluded.invoice_number, type=excluded.type,
+           status=excluded.status, contact_name=excluded.contact_name, xero_contact_id=excluded.xero_contact_id,
+           sub_total=excluded.sub_total, total_tax=excluded.total_tax, total=excluded.total,
+           amount_due=excluded.amount_due, amount_paid=excluded.amount_paid,
+           reference=excluded.reference, updated_date_utc=excluded.updated_date_utc,
+           meta=excluded.meta, synced_at=excluded.synced_at`
+      ).bind(invId, inv.InvoiceID, inv.InvoiceNumber ?? null, inv.Type ?? '', inv.Status ?? '',
+             inv.Contact ? (inv.Contact.Name ?? null) : null, inv.Contact ? (inv.Contact.ContactID ?? null) : null,
+             inv.DateString ?? null, inv.DueDateString ?? null, inv.CurrencyCode ?? 'IDR',
+             inv.SubTotal ?? 0, inv.TotalTax ?? 0, inv.Total ?? 0, inv.AmountDue ?? 0, inv.AmountPaid ?? 0,
+             inv.Reference ?? null, inv.UpdatedDateUTC ?? null,
+             JSON.stringify(inv), now).run();
+
+      // Replace line items
+      const lines = inv.LineItems || [];
+      await env.DB.prepare('DELETE FROM xero_line_items WHERE xero_invoice_id = ?').bind(inv.InvoiceID).run();
+      for (const li of lines) {
+        const liId = generateId('XLI');
+        await env.DB.prepare(
+          `INSERT INTO xero_line_items (id, xero_invoice_id, item_code, description, quantity, unit_amount,
+             tax_amount, line_amount, discount_rate, account_code, tax_type, tracking, meta, synced_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(liId, inv.InvoiceID, li.ItemCode ?? null, li.Description ?? null,
+               li.Quantity ?? 0, li.UnitAmount ?? 0, li.TaxAmount ?? 0, li.LineAmount ?? 0,
+               li.DiscountRate ?? 0, li.AccountCode ?? null, li.TaxType ?? null,
+               JSON.stringify(li.Tracking || []),
+               JSON.stringify(li), now).run();
+      }
+      recordsUpserted++;
+    }
+
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE sync_runs SET status = ?, finished_at = ?, records_fetched = ?, records_upserted = ? WHERE id = ?'
+    ).bind('completed', finishedAt, allInvoices.length, recordsUpserted, syncId).run();
+
+    return { ok: true, sync_id: syncId, month_key: monthKey,
+             invoices_fetched: allInvoices.length, contacts_fetched: allContacts.length,
+             items_fetched: allItems.length, records_upserted: recordsUpserted };
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE sync_runs SET status = ?, finished_at = ?, error = ? WHERE id = ?'
+    ).bind('failed', finishedAt, err.message, syncId).run();
+    throw err;
+  }
+}
+
+// POST /api/xero/sync-incremental — delta sync using modifiedAfter
+async function xeroSyncIncremental(req, env) {
+  const syncId = generateId('SYN');
+  const now = new Date().toISOString();
+
+  // Get last successful sync time
+  const lastSync = await env.DB.prepare(
+    "SELECT finished_at FROM sync_runs WHERE status = 'completed' AND sync_type LIKE 'xero%' ORDER BY finished_at DESC LIMIT 1"
+  ).first();
+  const modifiedAfter = lastSync ? lastSync.finished_at : new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  await env.DB.prepare(
+    'INSERT INTO sync_runs (id, sync_type, entity_type, started_at, status, meta) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(syncId, 'xero_incremental', 'all', now, 'running', JSON.stringify({ modified_after: modifiedAfter })).run();
+
+  try {
+    const tokenData = await getXeroAccessToken(env);
+    if (!tokenData) throw new Error('Xero not connected — no tokens found');
+    const { access_token, tenant_id } = tokenData;
+    const ifModifiedSince = new Date(modifiedAfter).toUTCString();
+    const results = { invoices: 0, contacts: 0, accounts: 0, payments: 0, items: 0 };
+
+    // Incremental: invoices (both types)
+    for (const invType of ['ACCREC', 'ACCPAY']) {
+      let page = 1;
+      while (true) {
+        const resp = await fetch(
+          `https://api.xero.com/api.xro/2.0/Invoices?where=${encodeURIComponent(`Type=="${invType}"`)}&page=${page}`, {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Xero-Tenant-Id': tenant_id,
+            Accept: 'application/json',
+            'If-Modified-Since': ifModifiedSince
+          }
+        });
+        if (!resp.ok) break;
+        const data = await resp.json();
+        const invoices = data.Invoices || [];
+        if (invoices.length === 0) break;
+
+        for (const inv of invoices) {
+          const invId = generateId('XIV');
+          await env.DB.prepare(
+            `INSERT INTO xero_invoices (id, xero_invoice_id, invoice_number, type, status, contact_name, xero_contact_id,
+               invoice_date, due_date, currency_code, sub_total, total_tax, total, amount_due, amount_paid,
+               reference, updated_date_utc, meta, synced_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(xero_invoice_id) DO UPDATE SET invoice_number=excluded.invoice_number, type=excluded.type,
+               status=excluded.status, contact_name=excluded.contact_name, xero_contact_id=excluded.xero_contact_id,
+               sub_total=excluded.sub_total, total_tax=excluded.total_tax, total=excluded.total,
+               amount_due=excluded.amount_due, amount_paid=excluded.amount_paid,
+               reference=excluded.reference, updated_date_utc=excluded.updated_date_utc,
+               meta=excluded.meta, synced_at=excluded.synced_at`
+          ).bind(invId, inv.InvoiceID, inv.InvoiceNumber ?? null, inv.Type ?? '', inv.Status ?? '',
+                 inv.Contact ? (inv.Contact.Name ?? null) : null, inv.Contact ? (inv.Contact.ContactID ?? null) : null,
+                 inv.DateString ?? null, inv.DueDateString ?? null, inv.CurrencyCode ?? 'IDR',
+                 inv.SubTotal ?? 0, inv.TotalTax ?? 0, inv.Total ?? 0, inv.AmountDue ?? 0, inv.AmountPaid ?? 0,
+                 inv.Reference ?? null, inv.UpdatedDateUTC ?? null,
+                 JSON.stringify(inv), now).run();
+
+          const lines = inv.LineItems || [];
+          await env.DB.prepare('DELETE FROM xero_line_items WHERE xero_invoice_id = ?').bind(inv.InvoiceID).run();
+          for (const li of lines) {
+            const liId = generateId('XLI');
+            await env.DB.prepare(
+              `INSERT INTO xero_line_items (id, xero_invoice_id, item_code, description, quantity, unit_amount,
+                 tax_amount, line_amount, discount_rate, account_code, tax_type, tracking, meta, synced_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            ).bind(liId, inv.InvoiceID, li.ItemCode ?? null, li.Description ?? null,
+                   li.Quantity ?? 0, li.UnitAmount ?? 0, li.TaxAmount ?? 0, li.LineAmount ?? 0,
+                   li.DiscountRate ?? 0, li.AccountCode ?? null, li.TaxType ?? null,
+                   JSON.stringify(li.Tracking || []), JSON.stringify(li), now).run();
+          }
+          results.invoices++;
+        }
+
+        if (invoices.length < 100) break;
+        page++;
+      }
+    }
+
+    // Incremental: contacts
+    const contactResp = await fetch('https://api.xero.com/api.xro/2.0/Contacts', {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+        'Xero-Tenant-Id': tenant_id,
+        Accept: 'application/json',
+        'If-Modified-Since': ifModifiedSince
+      }
+    });
+    if (contactResp.ok) {
+      const contactData = await contactResp.json();
+      for (const c of (contactData.Contacts || [])) {
+        const cId = generateId('XCT');
+        await env.DB.prepare(
+          `INSERT INTO xero_contacts (id, xero_contact_id, name, email, phone, is_customer, is_supplier, contact_status, meta, synced_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(xero_contact_id) DO UPDATE SET name=excluded.name, email=excluded.email, phone=excluded.phone,
+             is_customer=excluded.is_customer, is_supplier=excluded.is_supplier, contact_status=excluded.contact_status,
+             meta=excluded.meta, synced_at=excluded.synced_at`
+        ).bind(cId, c.ContactID || '', c.Name || '', c.EmailAddress ?? null,
+               (c.Phones && c.Phones[0] && c.Phones[0].PhoneNumber) || null,
+               c.IsCustomer ? 1 : 0, c.IsSupplier ? 1 : 0, c.ContactStatus ?? null,
+               JSON.stringify(c), now).run();
+        results.contacts++;
+      }
+    }
+
+    // Incremental: accounts
+    try {
+      const acctResult = await xeroSyncAccounts(env);
+      results.accounts = acctResult.upserted || 0;
+    } catch { /* non-critical */ }
+
+    // Incremental: payments
+    try {
+      const payResult = await xeroSyncPayments(env);
+      results.payments = payResult.upserted || 0;
+    } catch { /* non-critical */ }
+
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE sync_runs SET status = ?, finished_at = ?, records_fetched = ?, records_upserted = ?, meta = ? WHERE id = ?'
+    ).bind('completed', finishedAt,
+           results.invoices + results.contacts + results.accounts + results.payments,
+           results.invoices + results.contacts + results.accounts + results.payments,
+           JSON.stringify({ modified_after: modifiedAfter, results }), syncId).run();
+
+    return json({ ok: true, sync_id: syncId, modified_after: modifiedAfter, results });
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE sync_runs SET status = ?, finished_at = ?, error = ? WHERE id = ?'
+    ).bind('failed', finishedAt, err.message, syncId).run();
+    return json({ ok: false, error: { code: 'SYNC_ERROR', message: err.message } }, 500);
+  }
+}
+
+// GET /api/xero/sync-status — sync status for admin panel
+async function xeroSyncStatus(env) {
+  const { results: runs } = await env.DB.prepare(
+    'SELECT id, sync_type, entity_type, month_key, started_at, finished_at, records_fetched, records_upserted, status, error FROM sync_runs ORDER BY started_at DESC LIMIT 50'
+  ).all();
+
+  const { results: entityCounts } = await env.DB.prepare(`
+    SELECT 'invoices' as entity, COUNT(*) as count FROM xero_invoices
+    UNION ALL SELECT 'line_items', COUNT(*) FROM xero_line_items
+    UNION ALL SELECT 'contacts', COUNT(*) FROM xero_contacts
+    UNION ALL SELECT 'items', COUNT(*) FROM xero_items
+    UNION ALL SELECT 'accounts', COUNT(*) FROM xero_accounts
+    UNION ALL SELECT 'payments', COUNT(*) FROM xero_payments
+  `).all();
+
+  const counts = {};
+  for (const row of entityCounts) {
+    counts[row.entity] = row.count;
+  }
+
+  return json({ ok: true, data: { runs, entity_counts: counts } });
+}
+
 // POST /api/deck-metrics/:monthKey/generate-deck — slides adapter
 async function deckMetricsGenerateDeck(req, env, monthKey) {
   const metric = await env.DB.prepare('SELECT * FROM deck_metrics WHERE month_key = ?').bind(monthKey).first();
@@ -1790,6 +2321,19 @@ async function handleApi(req, env, url) {
   if (path === '/api/sales/sync-xero/backfill' && req.method === 'POST') return xeroBackfillHandler(req, env, url);
   if (path === '/api/sales/sync-xero' && req.method === 'POST') return xeroSyncHandler(req, env, url);
 
+  // Wave 4: Xero canonical ingestion routes (admin-gated)
+  if (path === '/api/xero/sync-accounts' && req.method === 'POST') {
+    try { const r = await xeroSyncAccounts(env); return json(r); }
+    catch (err) { return json({ ok: false, error: { code: 'SYNC_ERROR', message: err.message } }, 500); }
+  }
+  if (path === '/api/xero/sync-payments' && req.method === 'POST') {
+    try { const r = await xeroSyncPayments(env); return json(r); }
+    catch (err) { return json({ ok: false, error: { code: 'SYNC_ERROR', message: err.message } }, 500); }
+  }
+  if (path === '/api/xero/backfill' && req.method === 'POST') return xeroFullBackfill(req, env, url);
+  if (path === '/api/xero/sync-incremental' && req.method === 'POST') return xeroSyncIncremental(req, env);
+  if (path === '/api/xero/sync-status' && req.method === 'GET') return xeroSyncStatus(env);
+
   // Reports: deck generation (new canonical route)
   const reportsDeckMatch = path.match(/^\/api\/reports\/deck\/([^/]+)\/generate$/);
   if (reportsDeckMatch && req.method === 'POST') return deckMetricsGenerateDeck(req, env, reportsDeckMatch[1]);
@@ -1799,11 +2343,11 @@ async function handleApi(req, env, url) {
   if (deckGenMatch && req.method === 'POST') return deckMetricsGenerateDeck(req, env, deckGenMatch[1]);
 
   // Bulk import: /api/{collection}/import
-  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs|revenue_transactions|account_mapping|account_status|deck_metrics|sync_runs|xero_invoices|xero_contacts)\/import$/);
+  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs|revenue_transactions|account_mapping|account_status|deck_metrics|sync_runs|xero_invoices|xero_contacts|xero_accounts|xero_payments)\/import$/);
   if (importMatch && req.method === 'POST') return bulkImport(req, env, importMatch[1]);
 
   // CRUD routes: /api/{collection}[/{id}]
-  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs|revenue_transactions|account_mapping|account_status|deck_metrics|sync_runs|xero_invoices|xero_contacts)(?:\/([^/]+))?$/);
+  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs|revenue_transactions|account_mapping|account_status|deck_metrics|sync_runs|xero_invoices|xero_contacts|xero_accounts|xero_payments)(?:\/([^/]+))?$/);
   if (!match) return json({ ok: false, error: { code: 'NOT_FOUND', message: 'Unknown endpoint' } }, 404);
 
   const collection = match[1];

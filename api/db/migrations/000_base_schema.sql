@@ -1,5 +1,4 @@
--- Candidlabs D1 Schema
--- Tables for CRM (contacts, companies, deals) and Projects (projects, tasks)
+-- 000_base_schema.sql — Bootstrap base tables for fresh local D1
 
 -- CRM: Companies
 CREATE TABLE IF NOT EXISTS companies (
@@ -76,10 +75,10 @@ CREATE TABLE IF NOT EXISTS tasks (
   updated_at TEXT DEFAULT (datetime('now'))
 );
 
--- CRM: Comments (on contacts, companies, or deals)
+-- CRM: Comments
 CREATE TABLE IF NOT EXISTS comments (
   id TEXT PRIMARY KEY,
-  record_type TEXT NOT NULL,   -- 'contact' | 'company' | 'deal'
+  record_type TEXT NOT NULL,
   record_id TEXT NOT NULL,
   author_email TEXT NOT NULL,
   author_name TEXT NOT NULL,
@@ -97,47 +96,3 @@ CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 CREATE INDEX IF NOT EXISTS idx_comments_record ON comments(record_type, record_id);
-
--- ============================================================
--- Wave 4: Xero Accounts + Payments
--- ============================================================
-
-CREATE TABLE IF NOT EXISTS xero_accounts (
-  id              TEXT PRIMARY KEY,
-  xero_account_id TEXT UNIQUE NOT NULL,
-  code            TEXT,
-  name            TEXT NOT NULL,
-  type            TEXT,
-  bank_account_type TEXT,
-  status          TEXT,
-  description     TEXT,
-  currency_code   TEXT DEFAULT 'IDR',
-  tax_type        TEXT,
-  enable_payments INTEGER DEFAULT 0,
-  class           TEXT,
-  system_account  TEXT,
-  meta            TEXT DEFAULT '{}',
-  synced_at       TEXT DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_xero_acct_code ON xero_accounts(code);
-CREATE INDEX IF NOT EXISTS idx_xero_acct_type ON xero_accounts(type);
-
-CREATE TABLE IF NOT EXISTS xero_payments (
-  id              TEXT PRIMARY KEY,
-  xero_payment_id TEXT UNIQUE NOT NULL,
-  xero_invoice_id TEXT,
-  invoice_number  TEXT,
-  payment_type    TEXT,
-  status          TEXT,
-  date            TEXT,
-  amount          REAL,
-  currency_code   TEXT DEFAULT 'IDR',
-  reference       TEXT,
-  is_reconciled   INTEGER DEFAULT 0,
-  account_code    TEXT,
-  account_name    TEXT,
-  meta            TEXT DEFAULT '{}',
-  synced_at       TEXT DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_xero_pay_invoice ON xero_payments(xero_invoice_id);
-CREATE INDEX IF NOT EXISTS idx_xero_pay_date ON xero_payments(date);

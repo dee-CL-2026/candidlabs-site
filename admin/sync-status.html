@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sync Status | Candid Labs Admin</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .sync-container { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+    .entity-counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .entity-card { background: var(--bg-secondary, #f8f9fa); border: 1px solid var(--border, #dee2e6); border-radius: 8px; padding: 1rem; text-align: center; }
+    .entity-card .count { font-size: 1.8rem; font-weight: 700; color: var(--primary, #4361ee); }
+    .entity-card .label { font-size: 0.85rem; color: var(--text-muted, #6c757d); text-transform: uppercase; }
+    .sync-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .sync-table th, .sync-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border, #dee2e6); text-align: left; }
+    .sync-table th { background: var(--bg-secondary, #f8f9fa); font-weight: 600; }
+    .status-completed { color: #198754; font-weight: 600; }
+    .status-running { color: #0d6efd; font-weight: 600; }
+    .status-failed { color: #dc3545; font-weight: 600; }
+    .actions { margin-bottom: 2rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .actions button { padding: 0.5rem 1rem; border: 1px solid var(--border, #dee2e6); border-radius: 6px; cursor: pointer; font-size: 0.85rem; background: var(--bg-secondary, #f8f9fa); }
+    .actions button:hover { background: var(--primary, #4361ee); color: #fff; }
+    .actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #syncLog { margin-top: 1rem; padding: 0.75rem; background: var(--bg-secondary, #f8f9fa); border-radius: 6px; font-size: 0.85rem; display: none; }
+  </style>
+</head>
+<body>
+  <div class="sync-container">
+    <h1>Xero Sync Status</h1>
+    <p style="color: var(--text-muted, #6c757d);">Operational view of Xero data ingestion. Admin only.</p>
+
+    <h2>Entity Counts</h2>
+    <div class="entity-counts" id="entityCounts">
+      <div class="entity-card"><div class="count" id="cnt-invoices">-</div><div class="label">Invoices</div></div>
+      <div class="entity-card"><div class="count" id="cnt-line_items">-</div><div class="label">Line Items</div></div>
+      <div class="entity-card"><div class="count" id="cnt-contacts">-</div><div class="label">Contacts</div></div>
+      <div class="entity-card"><div class="count" id="cnt-items">-</div><div class="label">Items</div></div>
+      <div class="entity-card"><div class="count" id="cnt-accounts">-</div><div class="label">Accounts</div></div>
+      <div class="entity-card"><div class="count" id="cnt-payments">-</div><div class="label">Payments</div></div>
+    </div>
+
+    <h2>Sync Actions</h2>
+    <div class="actions">
+      <button onclick="triggerSync('/api/xero/sync-accounts')" id="btn-accounts">Sync Accounts</button>
+      <button onclick="triggerSync('/api/xero/sync-payments')" id="btn-payments">Sync Payments</button>
+      <button onclick="triggerSync('/api/xero/sync-incremental')" id="btn-incremental">Incremental Sync</button>
+      <button onclick="triggerSync('/api/xero/backfill?from=2024-01&to=2026-02')" id="btn-backfill">Full Backfill</button>
+    </div>
+    <div id="syncLog"></div>
+
+    <h2>Recent Sync Runs</h2>
+    <table class="sync-table">
+      <thead>
+        <tr><th>ID</th><th>Type</th><th>Entity</th><th>Month</th><th>Started</th><th>Status</th><th>Fetched</th><th>Upserted</th><th>Error</th></tr>
+      </thead>
+      <tbody id="syncRuns"><tr><td colspan="9">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <script src="sync-status.js"></script>
+</body>
+</html>
