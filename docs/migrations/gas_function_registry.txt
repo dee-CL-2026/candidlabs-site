@@ -1,0 +1,416 @@
+=== candid-labs-core-os ===
+  constants.js:95:function getGlobalConfig() {
+  healthCheck.js:7:function runCmsGlobalServiceAudit() {
+  CoreOS.gs:7:function createSovereignMenu(title) {
+  CoreOS.gs:12:function appendGlobalTools(menu) {
+  CoreOS.gs:26:function showStatusCard(message, seconds = 3) {
+  scriptEngine.js:6:function runMasterScriptsSync() {
+  scriptEngine.js:76:function updateRegistry(dirSheet, result, timestamp, cleanName) {
+  CoreOS.js:7:function createSovereignMenu(title) {
+  CoreOS.js:12:function appendGlobalTools(menu) {
+  CoreOS.js:26:function showStatusCard(message, seconds = 3) {
+  generateConstantsScan.js:5:function generateConstantsCode() {
+  docEngine.js:6:function liberateDocContent(sourceDocId, masterDocId) {
+  TabAnalyser.gs:5:function CoreOS_TabAnalyser() {
+  Directory.js:4:function getOrCreateDirectorySheet(parentFolderId, name) {
+  liberateCode.js:1:function liberateCode(oldId, vaultId, token) {
+  docWorkFlows.js:5:function runCmsDocLiberation() {
+  Menu.js:5:function createSovereignMenu(title) {
+  Menu.js:14:function appendGlobalTools(menu) {
+  Menu.js:32:function coreos_analyseTabStructure() {
+  Menu.js:53:function coreos_checkConnection() {
+  Menu.js:57:function coreos_listFunctions() {
+  VaultScriptsAudit.js:5:function listVaultScripts() {
+  TabAnalyser.js:5:function CoreOS_TabAnalyser() {
+
+=== candid-labs-loan-tracker ===
+  BulkStatements.js:10:function bulkGenerateStatementsForLender(lender) {
+  BulkStatements.js:77:function promptBulkStatementsForLender() {
+  StatementGenerator.js:9:function generateStatements(options) {
+  StatementGenerator.js:110:function getOrCreateLenderPdfFolder_(lender) {
+  StatementGenerator.js:121:function exportDocToPdfViaHttp_(docId, pdfName, targetFolder) {
+  StatementGenerator.js:37:    const monthRows = lenderRows.filter(r => {
+  CheckSheetAndreports.js:19:function buildMonthlySummaries_() {
+  CheckSheetAndreports.js:94:function generateCheckSheet() {
+  CheckSheetAndreports.js:157:function generateLenderCheckReport(lender) {
+  healthCheck.js:7:function runCmsGlobalServiceAudit() {
+  scriptEngine.js:6:function runMasterScriptsSync() {
+  scriptEngine.js:76:function updateRegistry(dirSheet, result, timestamp, cleanName) {
+  TEST_ID.js:1:function logActiveSpreadsheetId() {
+  CoreOS.js:16:function getGlobalConfig() {
+  CoreOS.js:29:function createSovereignMenu(title) {
+  CoreOS.js:37:function appendGlobalTools(menu) {
+  CoreOS.js:59:function showStatusCard(message, seconds = 3) {
+  CoreOS.js:75:function runCmsPlatformDiagnostic() {
+  CoreOS.js:84:function listVaultScripts() {
+  CoreOS.js:93:function CoreOS_TabAnalyser() {
+  CoreOS.js:102:function runCmsGlobalServiceAudit() {
+  InterestAccrual.js:20:function accrueMonthlyInterest() {
+  InterestAccrual.js:89:function accrueMonthlyInterestForLender_(lender, allRows, sheet, lastFullMonthDate) {
+  InterestAccrual.js:115:    const interestAlreadyLogged = lenderRows.some(row => {
+  generateConstantsScan.js:5:function generateConstantsCode() {
+  docEngine.js:6:function liberateDocContent(sourceDocId, masterDocId) {
+  UITriggers.js:9:function getUiSpreadsheetId_() {
+  UITriggers.js:17:function installUiTriggers() {
+  liberateCode.js:1:function liberateCode(oldId, vaultId, token) {
+  docWorkFlows.js:5:function runCmsDocLiberation() {
+  Analyser.js:9:function runAnalyser() {
+  Analyser.js:91:function getEmailsSafe(users) {
+  BulkFromTransactions.js:9:function applyTransactionsFromLoanTransactions() {
+  UIHelpers.js:4:function showSuccessToast(msg) {
+  UIHelpers.js:8:function showErrorToast(msg) {
+  TransactionLogic.js:10:function saveTransaction(formData) {
+  OpenOn.js:5:function onOpen(e) {
+  OpenOn.js:47:function coreos_menuTestPing() {
+  OpenOn.js:51:function showTransactionForm() {
+  OpenOn.js:58:function showGenerateStatementsForm() {
+  VaultScriptsAudit.js:5:function listVaultScripts() {
+  RebuildLoanInterest.js:5:function rebuildLoanDataWithInterest() {
+  TabAnalyser.js:5:function CoreOS_TabAnalyser() {
+  Helpers_Sections.js:8:function deleteSectionRobustly(body, startTag, endTag) {
+  FolderUtils.js:1:function getOrCreateLenderFolder_(lender) {
+
+=== candid-labs-platform ===
+  healthCheck.js:7:function runCmsGlobalServiceAudit() {
+  masterMigration.js:6:function runCmsSovereignSearch() {
+  masterMigration.js:32:function recursiveVaultSearch_(currentFolder, pathName, vaultFolder, directorySheet, existingIds, token) {
+  masterMigration.js:68:function getBoundScriptId_(fileId, token) {
+  masterMigration.js:78:function liberateCode_(oldId, fileName, folderName, vaultId, token) {
+  masterMigration.js:101:function getOrCreateDirectorySheet_(parent, name) {
+  masterMigration.js:115:function getOrCreateSubfolder_(parent, name) {
+  masterMigration.js:123:function logToDirectory_(ss, sheetName, folderName, newId, url, sourceId) {
+  DiscoveryCmsAudit.js:8:function runCmsAudit() {
+  DiscoveryCmsAudit.js:45:function performCrawl(folder, path, depth, results) {
+  CoreOS.js:16:function getGlobalConfig() {
+  CoreOS.js:29:function createSovereignMenu(title) {
+  CoreOS.js:37:function appendGlobalTools(menu) {
+  CoreOS.js:59:function showStatusCard(message, seconds = 3) {
+  CoreOS.js:75:function runCmsPlatformDiagnostic() {
+  CoreOS.js:84:function listVaultScripts() {
+  CoreOS.js:93:function CoreOS_TabAnalyser() {
+  CoreOS.js:102:function runCmsGlobalServiceAudit() {
+  flattener.js:7:function runCmsCodeExportMaster() {
+  debuggerONE.js:1:function runCmsPlatformDiagnostic() {
+  debuggerONE.js:11:function diagnosticWalk_(currentFolder) {
+  OpenOn.js:5:function onOpen(e) {
+  OpenOn.js:18:function coreos_menuTestPing() {
+
+=== candid-labs-production-master ===
+  ARAPSnapshot.js:15:function cleanNumber_(value) {
+  ARAPSnapshot.js:36:function getSnapshotDateFromUser_() {
+  ARAPSnapshot.js:77:function buildArApRowsFromSheet_(sheet, metricType, snapshotDate) {
+  ARAPSnapshot.js:146:function snapshotArApFromRaw() {
+  ARAPSnapshot.js:227:function runXeroMonthEndRefresh() {
+  kmiFgParser.js:4:function runAllKmiFgParsers() {
+  kmiFgParser.js:22:function buildKmiFgBatchClean() {
+  kmiFgParser.js:86:function buildKmiFgShipmentsRaw() {
+  kmiFgParser.js:184:function buildKmiFgShipmentsClean() {
+  kmiFgParser.js:299:function buildKmiFgStockSummary() {
+  kmiFgParser.js:350:function clearKmiFgOutputTabs_() {
+  kmiFgParser.js:377:function parseKmiSkuTab_(sheet) {
+  kmiFgParser.js:463:function normaliseDoNumber_(doRaw) {
+  kmiFgParser.js:476:function normaliseShipmentDateKey_(val, tz) {
+  kmiFgParser.js:495:function classifyShipmentMovement_(destination, doNumber, notes) {
+  kmiFgParser.js:521:function getKmiSkuTabConfig_() {
+  kmiFgParser.js:544:function getOrCreateSheetWithHeaders_(ss, sheetName, headers) {
+  kmiFgParser.js:560:function findRowIndexByLabel_(values, label) {
+  build_batch_cogs.js:4:function buildBatchCOGS() {
+  build_batch_cogs.js:81:  function findPrice(comp, monthKey) {
+  extract_bom.js:1:function extractBOM() {
+  healthCheck.js:7:function runCmsGlobalServiceAudit() {
+  import_bom_master.js:5:function importBOMMaster() {
+  check_united_cans.js:1:function checkUnitedCans() {
+  Mopper_Tool.js:6:function runAutoMapper() {
+  buildProductionRuns.js:20:function buildProductionRunsClean() {
+  buildProductionRuns.js:72:  function colIdx(name) {
+  buildProductionRuns.js:177:function _numberFromCell_(value) {
+  buildProductionRuns.js:188:function _parseDateLoose_(str, tz) {
+  buildProductionRuns.js:134:  const rowsOut = Object.keys(groups).map(key => {
+  analyseKmiData.js:8:function analyseKmiData() {
+  analyseKmiData.js:47:function analyseSingleKmiSheet_(ss, sheet, name, dateColIndex) {
+  analyseKmiData.js:112:function parseKmiDate_(value) {
+  scriptEngine.js:6:function runMasterScriptsSync() {
+  scriptEngine.js:76:function updateRegistry(dirSheet, result, timestamp, cleanName) {
+  check_raw_can_data.js:1:function checkRawCanData() {
+  build_component_cost_history.js:5:function buildComponentCostHistory() {
+  build_component_cost_history.js:9:  function isProductionComponent(supplier, item, desc) {
+  build_component_cost_history.js:115:  function normalizeComponent(item, desc) {
+  check_kmi_raw_data.js:1:function checkKMIRawData() {
+  CoreOS.js:16:function getGlobalConfig() {
+  CoreOS.js:29:function createSovereignMenu(title) {
+  CoreOS.js:37:function appendGlobalTools(menu) {
+  CoreOS.js:59:function showStatusCard(message, seconds = 3) {
+  CoreOS.js:75:function runCmsPlatformDiagnostic() {
+  CoreOS.js:84:function listVaultScripts() {
+  CoreOS.js:93:function CoreOS_TabAnalyser() {
+  CoreOS.js:102:function runCmsGlobalServiceAudit() {
+  Costing_Engine.js:9:function runCostingPipeline() {
+  Costing_Engine.js:76:function getStandardCostFromXero(ss) {
+  Costing_Engine.js:102:function getSmartBomData(ss) {
+  Costing_Engine.js:164:function getWacFromPayables(ss) {
+  Costing_Engine.js:202:function writeToCostMaster(ss, rows) {
+  audit_cost_coverage.js:1:function auditCostCoverage() {
+  check_cost_categories.js:1:function checkCostCategories() {
+  debug_missing_components.js:1:function debugMissingComponents() {
+  debug_can_costs.js:1:function debugCanCosts() {
+  diagnose_cost_history.js:1:function diagnoseCostHistory() {
+  audit_kmi_invoices.js:1:function auditKMIInvoices() {
+  generateConstantsScan.js:5:function generateConstantsCode() {
+  check_component_codes.js:1:function checkComponentCodes() {
+  docEngine.js:6:function liberateDocContent(sourceDocId, masterDocId) {
+  cleanPayables.js:5:function cleanPayables() {
+  Directory.js:4:function getOrCreateDirectorySheet(parentFolderId, name) {
+  buildPurchaseSummary.js:16:function buildPurchasesSummaryFromPayables() {
+  buildPurchaseSummary.js:42:  function colIdx(name) {
+  buildPurchaseSummary.js:190:  const output = Object.keys(groups).map(key => {
+  kmiPackagingMovements.js:26:function buildKmiPackagingMovements() {
+  kmiPackagingMovements.js:50:  function h(name) {
+  kmiPackagingMovements.js:118:    function pushMovement(type, qty) {
+  kmiPackagingMovements.js:160:function _getKmiPackagingMovementHeaders_() {
+  kmiPackagingMovements.js:182:function _numKmi_(value) {
+  UITriggers.js:9:function getUiSpreadsheetId_() {
+  UITriggers.js:17:function installUiTriggers() {
+  liberateCode.js:1:function liberateCode(oldId, vaultId, token) {
+  docWorkFlows.js:5:function runCmsDocLiberation() {
+  Pipelines.js:15:function runAllProductionPipelines() {
+  Analyser.js:1:function listProductionSheetHeaders() {
+  Analyser.js:5:function setupProductionDbTabs() {
+  Setup.js:11:function setupProductionDbTabs() {
+  Setup.js:176:function getOrCreateSheetWithHeaders_(ss, name, headers) {
+  OpenOn.js:5:function onOpen(e) {
+  OpenOn.js:59:function coreos_menuTestPing() {
+  VaultScriptsAudit.js:5:function listVaultScripts() {
+  import_config_components.js:5:function importConfigComponents() {
+  list_can_purchases.js:1:function listCanPurchases() {
+
+=== candid-labs-sales-master ===
+  Xero transformer.js:16:function uiPromptUpdateDeckMetricsFromXero() {
+  Xero transformer.js:68:function updateDeckMetricsRevenueFromXero_(monthKey) {
+  Xero transformer.js:114:  function normaliseMonthKeyCell_(cell) {
+  Xero transformer.js:164:function buildMonthlyRevenueFromXeroRaw_() {
+  Xero transformer.js:206:  function normaliseMonthKeyFromDate_(d) {
+  Xero transformer.js:212:  function parseXeroDate_(raw) {
+  Xero transformer.js:269:function getReceivableRawSheet_(ss) {
+  Xero transformer.js:296:function formatCurrencyIdr_(v) {
+  config_lists.js:12:function rebuildConfigLists() {
+  config_lists.js:49:function runConfigToolsRefresh() {
+  structure_setup.js:6:function setupSalesDbStructure() {
+  structure_setup.js:128:function listSheetHeaders() {
+  find_all_sku_patterns.js:1:function findAllSKUPatterns() {
+  CRM.js:5:function ensureCrmContactsSheet_() {
+  CRM.js:61:function rebuildCrmContactHealth() {
+  CRM.js:109:  function pct(part, whole) {
+  CRM.js:143:function syncCrmFromConfigMapping() {
+  CRM.js:166:  function idx(h) { return configHeader.indexOf(h); }
+  CRM.js:213:  function cIdx(h) { return crmHeader.indexOf(h); }
+  CRM.js:247:      function setIfBlank(colIndex, value) {
+  Mapping_Health.js:19:function rebuildMappingHealth() {
+  Mapping_Health.js:39:  function idx(name) {
+  Mapping_Health.js:79:  function isActive(row) {
+  Mapping_Health.js:123:  const rowsOut = tracked.map(f => {
+  cleanReceivables.js:1:function cleanReceivableDetailRaw() {
+  check_early_months.js:1:function checkEarlyMonthsCOGS() {
+  mapping_sync.js:5:function syncVenueMappingFromAccountTracking() {
+  mapping_sync.js:15:  function col(name) {
+  mapping_sync.js:77:function forceMappingKeyToStaticText() {
+  mapping_sync.js:102:function generateMissingAccountIDs() {
+  mapping_sync.js:57:  const newRows = uniqueNewVenues.map(venue => {
+  healthCheck.js:7:function runCmsGlobalServiceAudit() {
+  margin.js:27:function updateGrossMarginMetrics() {
+  margin.js:98:  function shouldExcludeSku_(skuName) {
+  margin.js:106:  function normalizeSkuName_(skuName) {
+  margin.js:120:  function fuzzyMatchSkuCode_(skuName) {
+  margin.js:183:  function normaliseMonthKeyFromDate_(d) {
+  margin.js:349:  function normaliseMonthKeyCell_(cell) {
+  margin.js:356:  function formatMonthLabel_(monthKey, monthLabel) {
+  margin.js:455:function writeCOGSExceptions_(ss, unmatchedSkuDetails) {
+  margin.js:560:function verifyGrossMarginEngine() {
+  check_pni_details.js:1:function checkPNIDetails() {
+  buildRevenueMaster.js:1:function rebuildSalesRevenueMasterFromReceivables() {
+  check_sku_matching.js:1:function diagnosticSkuMatching() {
+  tracking_enrichment.js:16:function updateAccountTrackingFromMapping_() {
+  tracking_enrichment.js:27:  function col(headers, name, sheetName) {
+  tracking_enrichment.js:142:function populateAccountIDs() {
+  deck_metrics_builder.js:8:function parseInvoiceDateSafe_(rawDate, txnId) {
+  deck_metrics_builder.js:46:function rebuildDeckMetricsFromSales() {
+  deck_metrics_builder.js:113:  function colIndexByHeader(name) {
+  deck_metrics_builder.js:162:function updateHeadlineMoMChanges() {
+  deck_metrics_builder.js:189:  function formatMonthLabel(monthKey, monthLabel) {
+  deck_metrics_builder.js:215:  function formatDeltaPercent(v) {
+  deck_metrics_builder.js:285:function updateSalesPerformanceSummary() {
+  deck_metrics_builder.js:314:  function formatMonthLabel(monthKey, monthLabel) {
+  deck_metrics_builder.js:334:  function formatCurrencyIdr(v) {
+  deck_metrics_builder.js:341:  function formatDeltaPercent(v) {
+  deck_metrics_builder.js:408:function updateChannelPerformanceMoM() {
+  deck_metrics_builder.js:478:  function normaliseMonthKeyFromDate_(d) {
+  deck_metrics_builder.js:583:  function formatMonthLabel_(monthKey, monthLabel) {
+  deck_metrics_builder.js:603:  function normaliseMonthKeyCell_(cell) {
+  deck_metrics_builder.js:672:function updateYoYRevenue() {
+  deck_metrics_builder.js:770:function updateMoMRevenue() {
+  deck_metrics_builder.js:825:function updateMoMRevenue() {
+  scriptEngine.js:6:function runMasterScriptsSync() {
+  scriptEngine.js:76:function updateRegistry(dirSheet, result, timestamp, cleanName) {
+  check_problem_months.js:1:function checkProblemMonths() {
+  DebugRunner.js:5:function TEST_generateMonthlyDeck_2025_10_() {
+  Test Library.js:1:function TEST_CoreOSLibrary() {
+  Test Library.js:20:function testSpokesFix() {
+  Test Library.js:32:function TEST_BoardDeckConfig() {
+  check_cogs_assignment.js:1:function checkCOGSAssignment() {
+  CoreOS.js:17:function getGlobalConfig() {
+  CoreOS.js:30:function createSovereignMenu(title) {
+  CoreOS.js:38:function appendGlobalTools(menu) {
+  CoreOS.js:60:function showStatusCard(message, seconds = 3) {
+  CoreOS.js:79:function runCmsPlatformDiagnostic() {
+  CoreOS.js:91:function listVaultScripts() {
+  CoreOS.js:103:function CoreOS_TabAnalyser() {
+  CoreOS.js:115:function runCmsGlobalServiceAudit() {
+  config_validation.js:5:function getHeaderIndex(sheet, headerName) {
+  config_validation.js:27:function applyMappingValidations() {
+  config_validation.js:13:  const index = headerRow.findIndex(header => {
+  SnapshotOutline.js:18:function uiPromptForMarekSnapshotDeck() {
+  SnapshotOutline.js:73:function generateMarekOutlineDeckForMonth_(monthKey) {
+  SnapshotOutline.js:147:  function addSlideWithBody(title, body) {
+  ReportGenerator.js:11:function uiPromptForReport() {
+  ReportGenerator.js:62:function generateMonthlyDeckForMonth(monthKey) {
+  ReportGenerator.js:75:  function normaliseMonthKey(cell) {
+  ReportGenerator.js:97:function f(name) {
+  ReportGenerator.js:191:function TEST_generateMonthlyDeckForMonth_() {
+  header_protect.js:1:function freezeAndProtectHeaders() {
+  header_protect.js:15:      const alreadyProtected = protections.some(p => {
+  find_unmapped_skus.js:1:function findUnmappedSkus() {
+  generateConstantsScan.js:5:function generateConstantsCode() {
+  docEngine.js:6:function liberateDocContent(sourceDocId, masterDocId) {
+  Directory.js:4:function getOrCreateDirectorySheet(parentFolderId, name) {
+  SpokeConstants.js:9:function getProductionDbId_() {
+  SpokeConstants.js:56:function getSlidesTemplateId_() {
+  SpokeConstants.js:59:function getSlidesOutputFolderId_() {
+  SpokeConstants.js:67:function listFolderContents() {
+  UITriggers.js:9:function getUiSpreadsheetId_() {
+  UITriggers.js:17:function installUiTriggers() {
+  liberateCode.js:1:function liberateCode(oldId, vaultId, token) {
+  docWorkFlows.js:5:function runCmsDocLiberation() {
+  Deck_Metrics_Channel_Narratives.js:14:function updateChannelPerformanceMoM() {
+  Deck_Metrics_Channel_Narratives.js:50:  function normaliseMonthKeyFromDate_(d) {
+  Deck_Metrics_Channel_Narratives.js:127:  function formatMonthLabel_(monthKey, monthLabel) {
+  Deck_Metrics_Channel_Narratives.js:148:  function normaliseMonthKeyCell_(cell) {
+  OpenOn.js:9:function onOpen(e) {
+  OpenOn.js:62:function promptGenerateMonthlyDeck() {
+  OpenOn.js:87:function coreos_menuTestPing() {
+  VaultScriptsAudit.js:5:function listVaultScripts() {
+  Deck_Metrics_Wrapper.js:13:function refreshDeckMetricsAll() {
+  slides_template_builder.js:5:function buildMonthlyDeckTemplateSlides() {
+  slides_template_builder.js:19:  function addSlideWithTitleAndBody(titleText, bodyText) {
+  slides_template_builder.js:195:function generateMonthlyDeckForMonth_FromTemplateBuilder_(monthKey) {
+  slides_template_builder.js:211:  function normaliseMonthKey(cell) {
+  slides_template_builder.js:234:  function f(name) {
+  account_status.js:8:function rebuildAccountStatus() {
+  account_status.js:27:  function col(name) {
+  account_status.js:44:  function toDate(value) {
+  account_status.js:160:function checkDormantAccounts() {
+  account_status.js:178:  function colStatus(name) {
+  account_status.js:204:  function colMap(name) {
+  deck_metrics_tab_setup.js:9:function setupDeckMetricsSheet() {
+  Debug.js:1:function debug_listTriggers() {
+
+=== candid-labs-sales-tool ===
+  healthCheck.js:7:function runCmsGlobalServiceAudit() {
+  code.js:10:function getActiveUserIdentity() {
+  code.js:39:function generatePDF(formData) {
+  code.js:177:function formatCurrency(raw) {
+  code.js:185:function formatPhoneForDisplay(phone) {
+  code.js:200:function getPricingFromSheet(location, channel, tier) {
+  code.js:241:function logAction(data, url) {
+  code.js:272:function loadImageBase64(id) {
+  code.js:302:function debugLogos() {
+  MenuBuilder.js:1:function buildMenus() {
+  scriptEngine.js:6:function runMasterScriptsSync() {
+  scriptEngine.js:76:function updateRegistry(dirSheet, result, timestamp, cleanName) {
+  CoreOS.js:7:function createSovereignMenu(title) {
+  CoreOS.js:12:function appendGlobalTools(menu) {
+  CoreOS.js:26:function showStatusCard(message, seconds = 3) {
+  Tests.js:1:function debugProjectFiles() {
+  generateConstantsScan.js:5:function generateConstantsCode() {
+  docEngine.js:6:function liberateDocContent(sourceDocId, masterDocId) {
+  Directory.js:4:function getOrCreateDirectorySheet(parentFolderId, name) {
+  UITriggers.js:7:function installUiTriggers() {
+  liberateCode.js:1:function liberateCode(oldId, vaultId, token) {
+  docWorkFlows.js:5:function runCmsDocLiberation() {
+  SetUp.js:6:function runSetup() {
+  OpenOn.js:5:function onOpen(e) {
+  OpenOn.js:19:function coreos_menuTestPing() {
+  OpenOn.js:23:function showSidebar() {
+  OpenOn.js:30:function doGet() {
+  VaultScriptsAudit.js:5:function listVaultScripts() {
+  TabAnalyser.js:5:function CoreOS_TabAnalyser() {
+  Debug.js:1:function debug_listTriggers() {
+
+=== candid-os-script-discovery-engine ===
+  GasScan.js:6:function discoverAndUpsert_AllScripts() {
+  GasScan.js:111:function listAllScriptsViaDrive_() {
+  SetUp.js:54:function runDiscoveryInitialSetup() {
+  SetUp.js:76:function upsertSheet_(ss, name) {
+  SetUp.js:82:function ensureHeaders_(sh, headers, forceReset) {
+  SetUp.js:92:function formatSheet_(sh, numCols) {
+  SetUp.js:106:function logDiscovery_(ss, event, detail, scanId) {
+  SetUp.js:112:function resetDataBelowHeader_(sh) {
+  SetUp.js:118:function makeScanId_() {
+  Deep containerAudit.js:5:function runDeepContainerAudit() {
+
+=== key-account-agreement-generator ===
+  healthCheck.js:7:function runCmsGlobalServiceAudit() {
+  Header_Setup.js:9:function kaa_createOrResetAgreementsHeaders() {
+  OnFormSubmit.js:4:function onFormSubmit(e) {
+  scriptEngine.js:6:function runMasterScriptsSync() {
+  scriptEngine.js:76:function updateRegistry(dirSheet, result, timestamp, cleanName) {
+  CoreOS.js:7:function createSovereignMenu(title) {
+  CoreOS.js:12:function appendGlobalTools(menu) {
+  CoreOS.js:26:function showStatusCard(message, seconds = 3) {
+  GenerateDoc.js:12:function normalizeRebateFrequencyKey_(value) {
+  GenerateDoc.js:25:function generateAgreementDocFromRow(rowIndex) {
+  GenerateDoc.js:43:  const colIndex = (headerName) => {
+  Mapping.js:7:function mapRawToCanonical_(headers, row) {
+  Mapping.js:123:function buildAgreementKey_(legalName, startDate) {
+  Mapping.js:134:function normalizeEnum_(val) {
+  Mapping.js:16:  const get = (name) => {
+  generateConstantsScan.js:5:function generateConstantsCode() {
+  Append.js:4:function appendCanonicalRow_(sheet, data) {
+  docEngine.js:6:function liberateDocContent(sourceDocId, masterDocId) {
+  Directory.js:4:function getOrCreateDirectorySheet(parentFolderId, name) {
+  RegenPicker.js:9:function kaa_pickerSearchAgreements_(query, limit) {
+  UITriggers.js:9:function getUiSpreadsheetId_() {
+  UITriggers.js:17:function installUiTriggers() {
+  liberateCode.js:1:function liberateCode(oldId, vaultId, token) {
+  docWorkFlows.js:5:function runCmsDocLiberation() {
+  Helpers.js:4:function buildAgreementKey_(name, startDate) {
+  Helpers.js:21:function normalizeEnum_(value) {
+  Helpers.js:33:function normalizeDateKey_(startDate) {
+  Helpers.js:60:function normalizeRebateFrequencyKey_(value) {
+  Helpers.js:84:function kaa_formatDateForDoc_(value) {
+  test_form_submission.js:15:function getKaaSpreadsheet_() {
+  test_form_submission.js:22:function testFormSubmission() {
+  test_form_submission.js:56:function buildMockFormEvent_() {
+  test_form_submission.js:133:function verifyTestResults_() {
+  test_form_submission.js:184:function testFormSubmissionExternal() {
+  test_form_submission.js:206:function cleanupLastTestRow() {
+  BackFill.js:10:function kaa_backfillRawMissingOnly() {
+  BackFill.js:43:function kaa_ensureRawMarkers_(ss) {
+  BackFill.js:73:function kaa_existingAgreementKeys_(ss) {
+  BackFill.js:89:function kaa_appendAgreementFromRawRow(rawRowIndex, ss) {
+  OpenOn.js:8:function onOpen() {
+  OpenOn.js:51:function getKaaUiSpreadsheetId_() {
+  OpenOn.js:55:function installKaaUiTriggers() {
+  VaultScriptsAudit.js:5:function listVaultScripts() {
+  Notifications.js:6:function kaa_sendNotificationsForAgreementRow_(rowIndex) {
+  Notifications.js:79:function kaa_isInternalEmail_(email) {
+  Notifications.js:86:function kaa_sendEmail_({ to, cc, subject, body }) {
+  Notifications.js:97:function kaa_defaultInternalBody_({ accountName, docUrl, agreementKey }) {
+  Notifications.js:112:function kaa_defaultExternalBody_({ requestor }) {
+  Regenerate.js:8:function kaa_regenerateFromSelectedRow() {
+  Regenerate.js:30:function kaa_regenerateFromRowPrompt() {
+  Regenerate.js:51:function kaa_regenerateFromAgreementKeyPrompt() {
+  Regenerate.js:78:function kaa_regenerateRow_(rowIndex) {
+  Regenerate.js:119:function kaa_findAgreementRowByKey_(agreementKey) {
+  Regenerate.js:142:function kaa_writeAgreementError_(rowIndex, message) {
+  Regenerate.js:162:function truncateForUi_(s) {
+  Heartbeat_test.js:1:function testSheetConnection() {
+
