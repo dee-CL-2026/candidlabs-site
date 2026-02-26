@@ -211,6 +211,27 @@ async function createOne(req, env, collection) {
     }
   }
 
+  // Agreements: dedup check on agreement_key, company_id verification, default status
+  if (collection === 'agreements') {
+    if (body.agreement_key) {
+      const dup = await env.DB.prepare(
+        'SELECT id FROM agreements WHERE agreement_key = ?'
+      ).bind(body.agreement_key).first();
+      if (dup) {
+        return json({ ok: false, error: { code: 'DUPLICATE', message: `Agreement with key "${body.agreement_key}" already exists (${dup.id})` } }, 409);
+      }
+    }
+    if (body.company_id) {
+      const company = await env.DB.prepare('SELECT id FROM companies WHERE id = ?').bind(body.company_id).first();
+      if (!company) {
+        return json({ ok: false, error: { code: 'VALIDATION', message: `Company ${body.company_id} not found` } }, 400);
+      }
+    }
+    if (!body.status) {
+      body.status = 'draft';
+    }
+  }
+
   // Build insert from known columns only
   const record = { id };
   if (cfg.columns.includes('created_at')) record.created_at = now;
@@ -246,6 +267,31 @@ async function updateOne(req, env, collection, id) {
     const fn = body.first_name !== undefined ? body.first_name : (cur?.first_name || '');
     const ln = body.last_name !== undefined ? body.last_name : (cur?.last_name || '');
     body.name = (fn + ' ' + ln).trim();
+  }
+
+  // Agreements: status transition validation, company_id verification
+  if (collection === 'agreements') {
+    if (body.status !== undefined) {
+      const cur = await env.DB.prepare('SELECT status FROM agreements WHERE id = ?').bind(id).first();
+      const from = cur?.status || 'draft';
+      const to = body.status;
+      const VALID_TRANSITIONS = {
+        draft: ['active', 'terminated'],
+        active: ['expired', 'terminated'],
+        expired: [],
+        terminated: []
+      };
+      const allowed = VALID_TRANSITIONS[from] || [];
+      if (from !== to && allowed.indexOf(to) === -1) {
+        return json({ ok: false, error: { code: 'VALIDATION', message: `Invalid status transition: ${from} → ${to}` } }, 400);
+      }
+    }
+    if (body.company_id !== undefined && body.company_id !== null && body.company_id !== '') {
+      const company = await env.DB.prepare('SELECT id FROM companies WHERE id = ?').bind(body.company_id).first();
+      if (!company) {
+        return json({ ok: false, error: { code: 'VALIDATION', message: `Company ${body.company_id} not found` } }, 400);
+      }
+    }
   }
 
   const sets = [];
