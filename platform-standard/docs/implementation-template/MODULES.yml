@@ -1,0 +1,35 @@
+# Module Registry
+# Source of truth: platform manifest (if one exists)
+# Update this file when adding or modifying modules.
+
+version: "1.0"
+generated: "<DATE>"
+platform_name: "<PLATFORM_NAME>"
+platform_version: "<PLATFORM_VERSION>"
+primary_domain: "<DOMAIN>"
+primary_data_store: "<DATABASE_TYPE>"
+primary_auth_method: "<AUTH_METHOD>"
+primary_accounting_system: "<ACCOUNTING_SYSTEM>"
+
+# ui_type allowed values:
+#   static  — No backend data store. Client-side rendering only. No API calls.
+#   dynamic — Backed by a data store. CRUD operations via API. Server-rendered or client-fetched.
+#   hybrid  — Mix of static content and dynamic data. Some sections are API-driven, others are not.
+
+modules:
+
+  # ── Example Module (remove and replace with real modules) ──
+
+  - name: Example Module
+    path: /example/
+    status: live            # live | wip | planned | deprecated
+    ui_type: dynamic        # static | dynamic | hybrid
+    auth_role: null          # null = all authenticated users, or a specific role name
+    d1_tables: [examples]
+    api_routes:
+      - GET/POST /api/examples
+      - GET/PUT/DELETE /api/examples/{id}
+      - POST /api/examples/import
+    owner: platform-team
+    wave: null               # null for initial modules, or wave/phase identifier
+    notes: Replace this with a real module description.

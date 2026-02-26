@@ -1,0 +1,30 @@
+# Integration Registry
+# Source of truth: platform manifest (if one exists)
+
+version: "1.0"
+generated: "<DATE>"
+platform_name: "<PLATFORM_NAME>"
+platform_version: "<PLATFORM_VERSION>"
+primary_domain: "<DOMAIN>"
+primary_data_store: "<DATABASE_TYPE>"
+primary_auth_method: "<AUTH_METHOD>"
+primary_accounting_system: "<ACCOUNTING_SYSTEM>"
+
+integrations:
+
+  # ── Example Integration (remove and replace with real integrations) ──
+
+  - name: Example Auth Provider
+    type: auth               # auth | database | hosting | external_api | adapter
+    status: live             # live | planned | deprecated
+    auth_method: "<AUTH_MECHANISM>"
+    scopes: "N/A"
+    data_direction: inbound  # inbound | outbound | bidirectional
+    sync_frequency: "N/A"    # real-time | scheduled | on-demand | N/A
+    retry: "N/A"
+    backoff: "N/A"
+    logging: "<WHERE_OPERATIONS_ARE_LOGGED>"
+    secrets_location: "<WHERE_SECRETS_ARE_STORED>"
+    notes: |
+      Replace this with a real integration description.
+      Document auth method, scopes, retry policy, and logging strategy.

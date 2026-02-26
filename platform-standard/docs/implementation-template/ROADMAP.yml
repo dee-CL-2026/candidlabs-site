@@ -1,0 +1,26 @@
+# Roadmap
+# Ordered milestones with dependencies.
+
+version: "1.0"
+generated: "<DATE>"
+platform_name: "<PLATFORM_NAME>"
+platform_version: "<PLATFORM_VERSION>"
+primary_domain: "<DOMAIN>"
+primary_data_store: "<DATABASE_TYPE>"
+primary_auth_method: "<AUTH_METHOD>"
+primary_accounting_system: "<ACCOUNTING_SYSTEM>"
+
+milestones:
+
+  # ── Example Milestone (remove and replace with real milestones) ──
+
+  - id: M-1
+    name: Example milestone
+    status: pending          # pending | in-progress | done | cancelled
+    priority: medium         # quick-win | high | medium | low
+    description: |
+      Replace this with a real milestone description.
+      Include: what tables, modules, or integrations are involved.
+    dependencies: []          # list of milestone IDs that must complete first
+    migration: null           # migration file name, or null
+    notes: null

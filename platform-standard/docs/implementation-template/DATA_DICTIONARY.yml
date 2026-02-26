@@ -1,0 +1,31 @@
+# Data Dictionary
+# Source of truth: platform manifest (if one exists)
+# For each table: purpose, key columns, owner module, retention.
+
+version: "1.0"
+generated: "<DATE>"
+platform_name: "<PLATFORM_NAME>"
+platform_version: "<PLATFORM_VERSION>"
+primary_domain: "<DOMAIN>"
+primary_data_store: "<DATABASE_TYPE>"
+primary_auth_method: "<AUTH_METHOD>"
+primary_accounting_system: "<ACCOUNTING_SYSTEM>"
+
+# Database-specific metadata
+database_name: "<DATABASE_NAME>"
+schema_location: "<PATH_TO_SCHEMA_FILE>"
+migrations_location: "<PATH_TO_MIGRATIONS_DIRECTORY>"
+
+tables:
+
+  # ── Example Table (remove and replace with real tables) ──
+
+  - table: examples
+    status: live             # live | planned | deprecated
+    module: Example Module
+    purpose: Placeholder table demonstrating the required data dictionary format.
+    primary_key: id (TEXT)
+    key_columns: [name, status, created_at, updated_at, meta]
+    migration: "001"
+    wave: null               # null for initial tables, or wave/phase identifier
+    retention: indefinite    # indefinite | <N> days | append-only | overwrite
