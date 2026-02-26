@@ -4,6 +4,12 @@
 
 version: "1.0"
 generated: "2026-02-26"
+platform_name: "CoreOS"
+platform_version: "1.0"
+primary_domain: "candidlabs-site"
+primary_data_store: "cloudflare-d1"
+primary_auth_method: "cloudflare-access-jwt"
+primary_accounting_system: "xero"
 
 modules:
 
