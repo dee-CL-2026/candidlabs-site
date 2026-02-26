@@ -8,13 +8,21 @@ function json(data, status = 200) {
       'content-type': 'application/json; charset=utf-8',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'access-control-allow-headers': 'Content-Type, Authorization, X-Agent-Id'
+      'access-control-allow-headers': 'Content-Type, Authorization, X-Agent-Id, X-Api-Key'
     }
   });
 }
 
 function generateId(prefix) {
   return prefix + '-' + Date.now().toString(16).slice(-6);
+}
+
+function validateApiKey(request, env) {
+  const key = request.headers.get('X-Api-Key');
+  if (!key || key !== env.GAS_API_KEY) {
+    return json({ ok: false, error: { code: 'UNAUTHORIZED', message: 'Invalid API key' } }, 401);
+  }
+  return null;
 }
 
 // ============================================================
@@ -476,6 +484,113 @@ async function bulkImport(req, env, collection) {
 }
 
 // ============================================================
+// Adapter invoke handler
+// ============================================================
+
+const ADAPTER_URL_MAP = {
+  docgen: 'GAS_DOCGEN_URL',
+  email: 'GAS_EMAIL_URL'
+};
+
+async function adapterInvoke(req, env, adapterType) {
+  const gasEnvVar = ADAPTER_URL_MAP[adapterType];
+  if (!gasEnvVar) {
+    return json({ ok: false, error: { code: 'BAD_REQUEST', message: `Unknown adapter type: ${adapterType}` } }, 400);
+  }
+
+  const gasUrl = env[gasEnvVar];
+  if (!gasUrl) {
+    return json({ ok: false, error: { code: 'CONFIG_ERROR', message: `Adapter URL not configured for ${adapterType}` } }, 500);
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const now = new Date().toISOString();
+  const jobId = generateId('JOB');
+
+  // Create job record (status: running)
+  await env.DB.prepare(
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(jobId, adapterType, 'running', JSON.stringify(body), body.created_by || null, now, now, now).run();
+
+  try {
+    const gasResponse = await fetch(gasUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': env.GAS_API_KEY
+      },
+      body: JSON.stringify(body)
+    });
+
+    const resultText = await gasResponse.text();
+    let result;
+    try { result = JSON.parse(resultText); } catch { result = { raw: resultText }; }
+    const finishedAt = new Date().toISOString();
+
+    // Update job to completed
+    await env.DB.prepare(
+      'UPDATE jobs SET status = ?, result = ?, finished_at = ?, updated_at = ? WHERE id = ?'
+    ).bind('completed', JSON.stringify(result), finishedAt, finishedAt, jobId).run();
+
+    // Create job_log entry
+    const logId = generateId('JLG');
+    await env.DB.prepare(
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'invoke', 'completed', JSON.stringify(result), finishedAt, finishedAt).run();
+
+    return json({ ok: true, job_id: jobId, result });
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+
+    // Update job to failed
+    await env.DB.prepare(
+      'UPDATE jobs SET status = ?, error = ?, finished_at = ?, updated_at = ? WHERE id = ?'
+    ).bind('failed', err.message, finishedAt, finishedAt, jobId).run();
+
+    // Create error job_log
+    const logId = generateId('JLG');
+    await env.DB.prepare(
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'invoke', 'failed', err.message, finishedAt, finishedAt).run();
+
+    return json({ ok: false, error: { code: 'ADAPTER_ERROR', message: err.message }, job_id: jobId }, 502);
+  }
+}
+
+// ============================================================
+// Webhook receiver handler
+// ============================================================
+
+async function webhookReceive(req, env, webhookType) {
+  const body = await req.json().catch(() => ({}));
+  const { job_id, status, result } = body;
+
+  if (!job_id) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'job_id is required' } }, 400);
+  }
+
+  const existing = await env.DB.prepare('SELECT id FROM jobs WHERE id = ?').bind(job_id).first();
+  if (!existing) {
+    return json({ ok: false, error: { code: 'NOT_FOUND', message: `Job ${job_id} not found` } }, 404);
+  }
+
+  const now = new Date().toISOString();
+
+  // Update the job record
+  await env.DB.prepare(
+    'UPDATE jobs SET status = ?, result = ?, finished_at = ?, updated_at = ? WHERE id = ?'
+  ).bind(status || 'completed', result ? JSON.stringify(result) : null, now, now, job_id).run();
+
+  // Create a job_log entry recording the callback
+  const logId = generateId('JLG');
+  await env.DB.prepare(
+    'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(logId, job_id, `webhook_${webhookType}`, status || 'completed', result ? JSON.stringify(result) : null, now, now).run();
+
+  return json({ ok: true });
+}
+
+// ============================================================
 // Router
 // ============================================================
 
@@ -496,6 +611,22 @@ async function handleApi(req, env, url) {
   if (path === '/api/comments' && req.method === 'POST') return createComment(req, env);
   const commentDeleteMatch = path.match(/^\/api\/comments\/([^/]+)$/);
   if (commentDeleteMatch && req.method === 'DELETE') return deleteComment(env, commentDeleteMatch[1]);
+
+  // Adapter invoke: POST /api/adapters/:type/invoke
+  const adapterMatch = path.match(/^\/api\/adapters\/([^/]+)\/invoke$/);
+  if (adapterMatch && req.method === 'POST') {
+    const authError = validateApiKey(req, env);
+    if (authError) return authError;
+    return adapterInvoke(req, env, adapterMatch[1]);
+  }
+
+  // Webhook receiver: POST /api/webhook/:type
+  const webhookMatch = path.match(/^\/api\/webhook\/([^/]+)$/);
+  if (webhookMatch && req.method === 'POST') {
+    const authError = validateApiKey(req, env);
+    if (authError) return authError;
+    return webhookReceive(req, env, webhookMatch[1]);
+  }
 
   // Bulk import: /api/{collection}/import
   const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs)\/import$/);
@@ -540,7 +671,7 @@ export default {
         headers: {
           'access-control-allow-origin': '*',
           'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'access-control-allow-headers': 'Content-Type, Authorization, X-Agent-Id',
+          'access-control-allow-headers': 'Content-Type, Authorization, X-Agent-Id, X-Api-Key',
           'access-control-max-age': '86400'
         }
       });
