@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Candid Labs Agreements - Key Account Agreements management, tracking, and document generation.">
+  <title>Agreements - Candidlabs</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../projects/projects.css">
+  <link rel="stylesheet" href="agreements.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body data-auth-require="true">
+  <!-- Navigation -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-container">
+      <a href="../index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
+
+      <ul class="nav-menu" role="menubar">
+        <li role="none" class="nav-dropdown">
+          <button class="nav-link nav-dropdown-trigger active" type="button" aria-expanded="false" aria-haspopup="true">Sales ▾</button>
+          <ul class="nav-dropdown-menu">
+            <li><a href="../crm/index.html" class="nav-dropdown-item">CRM</a></li>
+            <li><a href="../prospecting/index.html" class="nav-dropdown-item">Prospecting</a></li>
+            <li><a href="../agreements/index.html" class="nav-dropdown-item">Agreements</a></li>
+          </ul>
+        </li>
+        <li role="none" class="nav-dropdown" data-auth-role="partner">
+          <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Workspace ▾</button>
+          <ul class="nav-dropdown-menu">
+            <li><a href="../projects/index.html" class="nav-dropdown-item">Projects</a></li>
+            <li><a href="../rnd/index.html" class="nav-dropdown-item">R&D</a></li>
+          </ul>
+        </li>
+        <li role="none"><a href="../reports.html" class="nav-link" role="menuitem">Reports</a></li>
+        <li role="none" class="nav-dropdown">
+              <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Tools ▾</button>
+              <ul class="nav-dropdown-menu">
+                <li><a href="https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform" class="nav-dropdown-item" target="_blank" rel="noopener">KAA Form</a></li>
+                <li><a href="https://docs.google.com/spreadsheets/d/19kDef25LdbvPssTkMusFGu8FmNbj2rWuF7NNF9SBSvs/edit" class="nav-dropdown-item" target="_blank" rel="noopener">Quote Generator</a></li>
+                <li><a href="https://xero.me" class="nav-dropdown-item" target="_blank" rel="noopener">Submit Expenses</a></li>
+              </ul>
+            </li>
+      </ul>
+
+      <div class="nav-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+
+        <a href="../login.html" class="btn btn-primary btn-login" aria-label="Login">Login</a>
+
+        <button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu" role="menu" aria-label="Mobile navigation">
+      <ul>
+        <li class="mobile-menu-label">Sales</li>
+        <li><a href="../crm/index.html" role="menuitem">CRM</a></li>
+        <li><a href="../prospecting/index.html" role="menuitem">Prospecting</a></li>
+        <li><a href="../agreements/index.html" role="menuitem">Agreements</a></li>
+        <li class="mobile-menu-label" data-auth-role="partner">Workspace</li>
+        <li data-auth-role="partner"><a href="../projects/index.html" role="menuitem">Projects</a></li>
+        <li data-auth-role="partner"><a href="../rnd/index.html" role="menuitem">R&D</a></li>
+        <li><a href="../reports.html" role="menuitem">Reports</a></li>
+        <li><a href="https://docs.google.com/forms/d/18dshhMSz7csbJBbeLg_fba6SAJMG5uyd3DnkW59rVSw/viewform" role="menuitem" target="_blank" rel="noopener">KAA Form</a></li>
+        <li><a href="https://docs.google.com/spreadsheets/d/19kDef25LdbvPssTkMusFGu8FmNbj2rWuF7NNF9SBSvs/edit" role="menuitem" target="_blank" rel="noopener">Quote Generator</a></li>
+        <li><a href="https://xero.me" role="menuitem" target="_blank" rel="noopener">Submit Expenses</a></li>
+        <li><a href="../login.html" role="menuitem">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="container">
+        <h1 class="page-title">Agreements</h1>
+        <p class="page-description">Key Account Agreements - tracking, documents, and notifications</p>
+      </div>
+    </header>
+
+    <!-- Tool Layout: Sidebar + Content -->
+    <section class="section" aria-label="Agreements Tool">
+      <div class="container">
+        <div class="tool-layout">
+
+          <!-- Sidebar -->
+          <aside class="tool-sidebar" aria-label="Agreements navigation">
+            <div class="sidebar-section">
+              <div class="sidebar-label">KAA Modules</div>
+              <button class="tool-btn active" data-tool="overview" onclick="agrSwitchTool('overview')">Overview</button>
+              <button class="tool-btn" data-tool="agreements" onclick="agrSwitchTool('agreements')">Agreements</button>
+            </div>
+          </aside>
+
+          <!-- Content Area -->
+          <div class="tool-content">
+
+            <!-- OVERVIEW PANEL -->
+            <div class="tool-panel active" id="tool-overview">
+              <div class="tool-panel-header">
+                <h2>Agreements Overview</h2>
+                <p>Summary of key account agreements</p>
+              </div>
+
+              <div class="pm-stats">
+                <div class="pm-stat-card">
+                  <div class="pm-stat-number" id="stat-agr-total">0</div>
+                  <div class="pm-stat-label">Total</div>
+                </div>
+                <div class="pm-stat-card">
+                  <div class="pm-stat-number" id="stat-agr-draft">0</div>
+                  <div class="pm-stat-label">Draft</div>
+                </div>
+                <div class="pm-stat-card">
+                  <div class="pm-stat-number" id="stat-agr-active">0</div>
+                  <div class="pm-stat-label">Active</div>
+                </div>
+                <div class="pm-stat-card">
+                  <div class="pm-stat-number" id="stat-agr-expired">0</div>
+                  <div class="pm-stat-label">Expired</div>
+                </div>
+                <div class="pm-stat-card">
+                  <div class="pm-stat-number" id="stat-agr-terminated">0</div>
+                  <div class="pm-stat-label">Terminated</div>
+                </div>
+              </div>
+
+              <div id="agr-recent-list"></div>
+            </div>
+
+            <!-- AGREEMENTS LIST PANEL -->
+            <div class="tool-panel" id="tool-agreements">
+              <div class="tool-panel-header">
+                <h2>Agreements</h2>
+                <p>All key account agreements</p>
+              </div>
+
+              <div class="pm-filter-tabs">
+                <button class="pm-filter-tab active" data-status="all" onclick="agrFilterStatus('all')">All</button>
+                <button class="pm-filter-tab" data-status="draft" onclick="agrFilterStatus('draft')">Draft</button>
+                <button class="pm-filter-tab" data-status="active" onclick="agrFilterStatus('active')">Active</button>
+                <button class="pm-filter-tab" data-status="expired" onclick="agrFilterStatus('expired')">Expired</button>
+                <button class="pm-filter-tab" data-status="terminated" onclick="agrFilterStatus('terminated')">Terminated</button>
+              </div>
+
+              <div class="pm-action-bar">
+                <input type="text" class="pm-search" id="agr-search" placeholder="Search agreements..." aria-label="Search agreements" oninput="agrRenderTable()">
+                <button class="btn-add" onclick="agrOpenAdd()">+ New Agreement</button>
+              </div>
+
+              <div class="pm-table-container">
+                <table class="pm-table">
+                  <thead>
+                    <tr>
+                      <th><button class="pm-sort-btn agr-sort-btn" data-col="accountName" onclick="agrSort('accountName')">Account<span class="sort-arrow"></span></button></th>
+                      <th><button class="pm-sort-btn agr-sort-btn" data-col="agreementType" onclick="agrSort('agreementType')">Type<span class="sort-arrow"></span></button></th>
+                      <th><button class="pm-sort-btn agr-sort-btn" data-col="status" onclick="agrSort('status')">Status<span class="sort-arrow"></span></button></th>
+                      <th><button class="pm-sort-btn agr-sort-btn" data-col="agreementDate" onclick="agrSort('agreementDate')">Date<span class="sort-arrow"></span></button></th>
+                      <th><button class="pm-sort-btn agr-sort-btn" data-col="endDate" onclick="agrSort('endDate')">End Date<span class="sort-arrow"></span></button></th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="agr-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div><!-- /tool-content -->
+        </div><!-- /tool-layout -->
+      </div>
+    </section>
+  </main>
+
+  <!-- FORM DRAWER (Add/Edit Agreement) -->
+  <div class="pm-form-backdrop" id="agr-modal-backdrop" onclick="agrCloseModal('agr-modal')"></div>
+  <aside class="pm-form-drawer" id="agr-modal" role="dialog" aria-labelledby="agr-modal-title">
+    <div class="pm-form-drawer-header">
+      <h3 id="agr-modal-title">New Agreement</h3>
+      <button class="btn-drawer-close" onclick="agrCloseModal('agr-modal')">&times;</button>
+    </div>
+    <div class="pm-form-drawer-body">
+      <form id="agr-form" onsubmit="event.preventDefault(); agrSave();">
+        <input type="hidden" id="agr-edit-id">
+        <div class="pm-form-group">
+          <label for="agr-account-name">Account Name *</label>
+          <input type="text" id="agr-account-name" required>
+        </div>
+        <div class="pm-form-row">
+          <div class="pm-form-group">
+            <label for="agr-contact-name">Contact Name</label>
+            <input type="text" id="agr-contact-name">
+          </div>
+          <div class="pm-form-group">
+            <label for="agr-company-id">Company</label>
+            <select id="agr-company-id">
+              <option value="">-- Select Company --</option>
+            </select>
+          </div>
+        </div>
+        <div class="pm-form-row">
+          <div class="pm-form-group">
+            <label for="agr-agreement-type">Agreement Type</label>
+            <select id="agr-agreement-type">
+              <option value="distribution">Distribution</option>
+              <option value="supply">Supply</option>
+              <option value="partnership">Partnership</option>
+              <option value="licensing">Licensing</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="pm-form-group">
+            <label for="agr-agreement-date">Agreement Date</label>
+            <input type="date" id="agr-agreement-date">
+          </div>
+        </div>
+        <div class="pm-form-row">
+          <div class="pm-form-group">
+            <label for="agr-start-date">Start Date</label>
+            <input type="date" id="agr-start-date">
+          </div>
+          <div class="pm-form-group">
+            <label for="agr-end-date">End Date</label>
+            <input type="date" id="agr-end-date">
+          </div>
+        </div>
+        <div class="pm-form-group">
+          <label for="agr-terms">Terms</label>
+          <textarea id="agr-terms" placeholder="Agreement terms and conditions..."></textarea>
+        </div>
+        <div class="pm-form-group">
+          <label for="agr-notes">Notes</label>
+          <textarea id="agr-notes" placeholder="Additional notes..."></textarea>
+        </div>
+        <div class="pm-form-drawer-actions">
+          <button type="button" class="btn-modal secondary" onclick="agrCloseModal('agr-modal')">Cancel</button>
+          <button type="submit" class="btn-modal primary">Save Agreement</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+  <!-- DETAIL DRAWER -->
+  <div class="pm-drawer-overlay" id="agr-detail-overlay" onclick="agrCloseDetail()"></div>
+  <aside class="pm-drawer" id="agr-detail-drawer" role="complementary" aria-label="Agreement details">
+    <div class="pm-drawer-header">
+      <div class="pm-drawer-header-left">
+        <h3 id="agr-detail-name">Agreement</h3>
+        <span class="agr-status" id="agr-detail-status"></span>
+      </div>
+      <div class="pm-drawer-header-right">
+        <button class="btn-row-action" onclick="agrEditFromDetail()">Edit</button>
+        <button class="pm-drawer-close-btn" onclick="agrCloseDetail()" aria-label="Close drawer">&#x2715;</button>
+      </div>
+    </div>
+    <div class="pm-drawer-body">
+      <!-- Meta fields -->
+      <div class="agr-detail-meta" id="agr-detail-meta"></div>
+
+      <!-- Terms -->
+      <div class="pm-drawer-section" id="agr-detail-terms-section" style="display:none;">
+        <div class="pm-drawer-section-header">
+          <span class="pm-drawer-section-title">TERMS</span>
+        </div>
+        <p id="agr-detail-terms" style="font-size:0.85rem;color:var(--text-secondary);white-space:pre-wrap;word-break:break-word;"></p>
+      </div>
+
+      <!-- Notes -->
+      <div class="pm-drawer-section" id="agr-detail-notes-section" style="display:none;">
+        <div class="pm-drawer-section-header">
+          <span class="pm-drawer-section-title">NOTES</span>
+        </div>
+        <p id="agr-detail-notes" style="font-size:0.85rem;color:var(--text-secondary);white-space:pre-wrap;word-break:break-word;"></p>
+      </div>
+
+      <!-- Status Actions -->
+      <div class="pm-drawer-section">
+        <div class="pm-drawer-section-header">
+          <span class="pm-drawer-section-title">ACTIONS</span>
+        </div>
+        <div class="agr-action-buttons" id="agr-detail-actions"></div>
+      </div>
+
+      <!-- Comments -->
+      <div class="pm-drawer-section">
+        <div class="pm-drawer-section-header">
+          <span class="pm-drawer-section-title">COMMENTS</span>
+          <span class="pm-drawer-section-count" id="agr-detail-comments-count">0</span>
+        </div>
+        <div id="agr-detail-comments-list"></div>
+        <div class="pm-drawer-note-form">
+          <textarea id="agr-detail-comment-input" placeholder="Add a comment..." rows="2"></textarea>
+          <button class="btn-modal primary" style="width:100%;margin-top:6px;" onclick="agrSaveComment()">Add Comment</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-content">&copy; 2026 Candidlabs - Internal Use Only</p>
+    </div>
+  </footer>
+
+  <script src="../auth.js"></script>
+  <script src="../data-adapter.js"></script>
+  <script src="../script.js"></script>
+  <script src="agreements.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+/* ===========================================
+   AGREEMENTS MODULE STYLES
+   Follows candidlabs design system conventions.
+   Extends projects.css for tool-layout, drawers, tables.
+   =========================================== */
+
+/* Status badges */
+.agr-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 4px;
+  text-transform: capitalize;
+}
+
+.agr-status.draft {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--text-secondary);
+}
+
+.agr-status.active {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+}
+
+.agr-status.expired {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning);
+}
+
+.agr-status.terminated {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
+}
+
+/* Detail meta rows */
+.agr-detail-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agr-meta-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.875rem;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.agr-meta-row:last-child {
+  border-bottom: none;
+}
+
+.agr-meta-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  min-width: 110px;
+  flex-shrink: 0;
+}
+
+.agr-meta-row span:last-child {
+  color: var(--text-primary);
+}
+
+/* Action buttons row */
+.agr-action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Recent agreement cards on overview */
+.agr-recent-card {
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  transition: border-color 0.15s, transform 0.1s;
+}
+
+.agr-recent-card:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
