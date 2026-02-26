@@ -12,10 +12,20 @@
     <div class="container navbar-container">
       <a href="../index.html" class="logo" aria-label="Candidlabs home">candidlabs</a>
       <ul class="nav-menu" role="menubar">
-        <li role="none"><a href="../crm/index.html" class="nav-link" role="menuitem">CRM</a></li>
-        <li role="none"><a href="../prospecting/index.html" class="nav-link" role="menuitem">Prospecting</a></li>
-        <li role="none"><a href="../projects/index.html" class="nav-link" role="menuitem">Projects</a></li>
-        <li role="none" data-auth-role="admin"><a href="../rnd/index.html" class="nav-link" role="menuitem">R&D</a></li>
+        <li role="none" class="nav-dropdown">
+          <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Sales ▾</button>
+          <ul class="nav-dropdown-menu">
+            <li><a href="../crm/index.html" class="nav-dropdown-item">CRM</a></li>
+            <li><a href="../prospecting/index.html" class="nav-dropdown-item">Prospecting</a></li>
+          </ul>
+        </li>
+        <li role="none" class="nav-dropdown" data-auth-role="partner">
+          <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Workspace ▾</button>
+          <ul class="nav-dropdown-menu">
+            <li><a href="../projects/index.html" class="nav-dropdown-item">Projects</a></li>
+            <li><a href="../rnd/index.html" class="nav-dropdown-item">R&D</a></li>
+          </ul>
+        </li>
         <li role="none"><a href="../reports.html" class="nav-link" role="menuitem">Reports</a></li>
         <li role="none" class="nav-dropdown">
               <button class="nav-link nav-dropdown-trigger" type="button" aria-expanded="false" aria-haspopup="true">Tools ▾</button>
