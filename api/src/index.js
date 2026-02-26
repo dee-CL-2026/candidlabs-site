@@ -181,6 +181,35 @@ const COLLECTIONS = {
               'channel_performance', 'meta', 'created_at', 'updated_at'],
     searchable: ['month_key', 'month_label'],
     orderBy: 'month_key'
+  },
+  sync_runs: {
+    table: 'sync_runs',
+    prefix: 'SYN',
+    required: ['sync_type'],
+    columns: ['id', 'sync_type', 'month_key', 'started_at', 'finished_at',
+              'records_fetched', 'records_upserted', 'status', 'error', 'meta'],
+    searchable: ['sync_type', 'status', 'month_key'],
+    orderBy: 'started_at'
+  },
+  xero_invoices: {
+    table: 'xero_invoices',
+    prefix: 'XIV',
+    required: ['xero_invoice_id', 'type', 'status'],
+    columns: ['id', 'xero_invoice_id', 'invoice_number', 'type', 'status', 'contact_name',
+              'xero_contact_id', 'invoice_date', 'due_date', 'currency_code', 'sub_total',
+              'total_tax', 'total', 'amount_due', 'amount_paid', 'reference',
+              'updated_date_utc', 'meta', 'synced_at'],
+    searchable: ['invoice_number', 'contact_name', 'status'],
+    orderBy: 'invoice_date'
+  },
+  xero_contacts: {
+    table: 'xero_contacts',
+    prefix: 'XCT',
+    required: ['xero_contact_id', 'name'],
+    columns: ['id', 'xero_contact_id', 'name', 'email', 'phone', 'is_customer',
+              'is_supplier', 'contact_status', 'meta', 'synced_at'],
+    searchable: ['name', 'email'],
+    orderBy: 'name'
   }
 };
 
@@ -944,10 +973,7 @@ async function salesImportReceivables(req, env) {
 // POST /api/sales/refresh-margins — replaces margin.js DQ-gated calculation
 async function salesRefreshMargins(req, env) {
   const body = await req.json().catch(() => ({}));
-  const monthKey = body.month_key; // e.g. '2026-02'
-  if (!monthKey) {
-    return json({ ok: false, error: { code: 'VALIDATION', message: 'month_key is required (e.g. 2026-02)' } }, 400);
-  }
+  const monthKey = body.month_key || new Date().toISOString().slice(0, 7);
 
   const now = new Date().toISOString();
   const jobId = generateId('JOB');
@@ -1043,10 +1069,7 @@ async function salesRefreshMargins(req, env) {
 // POST /api/sales/refresh-deck-metrics — replaces Deck_Metrics_Wrapper orchestration
 async function salesRefreshDeckMetrics(req, env) {
   const body = await req.json().catch(() => ({}));
-  const monthKey = body.month_key;
-  if (!monthKey) {
-    return json({ ok: false, error: { code: 'VALIDATION', message: 'month_key is required' } }, 400);
-  }
+  const monthKey = body.month_key || new Date().toISOString().slice(0, 7);
 
   const now = new Date().toISOString();
 
@@ -1309,6 +1332,308 @@ async function salesRunPipeline(req, env) {
   }
 }
 
+// ============================================================
+// Xero OAuth + Sync helpers
+// ============================================================
+
+async function getXeroAccessToken(env) {
+  const row = await env.DB.prepare("SELECT * FROM xero_tokens WHERE id = 'default'").first();
+  if (!row) return null;
+
+  // Check if token is still valid (with 60s buffer)
+  const expiresAt = new Date(row.expires_at).getTime();
+  if (Date.now() < expiresAt - 60000) {
+    return { access_token: row.access_token, tenant_id: row.tenant_id };
+  }
+
+  // Refresh the token
+  const resp = await fetch('https://identity.xero.com/connect/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: row.refresh_token,
+      client_id: env.XERO_CLIENT_ID,
+      client_secret: env.XERO_CLIENT_SECRET
+    })
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error('Xero token refresh failed: ' + errText);
+  }
+
+  const tokens = await resp.json();
+  const newExpiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
+  const now = new Date().toISOString();
+
+  await env.DB.prepare(
+    "UPDATE xero_tokens SET access_token = ?, refresh_token = ?, expires_at = ?, updated_at = ? WHERE id = 'default'"
+  ).bind(tokens.access_token, tokens.refresh_token, newExpiresAt, now).run();
+
+  return { access_token: tokens.access_token, tenant_id: row.tenant_id };
+}
+
+// GET /api/auth/xero/start — redirect to Xero authorize
+async function xeroAuthStart(req, env) {
+  const redirectUri = env.XERO_REDIRECT_URI;
+  const scopes = env.XERO_SCOPES;
+  const state = crypto.randomUUID();
+  const url = `https://login.xero.com/identity/connect/authorize?response_type=code&client_id=${encodeURIComponent(env.XERO_CLIENT_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${state}`;
+  return new Response(null, { status: 302, headers: { Location: url } });
+}
+
+// GET /api/auth/xero/callback — exchange code for tokens
+async function xeroAuthCallback(req, env, url) {
+  const code = url.searchParams.get('code');
+  if (!code) return json({ ok: false, error: { code: 'BAD_REQUEST', message: 'Missing code parameter' } }, 400);
+
+  // Exchange code for tokens
+  const resp = await fetch('https://identity.xero.com/connect/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: env.XERO_REDIRECT_URI,
+      client_id: env.XERO_CLIENT_ID,
+      client_secret: env.XERO_CLIENT_SECRET
+    })
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    return json({ ok: false, error: { code: 'XERO_AUTH_ERROR', message: errText } }, 502);
+  }
+
+  const tokens = await resp.json();
+  const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
+  const now = new Date().toISOString();
+
+  // Get tenant ID from /connections
+  const connResp = await fetch('https://api.xero.com/connections', {
+    headers: { Authorization: `Bearer ${tokens.access_token}`, 'Content-Type': 'application/json' }
+  });
+  const connections = await connResp.json();
+  if (!connections.length) {
+    return json({ ok: false, error: { code: 'XERO_NO_TENANT', message: 'No Xero tenants found' } }, 400);
+  }
+  const tenantId = connections[0].tenantId;
+
+  // Upsert token row
+  await env.DB.prepare(
+    `INSERT INTO xero_tokens (id, tenant_id, access_token, refresh_token, token_type, expires_at, scopes, connected_at, updated_at)
+     VALUES ('default', ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET tenant_id=excluded.tenant_id, access_token=excluded.access_token,
+       refresh_token=excluded.refresh_token, expires_at=excluded.expires_at, scopes=excluded.scopes, updated_at=excluded.updated_at`
+  ).bind(tenantId, tokens.access_token, tokens.refresh_token, tokens.token_type || 'Bearer',
+         expiresAt, env.XERO_SCOPES, now, now).run();
+
+  // Redirect to app
+  const appBase = env.APP_BASE_URL || 'https://candidlabs.pages.dev';
+  return new Response(null, { status: 302, headers: { Location: `${appBase}/sales/?xero=connected` } });
+}
+
+// GET /api/auth/xero/status
+async function xeroAuthStatus(env) {
+  const row = await env.DB.prepare("SELECT tenant_id, expires_at, connected_at, updated_at, scopes FROM xero_tokens WHERE id = 'default'").first();
+  if (!row) return json({ ok: true, connected: false });
+  const expired = new Date(row.expires_at).getTime() < Date.now();
+  return json({ ok: true, connected: true, tenant_id: row.tenant_id, token_expired: expired,
+    expires_at: row.expires_at, connected_at: row.connected_at, updated_at: row.updated_at });
+}
+
+// POST /api/auth/xero/disconnect
+async function xeroAuthDisconnect(env) {
+  await env.DB.prepare("DELETE FROM xero_tokens WHERE id = 'default'").run();
+  return json({ ok: true, message: 'Xero disconnected' });
+}
+
+// Core sync: fetch invoices for a single month from Xero and upsert
+async function xeroSyncMonth(env, monthKey) {
+  const syncId = generateId('SYN');
+  const now = new Date().toISOString();
+  await env.DB.prepare(
+    'INSERT INTO sync_runs (id, sync_type, month_key, started_at, status) VALUES (?, ?, ?, ?, ?)'
+  ).bind(syncId, 'xero_invoices', monthKey, now, 'running').run();
+
+  try {
+    const tokenData = await getXeroAccessToken(env);
+    if (!tokenData) throw new Error('Xero not connected — no tokens found');
+
+    const { access_token, tenant_id } = tokenData;
+    const [year, month] = monthKey.split('-').map(Number);
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+
+    let page = 1;
+    let allInvoices = [];
+    const whereClause = `Type=="ACCREC" AND Date >= DateTime(${year},${month},1) AND Date < DateTime(${nextYear},${nextMonth},1)`;
+
+    // Paginate invoices
+    while (true) {
+      const apiUrl = `https://api.xero.com/api.xro/2.0/Invoices?where=${encodeURIComponent(whereClause)}&page=${page}`;
+      const resp = await fetch(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          'Xero-Tenant-Id': tenant_id,
+          Accept: 'application/json'
+        }
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`Xero API error (${resp.status}): ${errText}`);
+      }
+      const data = await resp.json();
+      const invoices = data.Invoices || [];
+      if (invoices.length === 0) break;
+      allInvoices = allInvoices.concat(invoices);
+      if (invoices.length < 100) break; // Xero returns up to 100 per page
+      page++;
+    }
+
+    // Also fetch contacts for this org
+    let allContacts = [];
+    let contactPage = 1;
+    while (true) {
+      const contactUrl = `https://api.xero.com/api.xro/2.0/Contacts?page=${contactPage}`;
+      const resp = await fetch(contactUrl, {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          'Xero-Tenant-Id': tenant_id,
+          Accept: 'application/json'
+        }
+      });
+      if (!resp.ok) break; // Non-critical — continue with invoices
+      const data = await resp.json();
+      const contacts = data.Contacts || [];
+      if (contacts.length === 0) break;
+      allContacts = allContacts.concat(contacts);
+      if (contacts.length < 100) break;
+      contactPage++;
+    }
+
+    // Upsert contacts
+    for (const c of allContacts) {
+      const cId = generateId('XCT');
+      await env.DB.prepare(
+        `INSERT INTO xero_contacts (id, xero_contact_id, name, email, phone, is_customer, is_supplier, contact_status, synced_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(xero_contact_id) DO UPDATE SET name=excluded.name, email=excluded.email, phone=excluded.phone,
+           is_customer=excluded.is_customer, is_supplier=excluded.is_supplier, contact_status=excluded.contact_status, synced_at=excluded.synced_at`
+      ).bind(cId, c.ContactID, c.Name || '', c.EmailAddress || null,
+             (c.Phones && c.Phones[0] ? c.Phones[0].PhoneNumber : null),
+             c.IsCustomer ? 1 : 0, c.IsSupplier ? 1 : 0, c.ContactStatus || null, now).run();
+    }
+
+    let recordsUpserted = 0;
+
+    // Upsert invoices + line items + revenue_transactions
+    for (const inv of allInvoices) {
+      const invId = generateId('XIV');
+      await env.DB.prepare(
+        `INSERT INTO xero_invoices (id, xero_invoice_id, invoice_number, type, status, contact_name, xero_contact_id,
+           invoice_date, due_date, currency_code, sub_total, total_tax, total, amount_due, amount_paid,
+           reference, updated_date_utc, synced_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(xero_invoice_id) DO UPDATE SET invoice_number=excluded.invoice_number, status=excluded.status,
+           contact_name=excluded.contact_name, sub_total=excluded.sub_total, total_tax=excluded.total_tax,
+           total=excluded.total, amount_due=excluded.amount_due, amount_paid=excluded.amount_paid,
+           reference=excluded.reference, updated_date_utc=excluded.updated_date_utc, synced_at=excluded.synced_at`
+      ).bind(invId, inv.InvoiceID, inv.InvoiceNumber || null, inv.Type, inv.Status,
+             inv.Contact ? inv.Contact.Name : null, inv.Contact ? inv.Contact.ContactID : null,
+             inv.DateString || null, inv.DueDateString || null, inv.CurrencyCode || 'IDR',
+             inv.SubTotal || 0, inv.TotalTax || 0, inv.Total || 0, inv.AmountDue || 0, inv.AmountPaid || 0,
+             inv.Reference || null, inv.UpdatedDateUTC || null, now).run();
+
+      // Replace line items for this invoice
+      const lines = inv.LineItems || [];
+      await env.DB.prepare('DELETE FROM xero_line_items WHERE xero_invoice_id = ?').bind(inv.InvoiceID).run();
+      for (const li of lines) {
+        const liId = generateId('XLI');
+        await env.DB.prepare(
+          `INSERT INTO xero_line_items (id, xero_invoice_id, item_code, description, quantity, unit_amount,
+             tax_amount, line_amount, discount_rate, account_code, tax_type, tracking, synced_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(liId, inv.InvoiceID, li.ItemCode || null, li.Description || null,
+               li.Quantity || 0, li.UnitAmount || 0, li.TaxAmount || 0, li.LineAmount || 0,
+               li.DiscountRate || 0, li.AccountCode || null, li.TaxType || null,
+               JSON.stringify(li.Tracking || []), now).run();
+      }
+
+      // Transform ACCREC invoice → revenue_transaction (bridges Xero → sales pipeline)
+      if (inv.Type === 'ACCREC' && inv.Status !== 'VOIDED' && inv.Status !== 'DELETED') {
+        const txId = generateId('RTX');
+        const transactionId = `XERO-${inv.InvoiceNumber || inv.InvoiceID}`;
+        await env.DB.prepare(
+          `INSERT INTO revenue_transactions (id, transaction_id, invoice_date, invoice_number, distributor_name,
+             venue_name, invoice_value_idr, revenue_idr, source, meta, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(transaction_id) DO UPDATE SET invoice_date=excluded.invoice_date,
+             invoice_value_idr=excluded.invoice_value_idr, revenue_idr=excluded.revenue_idr,
+             source=excluded.source, updated_at=excluded.updated_at`
+        ).bind(txId, transactionId, inv.DateString || monthKey + '-01', inv.InvoiceNumber || null,
+               null, inv.Contact ? inv.Contact.Name : null,
+               inv.Total || 0, inv.Total || 0, 'xero',
+               JSON.stringify({ xero_invoice_id: inv.InvoiceID, xero_status: inv.Status }),
+               now, now).run();
+        recordsUpserted++;
+      }
+    }
+
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE sync_runs SET status = ?, finished_at = ?, records_fetched = ?, records_upserted = ? WHERE id = ?'
+    ).bind('completed', finishedAt, allInvoices.length, recordsUpserted, syncId).run();
+
+    return { ok: true, sync_id: syncId, month_key: monthKey, invoices_fetched: allInvoices.length,
+             contacts_fetched: allContacts.length, revenue_transactions_upserted: recordsUpserted };
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE sync_runs SET status = ?, finished_at = ?, error = ? WHERE id = ?'
+    ).bind('failed', finishedAt, err.message, syncId).run();
+    throw err;
+  }
+}
+
+// POST /api/sales/sync-xero — sync single month (defaults to current)
+async function xeroSyncHandler(req, env, url) {
+  const monthKey = url.searchParams.get('month_key') || new Date().toISOString().slice(0, 7);
+  try {
+    const result = await xeroSyncMonth(env, monthKey);
+    return json(result);
+  } catch (err) {
+    return json({ ok: false, error: { code: 'SYNC_ERROR', message: err.message } }, 500);
+  }
+}
+
+// POST /api/sales/sync-xero/backfill — range sync
+async function xeroBackfillHandler(req, env, url) {
+  const from = url.searchParams.get('from');
+  const to = url.searchParams.get('to');
+  if (!from || !to) return json({ ok: false, error: { code: 'VALIDATION', message: 'from and to query params required (YYYY-MM)' } }, 400);
+
+  const results = [];
+  const [fromY, fromM] = from.split('-').map(Number);
+  const [toY, toM] = to.split('-').map(Number);
+  let y = fromY, m = fromM;
+
+  while (y < toY || (y === toY && m <= toM)) {
+    const mk = `${y}-${String(m).padStart(2, '0')}`;
+    try {
+      const result = await xeroSyncMonth(env, mk);
+      results.push(result);
+    } catch (err) {
+      results.push({ ok: false, month_key: mk, error: err.message });
+    }
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+
+  return json({ ok: true, backfill: { from, to, months: results.length }, results });
+}
+
 // POST /api/deck-metrics/:monthKey/generate-deck — slides adapter
 async function deckMetricsGenerateDeck(req, env, monthKey) {
   const metric = await env.DB.prepare('SELECT * FROM deck_metrics WHERE month_key = ?').bind(monthKey).first();
@@ -1446,6 +1771,12 @@ async function handleApi(req, env, url) {
     return webhookReceive(req, env, webhookMatch[1]);
   }
 
+  // Xero OAuth routes
+  if (path === '/api/auth/xero/start' && req.method === 'GET') return xeroAuthStart(req, env);
+  if (path === '/api/auth/xero/callback' && req.method === 'GET') return xeroAuthCallback(req, env, url);
+  if (path === '/api/auth/xero/status' && req.method === 'GET') return xeroAuthStatus(env);
+  if (path === '/api/auth/xero/disconnect' && req.method === 'POST') return xeroAuthDisconnect(env);
+
   // Sales pipeline actions
   if (path === '/api/sales/import-receivables' && req.method === 'POST') return salesImportReceivables(req, env);
   if (path === '/api/sales/refresh-margins' && req.method === 'POST') return salesRefreshMargins(req, env);
@@ -1455,16 +1786,24 @@ async function handleApi(req, env, url) {
   if (path === '/api/sales/bridge-crm' && req.method === 'POST') return salesBridgeCrm(req, env);
   if (path === '/api/sales/run-pipeline' && req.method === 'POST') return salesRunPipeline(req, env);
 
-  // Deck metrics: POST /api/deck-metrics/:monthKey/generate-deck
+  // Xero sync routes
+  if (path === '/api/sales/sync-xero/backfill' && req.method === 'POST') return xeroBackfillHandler(req, env, url);
+  if (path === '/api/sales/sync-xero' && req.method === 'POST') return xeroSyncHandler(req, env, url);
+
+  // Reports: deck generation (new canonical route)
+  const reportsDeckMatch = path.match(/^\/api\/reports\/deck\/([^/]+)\/generate$/);
+  if (reportsDeckMatch && req.method === 'POST') return deckMetricsGenerateDeck(req, env, reportsDeckMatch[1]);
+
+  // Legacy deck route — 301 redirect to new reports path
   const deckGenMatch = path.match(/^\/api\/deck-metrics\/([^/]+)\/generate-deck$/);
   if (deckGenMatch && req.method === 'POST') return deckMetricsGenerateDeck(req, env, deckGenMatch[1]);
 
   // Bulk import: /api/{collection}/import
-  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs|revenue_transactions|account_mapping|account_status|deck_metrics)\/import$/);
+  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs|revenue_transactions|account_mapping|account_status|deck_metrics|sync_runs|xero_invoices|xero_contacts)\/import$/);
   if (importMatch && req.method === 'POST') return bulkImport(req, env, importMatch[1]);
 
   // CRUD routes: /api/{collection}[/{id}]
-  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs|revenue_transactions|account_mapping|account_status|deck_metrics)(?:\/([^/]+))?$/);
+  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs|revenue_transactions|account_mapping|account_status|deck_metrics|sync_runs|xero_invoices|xero_contacts)(?:\/([^/]+))?$/);
   if (!match) return json({ ok: false, error: { code: 'NOT_FOUND', message: 'Unknown endpoint' } }, 404);
 
   const collection = match[1];
@@ -1518,5 +1857,24 @@ export default {
     }
 
     return json({ ok: false, error: { code: 'NOT_FOUND', message: 'Not found' } }, 404);
+  },
+
+  async scheduled(event, env, ctx) {
+    // Daily cron: sync current month + previous month from Xero
+    const now = new Date();
+    const currMonth = now.toISOString().slice(0, 7);
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonth = prev.toISOString().slice(0, 7);
+
+    try {
+      await xeroSyncMonth(env, currMonth);
+    } catch (err) {
+      console.error('Cron sync failed for', currMonth, err.message);
+    }
+    try {
+      await xeroSyncMonth(env, prevMonth);
+    } catch (err) {
+      console.error('Cron sync failed for', prevMonth, err.message);
+    }
   }
 };

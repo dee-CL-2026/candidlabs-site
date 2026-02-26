@@ -8,7 +8,7 @@
 
 var _slsRevenue = null;
 var _slsAccounts = null;
-var _slsDeck = null;
+var _slsSyncRuns = null;
 var _slsDataReady = false;
 
 var SLS_API_BASE = 'https://candidlabs-api.dieterwerwath.workers.dev/api';
@@ -28,24 +28,24 @@ var _slsRevPerPage = 50;
 
 function slsLoadAll() {
   if (typeof CandidStore === 'undefined') {
-    return Promise.resolve({ revenue: [], accounts: [], deck: [] });
+    return Promise.resolve({ revenue: [], accounts: [], syncRuns: [] });
   }
   return Promise.all([
     CandidStore.load('revenue_transactions'),
     CandidStore.load('account_status'),
-    CandidStore.load('deck_metrics')
+    CandidStore.load('sync_runs')
   ]).then(function (results) {
     _slsRevenue = results[0] || [];
     _slsAccounts = results[1] || [];
-    _slsDeck = results[2] || [];
+    _slsSyncRuns = results[2] || [];
     _slsDataReady = true;
-    return { revenue: _slsRevenue, accounts: _slsAccounts, deck: _slsDeck };
+    return { revenue: _slsRevenue, accounts: _slsAccounts, syncRuns: _slsSyncRuns };
   });
 }
 
 function slsGetRevenue() { return _slsRevenue || []; }
 function slsGetAccounts() { return _slsAccounts || []; }
-function slsGetDeck() { return _slsDeck || []; }
+function slsGetSyncRuns() { return _slsSyncRuns || []; }
 
 // ============================================================
 // FORMAT HELPERS
@@ -86,7 +86,7 @@ function slsSwitchTool(toolId) {
   if (toolId === 'overview') slsRenderOverview();
   else if (toolId === 'revenue') slsRenderRevenue();
   else if (toolId === 'accounts') slsRenderAccounts();
-  else if (toolId === 'deck') slsRenderDeck();
+  else if (toolId === 'xero') { slsCheckXeroStatus(); slsRenderSyncHistory(); }
 }
 
 // ============================================================
@@ -96,7 +96,7 @@ function slsSwitchTool(toolId) {
 function slsRenderOverview() {
   var rev = slsGetRevenue();
   var accts = slsGetAccounts();
-  var deck = slsGetDeck();
+  var syncRuns = slsGetSyncRuns();
 
   // Total revenue
   var totalRev = 0;
@@ -108,24 +108,25 @@ function slsRenderOverview() {
   var active = 0;
   accts.forEach(function (a) { if (a.status === 'Active') active++; });
   document.getElementById('stat-sls-active-accts').textContent = active;
-  document.getElementById('stat-sls-deck-months').textContent = deck.length;
 
-  // Latest deck metrics
+  // Sync runs count
+  var completedSyncs = syncRuns.filter(function (s) { return s.status === 'completed'; }).length;
+  document.getElementById('stat-sls-deck-months').textContent = completedSyncs;
+
+  // Latest sync info
   var details = document.getElementById('sls-overview-details');
-  if (deck.length) {
-    var sorted = deck.slice().sort(function (a, b) { return (b.month_key || '').localeCompare(a.month_key || ''); });
+  if (syncRuns.length) {
+    var sorted = syncRuns.slice().sort(function (a, b) { return (b.started_at || '').localeCompare(a.started_at || ''); });
     var latest = sorted[0];
     details.innerHTML =
-      '<h3 style="font-size:1rem;margin:20px 0 12px;color:var(--text-primary);">Latest Deck: ' + slsEscapeHtml(latest.month_label || latest.month_key) + '</h3>' +
+      '<h3 style="font-size:1rem;margin:20px 0 12px;color:var(--text-primary);">Latest Sync: ' + slsEscapeHtml(latest.sync_type) + ' (' + slsEscapeHtml(latest.month_key || '-') + ')</h3>' +
       '<div class="pm-stats" style="margin-bottom:0;">' +
-        '<div class="pm-stat-card"><div class="pm-stat-number">' + slsFormatIDR(latest.total_revenue_idr) + '</div><div class="pm-stat-label">Revenue</div></div>' +
-        '<div class="pm-stat-card"><div class="pm-stat-number">' + (latest.gross_margin_pct != null ? latest.gross_margin_pct + '%' : '-') + '</div><div class="pm-stat-label">Gross Margin</div></div>' +
-        '<div class="pm-stat-card"><div class="pm-stat-number">' + slsEscapeHtml(latest.gross_margin_vs_prev || '-') + '</div><div class="pm-stat-label">vs Previous</div></div>' +
-        '<div class="pm-stat-card"><div class="pm-stat-number"><span class="sls-dq ' + slsEscapeHtml(latest.dq_flag || '') + '">' + slsEscapeHtml(latest.dq_flag || '-') + '</span></div><div class="pm-stat-label">DQ Status</div></div>' +
-      '</div>' +
-      (latest.headline ? '<p style="margin-top:12px;font-size:0.9rem;color:var(--text-secondary);">' + slsEscapeHtml(latest.headline) + '</p>' : '');
+        '<div class="pm-stat-card"><div class="pm-stat-number"><span class="sls-status ' + slsEscapeHtml(latest.status || '') + '">' + slsEscapeHtml(latest.status || '-') + '</span></div><div class="pm-stat-label">Status</div></div>' +
+        '<div class="pm-stat-card"><div class="pm-stat-number">' + (latest.records_fetched || 0) + '</div><div class="pm-stat-label">Fetched</div></div>' +
+        '<div class="pm-stat-card"><div class="pm-stat-number">' + (latest.records_upserted || 0) + '</div><div class="pm-stat-label">Upserted</div></div>' +
+      '</div>';
   } else {
-    details.innerHTML = '<div class="pm-empty"><div class="pm-empty-icon">&#128202;</div><p>No deck metrics yet. Import receivables and run the pipeline.</p></div>';
+    details.innerHTML = '<div class="pm-empty"><div class="pm-empty-icon">&#128202;</div><p>No sync runs yet. Connect Xero and sync data.</p></div>';
   }
 }
 
@@ -266,44 +267,127 @@ function slsRenderAccounts() {
 }
 
 // ============================================================
-// DECK METRICS TABLE
+// XERO SYNC
 // ============================================================
 
-function slsRenderDeck() {
-  var deck = slsGetDeck().slice();
-  var search = (document.getElementById('sls-deck-search').value || '').toLowerCase();
+function slsCheckXeroStatus() {
+  fetch(SLS_API_BASE + '/auth/xero/status')
+    .then(function (res) { return res.json(); })
+    .then(function (body) {
+      var indicator = document.getElementById('sls-xero-indicator');
+      var text = document.getElementById('sls-xero-status-text');
+      var connectBtn = document.getElementById('sls-xero-connect-btn');
+      var syncBtn = document.getElementById('sls-xero-sync-btn');
+      var disconnectBtn = document.getElementById('sls-xero-disconnect-btn');
+      var backfillBar = document.getElementById('sls-xero-backfill-bar');
 
-  if (search) {
-    deck = deck.filter(function (d) {
-      return (d.month_key || '').toLowerCase().indexOf(search) !== -1 ||
-             (d.month_label || '').toLowerCase().indexOf(search) !== -1;
+      if (body.ok && body.connected) {
+        indicator.className = 'sls-xero-indicator connected';
+        text.textContent = 'Connected (tenant: ' + (body.tenant_id || '-').slice(0, 8) + '...)';
+        connectBtn.style.display = 'none';
+        syncBtn.style.display = '';
+        disconnectBtn.style.display = '';
+        backfillBar.style.display = '';
+      } else {
+        indicator.className = 'sls-xero-indicator disconnected';
+        text.textContent = 'Not connected';
+        connectBtn.style.display = '';
+        syncBtn.style.display = 'none';
+        disconnectBtn.style.display = 'none';
+        backfillBar.style.display = 'none';
+      }
+    })
+    .catch(function () {
+      document.getElementById('sls-xero-status-text').textContent = 'Error checking status';
     });
-  }
+}
 
-  deck.sort(function (a, b) { return (b.month_key || '').localeCompare(a.month_key || ''); });
+function slsXeroConnect() {
+  window.location.href = SLS_API_BASE + '/auth/xero/start';
+}
 
-  var tbody = document.getElementById('sls-deck-tbody');
-  if (!deck.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);">No deck metrics found</td></tr>';
+function slsXeroDisconnect() {
+  if (!confirm('Disconnect Xero? This removes stored tokens.')) return;
+  slsApiPost('/auth/xero/disconnect')
+    .then(function (body) {
+      if (body.ok) {
+        alert('Xero disconnected.');
+        slsCheckXeroStatus();
+      } else {
+        alert('Error: ' + (body.error ? body.error.message : 'Unknown'));
+      }
+    }).catch(function (err) { alert('Error: ' + err.message); });
+}
+
+function slsXeroSync() {
+  var banner = document.getElementById('sls-xero-banner');
+  banner.className = 'sls-pipeline-banner running';
+  banner.textContent = 'Syncing current month from Xero...';
+
+  fetch(SLS_API_BASE + '/sales/sync-xero', { method: 'POST' })
+    .then(function (res) { return res.json(); })
+    .then(function (body) {
+      if (body.ok) {
+        banner.className = 'sls-pipeline-banner completed';
+        banner.textContent = 'Sync completed: ' + (body.invoices_fetched || 0) + ' invoices fetched, ' + (body.revenue_transactions_upserted || 0) + ' revenue transactions upserted.';
+        slsLoadAll().then(function () { slsRenderOverview(); slsRenderSyncHistory(); });
+      } else {
+        banner.className = 'sls-pipeline-banner failed';
+        banner.textContent = 'Sync failed: ' + (body.error ? body.error.message : 'Unknown error');
+      }
+    }).catch(function (err) {
+      banner.className = 'sls-pipeline-banner failed';
+      banner.textContent = 'Sync error: ' + err.message;
+    });
+}
+
+function slsXeroBackfill() {
+  var from = document.getElementById('sls-xero-from').value;
+  var to = document.getElementById('sls-xero-to').value;
+  if (!from || !to) { alert('Select both From and To months.'); return; }
+  if (!confirm('Backfill Xero data from ' + from + ' to ' + to + '?')) return;
+
+  var banner = document.getElementById('sls-xero-banner');
+  banner.className = 'sls-pipeline-banner running';
+  banner.textContent = 'Backfilling from ' + from + ' to ' + to + '...';
+
+  fetch(SLS_API_BASE + '/sales/sync-xero/backfill?from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to), { method: 'POST' })
+    .then(function (res) { return res.json(); })
+    .then(function (body) {
+      if (body.ok) {
+        banner.className = 'sls-pipeline-banner completed';
+        banner.textContent = 'Backfill completed: ' + (body.backfill ? body.backfill.months : 0) + ' months synced.';
+        slsLoadAll().then(function () { slsRenderOverview(); slsRenderSyncHistory(); });
+      } else {
+        banner.className = 'sls-pipeline-banner failed';
+        banner.textContent = 'Backfill failed: ' + (body.error ? body.error.message : 'Unknown error');
+      }
+    }).catch(function (err) {
+      banner.className = 'sls-pipeline-banner failed';
+      banner.textContent = 'Backfill error: ' + err.message;
+    });
+}
+
+function slsRenderSyncHistory() {
+  var runs = slsGetSyncRuns().slice();
+  runs.sort(function (a, b) { return (b.started_at || '').localeCompare(a.started_at || ''); });
+
+  var tbody = document.getElementById('sls-sync-tbody');
+  if (!runs.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);">No sync runs yet</td></tr>';
     return;
   }
 
-  tbody.innerHTML = deck.map(function (d) {
-    var meta = {};
-    try { meta = JSON.parse(d.meta || '{}'); } catch (e) {}
-    var presLink = meta.presentation_url
-      ? '<a href="' + slsEscapeHtml(meta.presentation_url) + '" target="_blank" rel="noopener" style="font-size:0.78rem;">View Deck</a> '
-      : '';
+  tbody.innerHTML = runs.map(function (r) {
+    var statusClass = r.status === 'completed' ? 'Active' : r.status === 'failed' ? 'at-risk' : 'New';
     return '<tr>' +
-      '<td style="font-weight:500;">' + slsEscapeHtml(d.month_label || d.month_key) + '</td>' +
-      '<td class="sls-rev-num">' + slsFormatIDR(d.total_revenue_idr) + '</td>' +
-      '<td class="sls-rev-num">' + (d.gross_margin_pct != null ? d.gross_margin_pct + '%' : '-') + '</td>' +
-      '<td class="row-secondary">' + slsEscapeHtml(d.gross_margin_vs_prev || '-') + '</td>' +
-      '<td><span class="sls-dq ' + slsEscapeHtml(d.dq_flag || '') + '">' + slsEscapeHtml(d.dq_flag || '-') + '</span></td>' +
-      '<td class="row-secondary" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + slsEscapeHtml(d.headline || '-') + '</td>' +
-      '<td><div class="row-actions">' + presLink +
-        '<button class="btn-row-action" onclick="slsGenerateDeck(\'' + slsEscapeHtml(d.month_key) + '\')">Generate Deck</button>' +
-      '</div></td>' +
+      '<td>' + slsEscapeHtml(r.sync_type || '-') + '</td>' +
+      '<td style="font-weight:500;">' + slsEscapeHtml(r.month_key || '-') + '</td>' +
+      '<td><span class="sls-status ' + statusClass + '">' + slsEscapeHtml(r.status || '-') + '</span></td>' +
+      '<td class="sls-rev-num">' + (r.records_fetched || 0) + '</td>' +
+      '<td class="sls-rev-num">' + (r.records_upserted || 0) + '</td>' +
+      '<td class="row-secondary">' + slsFormatDate(r.started_at) + '</td>' +
+      '<td class="row-secondary">' + slsFormatDate(r.finished_at) + '</td>' +
     '</tr>';
   }).join('');
 }
@@ -365,19 +449,6 @@ function slsParseCsv(text) {
   return rows;
 }
 
-function slsRefreshDeckMetrics() {
-  if (!confirm('Refresh deck metrics from current revenue data?')) return;
-  slsApiPost('/sales/refresh-deck-metrics')
-    .then(function (body) {
-      if (body.ok) {
-        alert('Deck metrics refreshed: ' + (body.months_refreshed || 0) + ' months.');
-        slsLoadAll().then(function () { slsRenderOverview(); slsRenderDeck(); });
-      } else {
-        alert('Refresh failed: ' + (body.error ? body.error.message : 'Unknown error'));
-      }
-    }).catch(function (err) { alert('Error: ' + err.message); });
-}
-
 function slsRebuildAccountStatus() {
   if (!confirm('Rebuild account status snapshots from revenue data?')) return;
   slsApiPost('/sales/rebuild-account-status')
@@ -417,22 +488,6 @@ function slsRunPipeline() {
     }).catch(function (err) { alert('Error: ' + err.message); });
 }
 
-function slsGenerateDeck(monthKey) {
-  if (!confirm('Generate slides deck for ' + monthKey + '?')) return;
-  slsApiPost('/deck-metrics/' + encodeURIComponent(monthKey) + '/generate-deck')
-    .then(function (body) {
-      if (body.ok && body.result && body.result.presentation_url) {
-        alert('Deck generated successfully.\nJob ID: ' + body.job_id);
-        window.open(body.result.presentation_url, '_blank');
-        slsLoadAll().then(function () { slsRenderDeck(); });
-      } else if (body.ok) {
-        alert('Deck generation job created.\nJob ID: ' + body.job_id + '\nCheck Jobs for result.');
-      } else {
-        alert('Deck generation failed: ' + (body.error ? body.error.message : 'Unknown error'));
-      }
-    }).catch(function (err) { alert('Error: ' + err.message); });
-}
-
 // ============================================================
 // INIT
 // ============================================================
@@ -441,4 +496,11 @@ document.addEventListener('DOMContentLoaded', function () {
   slsLoadAll().then(function () {
     slsRenderOverview();
   });
+
+  // Handle OAuth redirect back
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('xero') === 'connected') {
+    slsSwitchTool('xero');
+    history.replaceState(null, '', window.location.pathname);
+  }
 });
