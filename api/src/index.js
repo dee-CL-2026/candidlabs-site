@@ -142,6 +142,45 @@ const COLLECTIONS = {
     columns: ['id', 'job_id', 'step', 'status', 'message', 'created_at'],
     searchable: ['job_id', 'step'],
     orderBy: 'created_at'
+  },
+  revenue_transactions: {
+    table: 'revenue_transactions',
+    prefix: 'RTX',
+    required: ['transaction_id', 'invoice_date'],
+    columns: ['id', 'transaction_id', 'invoice_date', 'invoice_number', 'distributor_name',
+              'venue_name', 'account_id', 'sku_code', 'sku_name', 'quantity_cases',
+              'quantity_cans', 'invoice_value_idr', 'revenue_idr', 'market', 'city',
+              'channel', 'group_name', 'source', 'meta', 'created_at', 'updated_at'],
+    searchable: ['venue_name', 'distributor_name', 'sku_name', 'invoice_number'],
+    orderBy: 'invoice_date'
+  },
+  account_mapping: {
+    table: 'account_mapping',
+    prefix: 'AMP',
+    required: ['raw_value'],
+    columns: ['id', 'raw_value', 'internal_venue_name', 'account_id', 'group_name',
+              'market', 'city', 'channel', 'active_flag', 'meta', 'created_at', 'updated_at'],
+    searchable: ['raw_value', 'internal_venue_name', 'account_id', 'group_name'],
+    orderBy: 'raw_value'
+  },
+  account_status: {
+    table: 'account_status',
+    prefix: 'AST',
+    required: ['snapshot_date', 'venue_name'],
+    columns: ['id', 'snapshot_date', 'venue_name', 'account_id', 'first_order_date',
+              'latest_order_date', 'days_since_last', 'status', 'meta', 'created_at'],
+    searchable: ['venue_name', 'account_id', 'status'],
+    orderBy: 'snapshot_date'
+  },
+  deck_metrics: {
+    table: 'deck_metrics',
+    prefix: 'DKM',
+    required: ['month_key'],
+    columns: ['id', 'month_key', 'month_label', 'total_revenue_idr', 'gross_margin_pct',
+              'gross_margin_vs_prev', 'dq_flag', 'headline', 'sales_performance',
+              'channel_performance', 'meta', 'created_at', 'updated_at'],
+    searchable: ['month_key', 'month_label'],
+    orderBy: 'month_key'
   }
 };
 
@@ -535,7 +574,8 @@ async function bulkImport(req, env, collection) {
 
 const ADAPTER_URL_MAP = {
   docgen: 'GAS_DOCGEN_URL',
-  email: 'GAS_EMAIL_URL'
+  email: 'GAS_EMAIL_URL',
+  slides: 'GAS_SLIDES_URL'
 };
 
 async function adapterInvoke(req, env, adapterType) {
@@ -817,6 +857,546 @@ async function agreementSendEmail(req, env, agreementId) {
 }
 
 // ============================================================
+// Sales pipeline endpoints (Wave 2)
+// ============================================================
+
+// POST /api/sales/import-receivables — replaces cleanReceivables + buildRevenueMaster
+async function salesImportReceivables(req, env) {
+  const body = await req.json().catch(() => ({}));
+  const rows = body.rows || body.data || [];
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'rows array is required' } }, 400);
+  }
+
+  const now = new Date().toISOString();
+  const jobId = generateId('JOB');
+  await env.DB.prepare(
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(jobId, 'import_receivables', 'running', JSON.stringify({ row_count: rows.length }), body.created_by || 'platform', now, now).run();
+
+  let imported = 0;
+  let skipped = 0;
+  const errors = [];
+
+  for (const row of rows) {
+    try {
+      const txnId = row.transaction_id || row.TransactionID || `${row.invoice_number || ''}-${row.venue_name || ''}-${row.sku_code || ''}-${row.invoice_date || ''}`;
+      if (!txnId || !row.invoice_date) {
+        skipped++;
+        continue;
+      }
+
+      // Look up account mapping for venue enrichment
+      let accountId = row.account_id || null;
+      let market = row.market || null;
+      let city = row.city || null;
+      let channel = row.channel || null;
+      let groupName = row.group_name || null;
+
+      if (row.venue_name && !accountId) {
+        const mapping = await env.DB.prepare(
+          'SELECT account_id, market, city, channel, group_name FROM account_mapping WHERE raw_value = ? OR internal_venue_name = ?'
+        ).bind(row.venue_name, row.venue_name).first();
+        if (mapping) {
+          accountId = mapping.account_id;
+          market = market || mapping.market;
+          city = city || mapping.city;
+          channel = channel || mapping.channel;
+          groupName = groupName || mapping.group_name;
+        }
+      }
+
+      const id = generateId('RTX');
+      await env.DB.prepare(
+        `INSERT OR REPLACE INTO revenue_transactions
+         (id, transaction_id, invoice_date, invoice_number, distributor_name, venue_name,
+          account_id, sku_code, sku_name, quantity_cases, quantity_cans,
+          invoice_value_idr, revenue_idr, market, city, channel, group_name, source,
+          meta, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
+        id, txnId, row.invoice_date, row.invoice_number || null,
+        row.distributor_name || null, row.venue_name || null,
+        accountId, row.sku_code || null, row.sku_name || null,
+        row.quantity_cases || null, row.quantity_cans || null,
+        row.invoice_value_idr || null, row.revenue_idr || row.invoice_value_idr || null,
+        market, city, channel, groupName,
+        row.source || 'xero', JSON.stringify(row.meta || {}), now, now
+      ).run();
+      imported++;
+    } catch (err) {
+      errors.push({ row: row.transaction_id || row.invoice_number, error: err.message });
+      skipped++;
+    }
+  }
+
+  const finishedAt = new Date().toISOString();
+  const result = { imported, skipped, errors: errors.slice(0, 10), total: rows.length };
+  await env.DB.prepare('UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?')
+    .bind('completed', JSON.stringify(result), finishedAt, jobId).run();
+  const logId = generateId('JLG');
+  await env.DB.prepare('INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(logId, jobId, 'import_receivables', 'completed', JSON.stringify(result), finishedAt).run();
+
+  return json({ ok: true, job_id: jobId, result });
+}
+
+// POST /api/sales/refresh-margins — replaces margin.js DQ-gated calculation
+async function salesRefreshMargins(req, env) {
+  const body = await req.json().catch(() => ({}));
+  const monthKey = body.month_key; // e.g. '2026-02'
+  if (!monthKey) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'month_key is required (e.g. 2026-02)' } }, 400);
+  }
+
+  const now = new Date().toISOString();
+  const jobId = generateId('JOB');
+  await env.DB.prepare(
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(jobId, 'refresh_margins', 'running', JSON.stringify({ month_key: monthKey }), body.created_by || 'platform', now, now).run();
+
+  try {
+    // Get revenue for the month
+    const { results: txns } = await env.DB.prepare(
+      "SELECT sku_code, SUM(revenue_idr) as total_revenue, SUM(quantity_cases) as total_cases FROM revenue_transactions WHERE invoice_date LIKE ? GROUP BY sku_code"
+    ).bind(monthKey + '%').all();
+
+    if (txns.length === 0) {
+      const result = { month_key: monthKey, status: 'no_data', message: 'No transactions found for this month' };
+      const finishedAt = new Date().toISOString();
+      await env.DB.prepare('UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?')
+        .bind('completed', JSON.stringify(result), finishedAt, jobId).run();
+      return json({ ok: true, job_id: jobId, result });
+    }
+
+    // Compute totals
+    let totalRevenue = 0;
+    let matchedRevenue = 0;
+    let totalCogs = 0;
+
+    for (const txn of txns) {
+      totalRevenue += txn.total_revenue || 0;
+      // Attempt cost lookup from sku_costing (Wave 3 dependency — graceful fallback)
+      if (txn.sku_code) {
+        const cost = await env.DB.prepare('SELECT unit_cost FROM sku_costing WHERE sku_code = ?')
+          .bind(txn.sku_code).first().catch(() => null);
+        if (cost && cost.unit_cost) {
+          totalCogs += cost.unit_cost * (txn.total_cases || 0);
+          matchedRevenue += txn.total_revenue || 0;
+        }
+      }
+    }
+
+    // DQ gate: require 98% coverage for valid margin
+    const coverage = totalRevenue > 0 ? matchedRevenue / totalRevenue : 0;
+    const dqPass = coverage >= 0.98;
+    const grossMarginPct = totalRevenue > 0 && dqPass
+      ? ((totalRevenue - totalCogs) / totalRevenue * 100).toFixed(2)
+      : null;
+
+    // Get previous month for comparison
+    const [year, month] = monthKey.split('-').map(Number);
+    const prevDate = new Date(year, month - 2, 1);
+    const prevKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+    const prevMetric = await env.DB.prepare('SELECT gross_margin_pct FROM deck_metrics WHERE month_key = ?')
+      .bind(prevKey).first();
+    const prevMargin = prevMetric ? prevMetric.gross_margin_pct : null;
+    const marginVsPrev = grossMarginPct && prevMargin
+      ? (parseFloat(grossMarginPct) - prevMargin).toFixed(2) + 'pp'
+      : null;
+
+    // Upsert deck_metrics for this month
+    const existing = await env.DB.prepare('SELECT id FROM deck_metrics WHERE month_key = ?').bind(monthKey).first();
+    if (existing) {
+      await env.DB.prepare(
+        'UPDATE deck_metrics SET total_revenue_idr = ?, gross_margin_pct = ?, gross_margin_vs_prev = ?, dq_flag = ?, updated_at = ? WHERE month_key = ?'
+      ).bind(totalRevenue, grossMarginPct ? parseFloat(grossMarginPct) : null, marginVsPrev, dqPass ? 'PASS' : 'FAIL', now, monthKey).run();
+    } else {
+      const dkmId = generateId('DKM');
+      const monthLabel = prevDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' }).replace(/.*,/, monthKey);
+      await env.DB.prepare(
+        'INSERT INTO deck_metrics (id, month_key, month_label, total_revenue_idr, gross_margin_pct, gross_margin_vs_prev, dq_flag, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).bind(dkmId, monthKey, monthKey, totalRevenue, grossMarginPct ? parseFloat(grossMarginPct) : null, marginVsPrev, dqPass ? 'PASS' : 'FAIL', now, now).run();
+    }
+
+    const result = {
+      month_key: monthKey, total_revenue: totalRevenue, total_cogs: totalCogs,
+      gross_margin_pct: grossMarginPct, dq_coverage: (coverage * 100).toFixed(1) + '%',
+      dq_flag: dqPass ? 'PASS' : 'FAIL', margin_vs_prev: marginVsPrev, sku_count: txns.length
+    };
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare('UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?')
+      .bind('completed', JSON.stringify(result), finishedAt, jobId).run();
+    const logId = generateId('JLG');
+    await env.DB.prepare('INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(logId, jobId, 'refresh_margins', 'completed', JSON.stringify(result), finishedAt).run();
+
+    return json({ ok: true, job_id: jobId, result });
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare('UPDATE jobs SET status = ?, error = ?, finished_at = ? WHERE id = ?')
+      .bind('failed', err.message, finishedAt, jobId).run();
+    return json({ ok: false, error: { code: 'COMPUTATION_ERROR', message: err.message }, job_id: jobId }, 500);
+  }
+}
+
+// POST /api/sales/refresh-deck-metrics — replaces Deck_Metrics_Wrapper orchestration
+async function salesRefreshDeckMetrics(req, env) {
+  const body = await req.json().catch(() => ({}));
+  const monthKey = body.month_key;
+  if (!monthKey) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'month_key is required' } }, 400);
+  }
+
+  const now = new Date().toISOString();
+
+  // Get or create deck_metrics row
+  let metric = await env.DB.prepare('SELECT * FROM deck_metrics WHERE month_key = ?').bind(monthKey).first();
+  if (!metric) {
+    const dkmId = generateId('DKM');
+    await env.DB.prepare(
+      'INSERT INTO deck_metrics (id, month_key, month_label, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'
+    ).bind(dkmId, monthKey, monthKey, now, now).run();
+    metric = await env.DB.prepare('SELECT * FROM deck_metrics WHERE month_key = ?').bind(monthKey).first();
+  }
+
+  // Aggregate revenue by month
+  const revRow = await env.DB.prepare(
+    "SELECT SUM(revenue_idr) as total FROM revenue_transactions WHERE invoice_date LIKE ?"
+  ).bind(monthKey + '%').first();
+  const totalRevenue = revRow ? revRow.total || 0 : 0;
+
+  // Headline MoM: compare with previous month
+  const [year, month] = monthKey.split('-').map(Number);
+  const prevDate = new Date(year, month - 2, 1);
+  const prevKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+  const prevRevRow = await env.DB.prepare(
+    "SELECT SUM(revenue_idr) as total FROM revenue_transactions WHERE invoice_date LIKE ?"
+  ).bind(prevKey + '%').first();
+  const prevRevenue = prevRevRow ? prevRevRow.total || 0 : 0;
+  const momChange = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue * 100).toFixed(1) : null;
+  const headline = momChange !== null
+    ? `Revenue ${parseFloat(momChange) >= 0 ? 'up' : 'down'} ${Math.abs(parseFloat(momChange))}% MoM`
+    : `Revenue: IDR ${(totalRevenue / 1e6).toFixed(1)}M`;
+
+  // Sales performance: top 5 accounts by revenue
+  const { results: topAccounts } = await env.DB.prepare(
+    "SELECT venue_name, SUM(revenue_idr) as rev FROM revenue_transactions WHERE invoice_date LIKE ? AND venue_name IS NOT NULL GROUP BY venue_name ORDER BY rev DESC LIMIT 5"
+  ).bind(monthKey + '%').all();
+  const salesPerformance = JSON.stringify(topAccounts.map(a => ({ venue: a.venue_name, revenue: a.rev })));
+
+  // Channel performance MoM
+  const { results: channels } = await env.DB.prepare(
+    "SELECT channel, SUM(revenue_idr) as rev FROM revenue_transactions WHERE invoice_date LIKE ? AND channel IS NOT NULL GROUP BY channel"
+  ).bind(monthKey + '%').all();
+  const channelPerformance = JSON.stringify(channels.map(c => ({ channel: c.channel, revenue: c.rev })));
+
+  // Update deck_metrics
+  await env.DB.prepare(
+    'UPDATE deck_metrics SET total_revenue_idr = ?, headline = ?, sales_performance = ?, channel_performance = ?, updated_at = ? WHERE month_key = ?'
+  ).bind(totalRevenue, headline, salesPerformance, channelPerformance, now, monthKey).run();
+
+  return json({
+    ok: true,
+    data: { month_key: monthKey, total_revenue_idr: totalRevenue, headline, mom_change: momChange,
+            top_accounts: topAccounts.length, channels: channels.length }
+  });
+}
+
+// POST /api/sales/rebuild-account-status — replaces account_status.js
+async function salesRebuildAccountStatus(req, env) {
+  const body = await req.json().catch(() => ({}));
+  const snapshotDate = body.snapshot_date || new Date().toISOString().slice(0, 10);
+
+  const now = new Date().toISOString();
+  const jobId = generateId('JOB');
+  await env.DB.prepare(
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(jobId, 'rebuild_account_status', 'running', JSON.stringify({ snapshot_date: snapshotDate }), body.created_by || 'platform', now, now).run();
+
+  try {
+    // Get first and latest order per venue
+    const { results: accounts } = await env.DB.prepare(
+      `SELECT venue_name, account_id,
+              MIN(invoice_date) as first_order, MAX(invoice_date) as latest_order
+       FROM revenue_transactions
+       WHERE venue_name IS NOT NULL
+       GROUP BY venue_name`
+    ).all();
+
+    // Delete existing snapshot for this date
+    await env.DB.prepare('DELETE FROM account_status WHERE snapshot_date = ?').bind(snapshotDate).run();
+
+    let processed = 0;
+    for (const acct of accounts) {
+      const daysSince = Math.floor((new Date(snapshotDate) - new Date(acct.latest_order)) / 86400000);
+      let status = 'Active';
+      if (daysSince > 90) status = 'Dormant';
+      else if (daysSince > 60) status = 'At Risk';
+
+      // Check if first order is within last 90 days
+      const daysSinceFirst = Math.floor((new Date(snapshotDate) - new Date(acct.first_order)) / 86400000);
+      if (daysSinceFirst <= 90) status = 'New';
+
+      const id = generateId('AST');
+      await env.DB.prepare(
+        'INSERT INTO account_status (id, snapshot_date, venue_name, account_id, first_order_date, latest_order_date, days_since_last, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).bind(id, snapshotDate, acct.venue_name, acct.account_id, acct.first_order, acct.latest_order, daysSince, status, now).run();
+      processed++;
+    }
+
+    const result = { snapshot_date: snapshotDate, accounts_processed: processed };
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare('UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?')
+      .bind('completed', JSON.stringify(result), finishedAt, jobId).run();
+    const logId = generateId('JLG');
+    await env.DB.prepare('INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(logId, jobId, 'rebuild_account_status', 'completed', JSON.stringify(result), finishedAt).run();
+
+    return json({ ok: true, job_id: jobId, result });
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare('UPDATE jobs SET status = ?, error = ?, finished_at = ? WHERE id = ?')
+      .bind('failed', err.message, finishedAt, jobId).run();
+    return json({ ok: false, error: { code: 'COMPUTATION_ERROR', message: err.message }, job_id: jobId }, 500);
+  }
+}
+
+// POST /api/sales/sync-mapping — replaces mapping_sync.js + tracking_enrichment.js
+async function salesSyncMapping(req, env) {
+  const body = await req.json().catch(() => ({}));
+  const mappings = body.mappings || body.rows || [];
+  if (!Array.isArray(mappings) || mappings.length === 0) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'mappings array is required' } }, 400);
+  }
+
+  const now = new Date().toISOString();
+  let upserted = 0;
+  let enriched = 0;
+
+  for (const m of mappings) {
+    if (!m.raw_value) continue;
+
+    // Generate account_id if missing
+    const accountId = m.account_id || ('ACC-' + m.raw_value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12).toUpperCase());
+
+    // Upsert account_mapping
+    const existing = await env.DB.prepare('SELECT id FROM account_mapping WHERE raw_value = ?').bind(m.raw_value).first();
+    if (existing) {
+      await env.DB.prepare(
+        'UPDATE account_mapping SET internal_venue_name = ?, account_id = ?, group_name = ?, market = ?, city = ?, channel = ?, active_flag = ?, updated_at = ? WHERE raw_value = ?'
+      ).bind(m.internal_venue_name || m.raw_value, accountId, m.group_name || null, m.market || null, m.city || null, m.channel || null, m.active_flag || 'Active', now, m.raw_value).run();
+    } else {
+      const id = generateId('AMP');
+      await env.DB.prepare(
+        'INSERT INTO account_mapping (id, raw_value, internal_venue_name, account_id, group_name, market, city, channel, active_flag, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).bind(id, m.raw_value, m.internal_venue_name || m.raw_value, accountId, m.group_name || null, m.market || null, m.city || null, m.channel || null, m.active_flag || 'Active', now, now).run();
+    }
+    upserted++;
+
+    // Enrich existing revenue_transactions that match this venue
+    const { meta: updateMeta } = await env.DB.prepare(
+      'UPDATE revenue_transactions SET account_id = ?, market = ?, city = ?, channel = ?, group_name = ?, updated_at = ? WHERE (venue_name = ? OR venue_name = ?) AND account_id IS NULL'
+    ).bind(accountId, m.market || null, m.city || null, m.channel || null, m.group_name || null, now, m.raw_value, m.internal_venue_name || m.raw_value).run();
+    enriched += updateMeta ? updateMeta.changes || 0 : 0;
+  }
+
+  return json({ ok: true, data: { mappings_upserted: upserted, transactions_enriched: enriched } });
+}
+
+// POST /api/sales/bridge-crm — replaces CRM.js syncCrmFromConfigMapping
+async function salesBridgeCrm(req, env) {
+  const now = new Date().toISOString();
+
+  // Read all active account mappings
+  const { results: mappings } = await env.DB.prepare(
+    "SELECT DISTINCT account_id, internal_venue_name, group_name, market, city, channel FROM account_mapping WHERE active_flag = 'Active' AND account_id IS NOT NULL"
+  ).all();
+
+  let companiesCreated = 0;
+  let companiesUpdated = 0;
+
+  for (const m of mappings) {
+    const companyName = m.internal_venue_name || m.account_id;
+
+    // Check if company already exists (by name match)
+    const existing = await env.DB.prepare('SELECT id FROM companies WHERE name = ?').bind(companyName).first();
+    if (existing) {
+      await env.DB.prepare(
+        'UPDATE companies SET market = ?, channel = ?, updated_at = ? WHERE id = ?'
+      ).bind(m.market || null, m.channel || null, now, existing.id).run();
+      companiesUpdated++;
+    } else {
+      const id = generateId('CMP');
+      await env.DB.prepare(
+        'INSERT INTO companies (id, name, type, market, channel, status, meta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).bind(id, companyName, 'venue', m.market || null, m.channel || null, 'active', JSON.stringify({ account_id: m.account_id, group_name: m.group_name, city: m.city }), now, now).run();
+      companiesCreated++;
+    }
+  }
+
+  return json({ ok: true, data: { companies_created: companiesCreated, companies_updated: companiesUpdated, mappings_processed: mappings.length } });
+}
+
+// POST /api/sales/run-pipeline — orchestration: import → margins → deck metrics
+async function salesRunPipeline(req, env) {
+  const body = await req.json().catch(() => ({}));
+  const monthKey = body.month_key;
+  if (!monthKey) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'month_key is required' } }, 400);
+  }
+  if (!body.rows && !body.data) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'rows/data array is required for import' } }, 400);
+  }
+
+  const now = new Date().toISOString();
+  const pipelineJobId = generateId('JOB');
+  await env.DB.prepare(
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(pipelineJobId, 'sales_pipeline', 'running', JSON.stringify({ month_key: monthKey, row_count: (body.rows || body.data || []).length }), body.created_by || 'platform', now, now).run();
+
+  const steps = [];
+  try {
+    // Step 1: Import receivables
+    const importReq = new Request('http://internal/api/sales/import-receivables', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows: body.rows || body.data, created_by: body.created_by })
+    });
+    const importRes = await salesImportReceivables(importReq, env);
+    const importData = await importRes.json();
+    steps.push({ step: 'import_receivables', status: importData.ok ? 'completed' : 'failed', result: importData.result || importData.error });
+    const logId1 = generateId('JLG');
+    await env.DB.prepare('INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(logId1, pipelineJobId, 'import_receivables', importData.ok ? 'completed' : 'failed', JSON.stringify(importData.result || importData.error), new Date().toISOString()).run();
+    if (!importData.ok) throw new Error('Import failed: ' + JSON.stringify(importData.error));
+
+    // Step 2: Refresh margins
+    const marginReq = new Request('http://internal/api/sales/refresh-margins', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ month_key: monthKey, created_by: body.created_by })
+    });
+    const marginRes = await salesRefreshMargins(marginReq, env);
+    const marginData = await marginRes.json();
+    steps.push({ step: 'refresh_margins', status: marginData.ok ? 'completed' : 'failed', result: marginData.result || marginData.error });
+    const logId2 = generateId('JLG');
+    await env.DB.prepare('INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(logId2, pipelineJobId, 'refresh_margins', marginData.ok ? 'completed' : 'failed', JSON.stringify(marginData.result || marginData.error), new Date().toISOString()).run();
+    if (!marginData.ok) throw new Error('Margin refresh failed: ' + JSON.stringify(marginData.error));
+
+    // Step 3: Refresh deck metrics
+    const deckReq = new Request('http://internal/api/sales/refresh-deck-metrics', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ month_key: monthKey })
+    });
+    const deckRes = await salesRefreshDeckMetrics(deckReq, env);
+    const deckData = await deckRes.json();
+    steps.push({ step: 'refresh_deck_metrics', status: deckData.ok ? 'completed' : 'failed', result: deckData.data || deckData.error });
+    const logId3 = generateId('JLG');
+    await env.DB.prepare('INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(logId3, pipelineJobId, 'refresh_deck_metrics', deckData.ok ? 'completed' : 'failed', JSON.stringify(deckData.data || deckData.error), new Date().toISOString()).run();
+
+    const finishedAt = new Date().toISOString();
+    const pipelineResult = { month_key: monthKey, steps, status: 'completed' };
+    await env.DB.prepare('UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?')
+      .bind('completed', JSON.stringify(pipelineResult), finishedAt, pipelineJobId).run();
+
+    return json({ ok: true, job_id: pipelineJobId, result: pipelineResult });
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare('UPDATE jobs SET status = ?, error = ?, finished_at = ? WHERE id = ?')
+      .bind('failed', err.message, finishedAt, pipelineJobId).run();
+    return json({ ok: false, error: { code: 'PIPELINE_ERROR', message: err.message }, job_id: pipelineJobId, steps }, 500);
+  }
+}
+
+// POST /api/deck-metrics/:monthKey/generate-deck — slides adapter
+async function deckMetricsGenerateDeck(req, env, monthKey) {
+  const metric = await env.DB.prepare('SELECT * FROM deck_metrics WHERE month_key = ?').bind(monthKey).first();
+  if (!metric) return json({ ok: false, error: { code: 'NOT_FOUND', message: `No deck metrics for ${monthKey}` } }, 404);
+
+  const gasUrl = env.GAS_SLIDES_URL;
+  if (!gasUrl) {
+    return json({ ok: false, error: { code: 'CONFIG_ERROR', message: 'Slides adapter URL not configured' } }, 500);
+  }
+
+  // Build 22 placeholders from deck_metrics
+  const meta = JSON.parse(metric.meta || '{}');
+  const salesPerf = JSON.parse(metric.sales_performance || '[]');
+  const channelPerf = JSON.parse(metric.channel_performance || '[]');
+
+  const payload = {
+    action: 'generate',
+    template: 'monthly_deck',
+    placeholders: {
+      '{{MONTH}}': metric.month_label || metric.month_key,
+      '{{TOTAL_REVENUE}}': metric.total_revenue_idr ? `IDR ${(metric.total_revenue_idr / 1e6).toFixed(1)}M` : '-',
+      '{{GROSS_MARGIN}}': metric.gross_margin_pct ? `${metric.gross_margin_pct}%` : '-',
+      '{{MARGIN_VS_PREV}}': metric.gross_margin_vs_prev || '-',
+      '{{DQ_FLAG}}': metric.dq_flag || '-',
+      '{{HEADLINE}}': metric.headline || '-',
+      '{{TOP_1_VENUE}}': salesPerf[0] ? salesPerf[0].venue : '-',
+      '{{TOP_1_REV}}': salesPerf[0] ? `IDR ${(salesPerf[0].revenue / 1e6).toFixed(1)}M` : '-',
+      '{{TOP_2_VENUE}}': salesPerf[1] ? salesPerf[1].venue : '-',
+      '{{TOP_2_REV}}': salesPerf[1] ? `IDR ${(salesPerf[1].revenue / 1e6).toFixed(1)}M` : '-',
+      '{{TOP_3_VENUE}}': salesPerf[2] ? salesPerf[2].venue : '-',
+      '{{TOP_3_REV}}': salesPerf[2] ? `IDR ${(salesPerf[2].revenue / 1e6).toFixed(1)}M` : '-',
+      '{{TOP_4_VENUE}}': salesPerf[3] ? salesPerf[3].venue : '-',
+      '{{TOP_4_REV}}': salesPerf[3] ? `IDR ${(salesPerf[3].revenue / 1e6).toFixed(1)}M` : '-',
+      '{{TOP_5_VENUE}}': salesPerf[4] ? salesPerf[4].venue : '-',
+      '{{TOP_5_REV}}': salesPerf[4] ? `IDR ${(salesPerf[4].revenue / 1e6).toFixed(1)}M` : '-',
+      '{{CH_1_NAME}}': channelPerf[0] ? channelPerf[0].channel : '-',
+      '{{CH_1_REV}}': channelPerf[0] ? `IDR ${(channelPerf[0].revenue / 1e6).toFixed(1)}M` : '-',
+      '{{CH_2_NAME}}': channelPerf[1] ? channelPerf[1].channel : '-',
+      '{{CH_2_REV}}': channelPerf[1] ? `IDR ${(channelPerf[1].revenue / 1e6).toFixed(1)}M` : '-',
+      '{{CH_3_NAME}}': channelPerf[2] ? channelPerf[2].channel : '-',
+      '{{CH_3_REV}}': channelPerf[2] ? `IDR ${(channelPerf[2].revenue / 1e6).toFixed(1)}M` : '-'
+    },
+    month_key: monthKey,
+    created_by: req.headers.get('X-Agent-Id') || 'platform'
+  };
+
+  const now = new Date().toISOString();
+  const jobId = generateId('JOB');
+  await env.DB.prepare(
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(jobId, 'slides', 'running', JSON.stringify(payload), payload.created_by, now, now).run();
+
+  try {
+    const gasUrlWithKey = gasUrl + (gasUrl.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(env.GAS_API_KEY);
+    const gasResponse = await fetch(gasUrlWithKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const resultText = await gasResponse.text();
+    let result;
+    try { result = JSON.parse(resultText); } catch { result = { raw: resultText }; }
+    const finishedAt = new Date().toISOString();
+
+    await env.DB.prepare('UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?')
+      .bind('completed', JSON.stringify(result), finishedAt, jobId).run();
+    const logId = generateId('JLG');
+    await env.DB.prepare('INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(logId, jobId, 'generate_deck', 'completed', JSON.stringify(result), finishedAt).run();
+
+    // Store presentation URL in deck_metrics.meta
+    if (result.ok && result.presentation_url) {
+      const updatedMeta = JSON.stringify({ ...meta, presentation_url: result.presentation_url, presentation_id: result.presentation_id });
+      await env.DB.prepare('UPDATE deck_metrics SET meta = ?, updated_at = ? WHERE month_key = ?')
+        .bind(updatedMeta, finishedAt, monthKey).run();
+    }
+
+    return json({ ok: true, job_id: jobId, result });
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare('UPDATE jobs SET status = ?, error = ?, finished_at = ? WHERE id = ?')
+      .bind('failed', err.message, finishedAt, jobId).run();
+    return json({ ok: false, error: { code: 'ADAPTER_ERROR', message: err.message }, job_id: jobId }, 502);
+  }
+}
+
+// ============================================================
 // Router
 // ============================================================
 
@@ -866,12 +1446,25 @@ async function handleApi(req, env, url) {
     return webhookReceive(req, env, webhookMatch[1]);
   }
 
+  // Sales pipeline actions
+  if (path === '/api/sales/import-receivables' && req.method === 'POST') return salesImportReceivables(req, env);
+  if (path === '/api/sales/refresh-margins' && req.method === 'POST') return salesRefreshMargins(req, env);
+  if (path === '/api/sales/refresh-deck-metrics' && req.method === 'POST') return salesRefreshDeckMetrics(req, env);
+  if (path === '/api/sales/rebuild-account-status' && req.method === 'POST') return salesRebuildAccountStatus(req, env);
+  if (path === '/api/sales/sync-mapping' && req.method === 'POST') return salesSyncMapping(req, env);
+  if (path === '/api/sales/bridge-crm' && req.method === 'POST') return salesBridgeCrm(req, env);
+  if (path === '/api/sales/run-pipeline' && req.method === 'POST') return salesRunPipeline(req, env);
+
+  // Deck metrics: POST /api/deck-metrics/:monthKey/generate-deck
+  const deckGenMatch = path.match(/^\/api\/deck-metrics\/([^/]+)\/generate-deck$/);
+  if (deckGenMatch && req.method === 'POST') return deckMetricsGenerateDeck(req, env, deckGenMatch[1]);
+
   // Bulk import: /api/{collection}/import
-  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs)\/import$/);
+  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs|revenue_transactions|account_mapping|account_status|deck_metrics)\/import$/);
   if (importMatch && req.method === 'POST') return bulkImport(req, env, importMatch[1]);
 
   // CRUD routes: /api/{collection}[/{id}]
-  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs)(?:\/([^/]+))?$/);
+  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs|revenue_transactions|account_mapping|account_status|deck_metrics)(?:\/([^/]+))?$/);
   if (!match) return json({ ok: false, error: { code: 'NOT_FOUND', message: 'Unknown endpoint' } }, 404);
 
   const collection = match[1];
