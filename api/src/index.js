@@ -2453,6 +2453,132 @@ async function cogsQuery(env, url) {
   return json({ ok: true, data: results, meta: { count: results.length } });
 }
 
+// ============================================================
+// Wave 7 — Pricing Engine v1
+// ============================================================
+
+// POST /api/pricing/extract — derive selling prices from ACCREC invoices by SKU and contact/channel
+async function priceExtract(env) {
+  const now = new Date().toISOString();
+
+  const { results: priceData } = await env.DB.prepare(`
+    SELECT
+      nli.item_code,
+      nd.contact_name as channel,
+      nli.period,
+      AVG(nli.unit_amount) as avg_selling_price,
+      SUM(nli.line_total) as total_revenue,
+      SUM(nli.quantity) as total_quantity,
+      MAX(nd.invoice_date) as latest_date
+    FROM normalised_line_items nli
+    JOIN normalised_documents nd ON nli.document_id = nd.id
+    WHERE nli.entity_type = 'revenue'
+      AND nli.item_code IS NOT NULL
+      AND nli.item_code != ''
+    GROUP BY nli.item_code, nd.contact_name, nli.period
+  `).all();
+
+  let upserted = 0;
+  for (const row of priceData) {
+    const id = generateId('PRI');
+    await env.DB.prepare(
+      `INSERT INTO pricing_inputs (id, item_code, channel, distributor, selling_price, effective_date,
+         period, total_revenue, total_quantity, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(item_code, channel, period) DO UPDATE SET selling_price=excluded.selling_price,
+         effective_date=excluded.effective_date, total_revenue=excluded.total_revenue,
+         total_quantity=excluded.total_quantity, updated_at=excluded.updated_at`
+    ).bind(id, row.item_code, row.channel, row.channel, row.avg_selling_price,
+           row.latest_date, row.period, row.total_revenue, row.total_quantity, now, now).run();
+    upserted++;
+  }
+
+  return { ok: true, pricing_inputs: upserted };
+}
+
+// POST /api/pricing/compute-margins — join pricing_inputs with cogs_results, compute margins
+async function marginCompute(env) {
+  const now = new Date().toISOString();
+
+  const { results: joined } = await env.DB.prepare(`
+    SELECT
+      pi.item_code,
+      pi.channel,
+      pi.period,
+      pi.selling_price,
+      pi.total_revenue,
+      pi.total_quantity,
+      cr.unit_cost,
+      cr.item_name
+    FROM pricing_inputs pi
+    LEFT JOIN cogs_results cr ON pi.item_code = cr.item_code AND pi.period = cr.period
+  `).all();
+
+  let upserted = 0;
+  for (const row of joined) {
+    const grossMargin = (row.selling_price != null && row.unit_cost != null)
+      ? row.selling_price - row.unit_cost : null;
+    const grossMarginPct = (grossMargin != null && row.selling_price > 0)
+      ? (grossMargin / row.selling_price) * 100 : null;
+    const contributionMargin = grossMargin;
+
+    const id = generateId('MRG');
+    await env.DB.prepare(
+      `INSERT INTO margin_results (id, item_code, item_name, channel, period, selling_price, unit_cost,
+         gross_margin, gross_margin_pct, contribution_margin, total_revenue, total_quantity, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(item_code, channel, period) DO UPDATE SET item_name=excluded.item_name,
+         selling_price=excluded.selling_price, unit_cost=excluded.unit_cost,
+         gross_margin=excluded.gross_margin, gross_margin_pct=excluded.gross_margin_pct,
+         contribution_margin=excluded.contribution_margin, total_revenue=excluded.total_revenue,
+         total_quantity=excluded.total_quantity, updated_at=excluded.updated_at`
+    ).bind(id, row.item_code, row.item_name, row.channel, row.period, row.selling_price,
+           row.unit_cost, grossMargin, grossMarginPct, contributionMargin,
+           row.total_revenue, row.total_quantity, now, now).run();
+    upserted++;
+  }
+
+  return { ok: true, margin_results: upserted };
+}
+
+// GET /api/pricing/margin-by-channel — margin by distributor/channel
+async function marginByChannel(env, url) {
+  const period = url.searchParams.get('period');
+  let sql = `
+    SELECT channel, period,
+      COUNT(DISTINCT item_code) as sku_count,
+      SUM(total_revenue) as channel_revenue,
+      SUM(total_quantity) as channel_quantity,
+      AVG(gross_margin_pct) as avg_margin_pct,
+      SUM(gross_margin * total_quantity) as total_gross_margin
+    FROM margin_results
+  `;
+  const binds = [];
+  if (period) { sql += ' WHERE period = ?'; binds.push(period); }
+  sql += ' GROUP BY channel, period ORDER BY channel_revenue DESC';
+  const stmt = binds.length > 0 ? env.DB.prepare(sql).bind(...binds) : env.DB.prepare(sql);
+  const { results } = await stmt.all();
+  return json({ ok: true, data: results, meta: { count: results.length } });
+}
+
+// GET /api/pricing/margin-query — read margin_results by SKU, channel, period
+async function marginQuery(env, url) {
+  const sku = url.searchParams.get('sku');
+  const channel = url.searchParams.get('channel');
+  const period = url.searchParams.get('period');
+  let sql = 'SELECT * FROM margin_results';
+  const wheres = [];
+  const binds = [];
+  if (sku) { wheres.push('item_code = ?'); binds.push(sku); }
+  if (channel) { wheres.push('channel = ?'); binds.push(channel); }
+  if (period) { wheres.push('period = ?'); binds.push(period); }
+  if (wheres.length > 0) sql += ' WHERE ' + wheres.join(' AND ');
+  sql += ' ORDER BY period DESC, channel ASC, item_code ASC';
+  const stmt = binds.length > 0 ? env.DB.prepare(sql).bind(...binds) : env.DB.prepare(sql);
+  const { results } = await stmt.all();
+  return json({ ok: true, data: results, meta: { count: results.length } });
+}
+
 // POST /api/deck-metrics/:monthKey/generate-deck — slides adapter
 async function deckMetricsGenerateDeck(req, env, monthKey) {
   const metric = await env.DB.prepare('SELECT * FROM deck_metrics WHERE month_key = ?').bind(monthKey).first();
@@ -2643,6 +2769,18 @@ async function handleApi(req, env, url) {
     catch (err) { return json({ ok: false, error: { code: 'COGS_ERROR', message: err.message } }, 500); }
   }
   if (path === '/api/cogs/query' && req.method === 'GET') return cogsQuery(env, url);
+
+  // Wave 7: Pricing routes (admin-gated)
+  if (path === '/api/pricing/extract' && req.method === 'POST') {
+    try { const r = await priceExtract(env); return json(r); }
+    catch (err) { return json({ ok: false, error: { code: 'PRICING_ERROR', message: err.message } }, 500); }
+  }
+  if (path === '/api/pricing/compute-margins' && req.method === 'POST') {
+    try { const r = await marginCompute(env); return json(r); }
+    catch (err) { return json({ ok: false, error: { code: 'PRICING_ERROR', message: err.message } }, 500); }
+  }
+  if (path === '/api/pricing/margin-by-channel' && req.method === 'GET') return marginByChannel(env, url);
+  if (path === '/api/pricing/margin-query' && req.method === 'GET') return marginQuery(env, url);
 
   // Reports: deck generation (new canonical route)
   const reportsDeckMatch = path.match(/^\/api\/reports\/deck\/([^/]+)\/generate$/);

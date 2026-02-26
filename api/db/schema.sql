@@ -222,3 +222,46 @@ CREATE TABLE IF NOT EXISTS cogs_results (
 );
 CREATE INDEX IF NOT EXISTS idx_cogs_item ON cogs_results(item_code);
 CREATE INDEX IF NOT EXISTS idx_cogs_period ON cogs_results(period);
+
+-- ============================================================
+-- Wave 7: Pricing Inputs + Margin Results
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS pricing_inputs (
+  id              TEXT PRIMARY KEY,
+  item_code       TEXT NOT NULL,
+  channel         TEXT,
+  distributor     TEXT,
+  selling_price   REAL,
+  effective_date  TEXT,
+  period          TEXT,
+  currency_code   TEXT DEFAULT 'IDR',
+  total_revenue   REAL DEFAULT 0,
+  total_quantity  REAL DEFAULT 0,
+  created_at      TEXT DEFAULT (datetime('now')),
+  updated_at      TEXT DEFAULT (datetime('now')),
+  UNIQUE(item_code, channel, period)
+);
+CREATE INDEX IF NOT EXISTS idx_pi_item ON pricing_inputs(item_code);
+CREATE INDEX IF NOT EXISTS idx_pi_channel ON pricing_inputs(channel);
+
+CREATE TABLE IF NOT EXISTS margin_results (
+  id                  TEXT PRIMARY KEY,
+  item_code           TEXT NOT NULL,
+  item_name           TEXT,
+  channel             TEXT,
+  period              TEXT NOT NULL,
+  selling_price       REAL,
+  unit_cost           REAL,
+  gross_margin        REAL,
+  gross_margin_pct    REAL,
+  contribution_margin REAL,
+  total_revenue       REAL DEFAULT 0,
+  total_quantity      REAL DEFAULT 0,
+  created_at          TEXT DEFAULT (datetime('now')),
+  updated_at          TEXT DEFAULT (datetime('now')),
+  UNIQUE(item_code, channel, period)
+);
+CREATE INDEX IF NOT EXISTS idx_mr_item ON margin_results(item_code);
+CREATE INDEX IF NOT EXISTS idx_mr_channel ON margin_results(channel);
+CREATE INDEX IF NOT EXISTS idx_mr_period ON margin_results(period);
