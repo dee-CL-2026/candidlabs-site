@@ -257,7 +257,7 @@
     function rptLoadDeckMetrics() {
       if (typeof CandidStore === 'undefined') return;
       CandidStore.load('deck_metrics').then(function (data) {
-        var deck = (data || []).slice().sort(function (a, b) { return (b.month_key || '').localeCompare(a.month_key || ''); });
+        var deck = (data || []).slice().sort(function (a, b) { return (b.monthKey || '').localeCompare(a.monthKey || ''); });
         var tbody = document.getElementById('rpt-deck-tbody');
         if (!deck.length) {
           tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-secondary);">No deck metrics yet</td></tr>';
@@ -269,13 +269,13 @@
             ? '<a href="' + rptEscape(meta.presentation_url) + '" target="_blank" rel="noopener" style="color:var(--color-primary);font-weight:500;">View Deck</a>'
             : '';
           return '<tr style="border-bottom:1px solid var(--border-color);">' +
-            '<td style="padding:8px 12px;font-weight:500;">' + rptEscape(d.month_label || d.month_key) + '</td>' +
-            '<td style="padding:8px 12px;text-align:right;font-family:monospace;">' + rptFormatIDR(d.total_revenue_idr) + '</td>' +
-            '<td style="padding:8px 12px;text-align:right;">' + (d.gross_margin_pct != null ? d.gross_margin_pct + '%' : '-') + '</td>' +
+            '<td style="padding:8px 12px;font-weight:500;">' + rptEscape(d.monthLabel || d.monthKey) + '</td>' +
+            '<td style="padding:8px 12px;text-align:right;font-family:monospace;">' + rptFormatIDR(d.totalRevenueIdr) + '</td>' +
+            '<td style="padding:8px 12px;text-align:right;">' + (d.grossMarginPct != null ? d.grossMarginPct + '%' : '-') + '</td>' +
             '<td style="padding:8px 12px;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + rptEscape(d.headline || '-') + '</td>' +
             '<td style="padding:8px 12px;">' + presLink +
               (presLink ? ' ' : '') +
-              '<button onclick="rptGenerateDeck(\'' + rptEscape(d.month_key) + '\')" style="font-size:0.78rem;padding:3px 8px;border:1px solid var(--border-color);border-radius:4px;background:var(--bg-card);color:var(--text-primary);cursor:pointer;">Generate</button>' +
+              '<button onclick="rptGenerateDeck(\'' + rptEscape(d.monthKey) + '\')" style="font-size:0.78rem;padding:3px 8px;border:1px solid var(--border-color);border-radius:4px;background:var(--bg-card);color:var(--text-primary);cursor:pointer;">Generate</button>' +
             '</td></tr>';
         }).join('');
       });
