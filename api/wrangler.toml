@@ -6,3 +6,7 @@ compatibility_date = "2026-02-18"
 binding = "DB"
 database_name = "candidlabs"
 database_id = "ab4a73ca-5285-4aac-93c2-c45209ef0db2"
+
+[vars]
+GAS_DOCGEN_URL = "https://script.google.com/macros/s/AKfycbxwgt1ZjU-RtD91k2is9g3ZG62lQcbQez5RIX7h34j_E89HBNv5qrLgbrpStDb_CgzJ/exec"
+GAS_EMAIL_URL  = "https://script.google.com/macros/s/AKfycbzO9evvX4I3VFaEIbrrWUq5wNuEUZEOJpLZWTtgT1N2tuhp-hHB5hgXjdtVBixYOdTB/exec"

@@ -8,13 +8,21 @@ function json(data, status = 200) {
       'content-type': 'application/json; charset=utf-8',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'access-control-allow-headers': 'Content-Type, Authorization, X-Agent-Id'
+      'access-control-allow-headers': 'Content-Type, Authorization, X-Agent-Id, X-Api-Key'
     }
   });
 }
 
 function generateId(prefix) {
   return prefix + '-' + Date.now().toString(16).slice(-6);
+}
+
+function validateApiKey(request, env) {
+  const key = request.headers.get('X-Api-Key');
+  if (!key || key !== env.GAS_API_KEY) {
+    return json({ ok: false, error: { code: 'UNAUTHORIZED', message: 'Invalid API key' } }, 401);
+  }
+  return null;
 }
 
 // ============================================================
@@ -107,6 +115,33 @@ const COLLECTIONS = {
     columns: ['id', 'sku_code', 'product_name', 'variant', 'pack_size', 'status',
               'rnd_project_id', 'notes', 'meta', 'created_at', 'updated_at'],
     searchable: ['sku_code', 'product_name']
+  },
+  agreements: {
+    table: 'agreements',
+    prefix: 'AGR',
+    required: ['account_name'],
+    columns: ['id', 'agreement_key', 'account_name', 'contact_name', 'company_id',
+              'agreement_date', 'start_date', 'end_date', 'agreement_type', 'status',
+              'terms', 'notes', 'meta', 'created_at', 'updated_at'],
+    searchable: ['account_name', 'contact_name', 'agreement_key'],
+    orderBy: 'created_at'
+  },
+  jobs: {
+    table: 'jobs',
+    prefix: 'JOB',
+    required: ['job_type'],
+    columns: ['id', 'job_type', 'status', 'payload', 'result', 'error',
+              'created_by', 'started_at', 'finished_at', 'created_at'],
+    searchable: ['job_type', 'status'],
+    orderBy: 'created_at'
+  },
+  job_logs: {
+    table: 'job_logs',
+    prefix: 'JLG',
+    required: ['job_id', 'step'],
+    columns: ['id', 'job_id', 'step', 'status', 'message', 'created_at'],
+    searchable: ['job_id', 'step'],
+    orderBy: 'created_at'
   }
 };
 
@@ -176,6 +211,27 @@ async function createOne(req, env, collection) {
     }
   }
 
+  // Agreements: dedup check on agreement_key, company_id verification, default status
+  if (collection === 'agreements') {
+    if (body.agreement_key) {
+      const dup = await env.DB.prepare(
+        'SELECT id FROM agreements WHERE agreement_key = ?'
+      ).bind(body.agreement_key).first();
+      if (dup) {
+        return json({ ok: false, error: { code: 'DUPLICATE', message: `Agreement with key "${body.agreement_key}" already exists (${dup.id})` } }, 409);
+      }
+    }
+    if (body.company_id) {
+      const company = await env.DB.prepare('SELECT id FROM companies WHERE id = ?').bind(body.company_id).first();
+      if (!company) {
+        return json({ ok: false, error: { code: 'VALIDATION', message: `Company ${body.company_id} not found` } }, 400);
+      }
+    }
+    if (!body.status) {
+      body.status = 'draft';
+    }
+  }
+
   // Build insert from known columns only
   const record = { id };
   if (cfg.columns.includes('created_at')) record.created_at = now;
@@ -211,6 +267,31 @@ async function updateOne(req, env, collection, id) {
     const fn = body.first_name !== undefined ? body.first_name : (cur?.first_name || '');
     const ln = body.last_name !== undefined ? body.last_name : (cur?.last_name || '');
     body.name = (fn + ' ' + ln).trim();
+  }
+
+  // Agreements: status transition validation, company_id verification
+  if (collection === 'agreements') {
+    if (body.status !== undefined) {
+      const cur = await env.DB.prepare('SELECT status FROM agreements WHERE id = ?').bind(id).first();
+      const from = cur?.status || 'draft';
+      const to = body.status;
+      const VALID_TRANSITIONS = {
+        draft: ['active', 'terminated'],
+        active: ['expired', 'terminated'],
+        expired: [],
+        terminated: []
+      };
+      const allowed = VALID_TRANSITIONS[from] || [];
+      if (from !== to && allowed.indexOf(to) === -1) {
+        return json({ ok: false, error: { code: 'VALIDATION', message: `Invalid status transition: ${from} → ${to}` } }, 400);
+      }
+    }
+    if (body.company_id !== undefined && body.company_id !== null && body.company_id !== '') {
+      const company = await env.DB.prepare('SELECT id FROM companies WHERE id = ?').bind(body.company_id).first();
+      if (!company) {
+        return json({ ok: false, error: { code: 'VALIDATION', message: `Company ${body.company_id} not found` } }, 400);
+      }
+    }
   }
 
   const sets = [];
@@ -449,6 +530,293 @@ async function bulkImport(req, env, collection) {
 }
 
 // ============================================================
+// Adapter invoke handler
+// ============================================================
+
+const ADAPTER_URL_MAP = {
+  docgen: 'GAS_DOCGEN_URL',
+  email: 'GAS_EMAIL_URL'
+};
+
+async function adapterInvoke(req, env, adapterType) {
+  const gasEnvVar = ADAPTER_URL_MAP[adapterType];
+  if (!gasEnvVar) {
+    return json({ ok: false, error: { code: 'BAD_REQUEST', message: `Unknown adapter type: ${adapterType}` } }, 400);
+  }
+
+  const gasUrl = env[gasEnvVar];
+  if (!gasUrl) {
+    return json({ ok: false, error: { code: 'CONFIG_ERROR', message: `Adapter URL not configured for ${adapterType}` } }, 500);
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const now = new Date().toISOString();
+  const jobId = generateId('JOB');
+
+  // Create job record (status: running)
+  await env.DB.prepare(
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(jobId, adapterType, 'running', JSON.stringify(body), body.created_by || null, now, now).run();
+
+  try {
+    // GAS web apps cannot read HTTP headers — pass API key as query parameter
+    const gasUrlWithKey = gasUrl + (gasUrl.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(env.GAS_API_KEY);
+    const gasResponse = await fetch(gasUrlWithKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const resultText = await gasResponse.text();
+    let result;
+    try { result = JSON.parse(resultText); } catch { result = { raw: resultText }; }
+    const finishedAt = new Date().toISOString();
+
+    // Update job to completed
+    await env.DB.prepare(
+      'UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?'
+    ).bind('completed', JSON.stringify(result), finishedAt, jobId).run();
+
+    // Create job_log entry
+    const logId = generateId('JLG');
+    await env.DB.prepare(
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'invoke', 'completed', JSON.stringify(result), finishedAt).run();
+
+    return json({ ok: true, job_id: jobId, result });
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+
+    // Update job to failed
+    await env.DB.prepare(
+      'UPDATE jobs SET status = ?, error = ?, finished_at = ? WHERE id = ?'
+    ).bind('failed', err.message, finishedAt, jobId).run();
+
+    // Create error job_log
+    const logId = generateId('JLG');
+    await env.DB.prepare(
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'invoke', 'failed', err.message, finishedAt).run();
+
+    return json({ ok: false, error: { code: 'ADAPTER_ERROR', message: err.message }, job_id: jobId }, 502);
+  }
+}
+
+// ============================================================
+// Webhook receiver handler
+// ============================================================
+
+async function webhookReceive(req, env, webhookType) {
+  const body = await req.json().catch(() => ({}));
+  const { job_id, status, result } = body;
+
+  if (!job_id) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'job_id is required' } }, 400);
+  }
+
+  const existing = await env.DB.prepare('SELECT id FROM jobs WHERE id = ?').bind(job_id).first();
+  if (!existing) {
+    return json({ ok: false, error: { code: 'NOT_FOUND', message: `Job ${job_id} not found` } }, 404);
+  }
+
+  const now = new Date().toISOString();
+
+  // Update the job record
+  await env.DB.prepare(
+    'UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?'
+  ).bind(status || 'completed', result ? JSON.stringify(result) : null, now, job_id).run();
+
+  // Create a job_log entry recording the callback
+  const logId = generateId('JLG');
+  await env.DB.prepare(
+    'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(logId, job_id, `webhook_${webhookType}`, status || 'completed', result ? JSON.stringify(result) : null, now).run();
+
+  return json({ ok: true });
+}
+
+// ============================================================
+// Agreement actions — generate-doc, send-email
+// ============================================================
+
+async function agreementGenerateDoc(req, env, agreementId) {
+  // Read the agreement record
+  const agr = await env.DB.prepare('SELECT * FROM agreements WHERE id = ?').bind(agreementId).first();
+  if (!agr) return json({ ok: false, error: { code: 'NOT_FOUND', message: `Agreement ${agreementId} not found` } }, 404);
+
+  // Look up company name if linked
+  let companyName = '';
+  if (agr.company_id) {
+    const company = await env.DB.prepare('SELECT name FROM companies WHERE id = ?').bind(agr.company_id).first();
+    if (company) companyName = company.name;
+  }
+
+  // Build placeholder map for doc generation
+  const payload = {
+    action: 'generate',
+    template: 'kaa_agreement',
+    placeholders: {
+      '<<ACCOUNT_NAME>>': agr.account_name || '',
+      '<<CONTACT_NAME>>': agr.contact_name || '',
+      '<<COMPANY_NAME>>': companyName,
+      '<<AGREEMENT_DATE>>': agr.agreement_date || '',
+      '<<START_DATE>>': agr.start_date || '',
+      '<<END_DATE>>': agr.end_date || '',
+      '<<AGREEMENT_TYPE>>': agr.agreement_type || '',
+      '<<TERMS>>': agr.terms || '',
+      '<<AGREEMENT_KEY>>': agr.agreement_key || ''
+    },
+    agreement_id: agreementId,
+    created_by: req.headers.get('X-Agent-Id') || 'platform'
+  };
+
+  // Call the docgen adapter via internal invoke
+  const gasUrl = env.GAS_DOCGEN_URL;
+  if (!gasUrl) {
+    return json({ ok: false, error: { code: 'CONFIG_ERROR', message: 'Doc generator URL not configured' } }, 500);
+  }
+
+  const now = new Date().toISOString();
+  const jobId = generateId('JOB');
+
+  // Create job record
+  await env.DB.prepare(
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(jobId, 'docgen', 'running', JSON.stringify(payload), payload.created_by, now, now).run();
+
+  try {
+    // GAS web apps cannot read HTTP headers — pass API key as query parameter
+    const gasUrlWithKey = gasUrl + (gasUrl.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(env.GAS_API_KEY);
+    const gasResponse = await fetch(gasUrlWithKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const resultText = await gasResponse.text();
+    let result;
+    try { result = JSON.parse(resultText); } catch { result = { raw: resultText }; }
+    const finishedAt = new Date().toISOString();
+
+    await env.DB.prepare(
+      'UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?'
+    ).bind('completed', JSON.stringify(result), finishedAt, jobId).run();
+
+    const logId = generateId('JLG');
+    await env.DB.prepare(
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'generate_doc', 'completed', JSON.stringify(result), finishedAt).run();
+
+    return json({ ok: true, job_id: jobId, result });
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE jobs SET status = ?, error = ?, finished_at = ? WHERE id = ?'
+    ).bind('failed', err.message, finishedAt, jobId).run();
+
+    const logId = generateId('JLG');
+    await env.DB.prepare(
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'generate_doc', 'failed', err.message, finishedAt).run();
+
+    return json({ ok: false, error: { code: 'ADAPTER_ERROR', message: err.message }, job_id: jobId }, 502);
+  }
+}
+
+async function agreementSendEmail(req, env, agreementId) {
+  // Read the agreement record
+  const agr = await env.DB.prepare('SELECT * FROM agreements WHERE id = ?').bind(agreementId).first();
+  if (!agr) return json({ ok: false, error: { code: 'NOT_FOUND', message: `Agreement ${agreementId} not found` } }, 404);
+
+  // Look up contact email from linked contact (via contact_name or company contacts)
+  let contactEmail = '';
+  let contactName = agr.contact_name || '';
+  if (agr.company_id) {
+    const contact = await env.DB.prepare(
+      'SELECT email, name FROM contacts WHERE company_id = ? LIMIT 1'
+    ).bind(agr.company_id).first();
+    if (contact) {
+      contactEmail = contact.email || '';
+      if (!contactName) contactName = contact.name || '';
+    }
+  }
+
+  // Allow override from request body
+  const body = await req.json().catch(() => ({}));
+  if (body.to) contactEmail = body.to;
+  if (body.contactName) contactName = body.contactName;
+
+  if (!contactEmail) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'No contact email found. Link a company with contacts or provide "to" in request body.' } }, 400);
+  }
+
+  const payload = {
+    action: 'send',
+    to: contactEmail,
+    subject: 'Your Agreement - ' + (agr.account_name || 'Agreement'),
+    htmlBody: '<h2>Agreement Summary</h2>' +
+      '<p><strong>Account:</strong> ' + (agr.account_name || '-') + '</p>' +
+      '<p><strong>Type:</strong> ' + (agr.agreement_type || '-') + '</p>' +
+      '<p><strong>Date:</strong> ' + (agr.agreement_date || '-') + '</p>' +
+      '<p><strong>Start:</strong> ' + (agr.start_date || '-') + '</p>' +
+      '<p><strong>End:</strong> ' + (agr.end_date || '-') + '</p>' +
+      (agr.terms ? '<p><strong>Terms:</strong> ' + agr.terms + '</p>' : ''),
+    agreement_id: agreementId,
+    created_by: req.headers.get('X-Agent-Id') || 'platform'
+  };
+
+  const gasUrl = env.GAS_EMAIL_URL;
+  if (!gasUrl) {
+    return json({ ok: false, error: { code: 'CONFIG_ERROR', message: 'Email adapter URL not configured' } }, 500);
+  }
+
+  const now = new Date().toISOString();
+  const jobId = generateId('JOB');
+
+  await env.DB.prepare(
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(jobId, 'email', 'running', JSON.stringify(payload), payload.created_by, now, now).run();
+
+  try {
+    // GAS web apps cannot read HTTP headers — pass API key as query parameter
+    const gasUrlWithKey = gasUrl + (gasUrl.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(env.GAS_API_KEY);
+    const gasResponse = await fetch(gasUrlWithKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const resultText = await gasResponse.text();
+    let result;
+    try { result = JSON.parse(resultText); } catch { result = { raw: resultText }; }
+    const finishedAt = new Date().toISOString();
+
+    await env.DB.prepare(
+      'UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?'
+    ).bind('completed', JSON.stringify(result), finishedAt, jobId).run();
+
+    const logId = generateId('JLG');
+    await env.DB.prepare(
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'send_email', 'completed', JSON.stringify(result), finishedAt).run();
+
+    return json({ ok: true, job_id: jobId, result });
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE jobs SET status = ?, error = ?, finished_at = ? WHERE id = ?'
+    ).bind('failed', err.message, finishedAt, jobId).run();
+
+    const logId = generateId('JLG');
+    await env.DB.prepare(
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'send_email', 'failed', err.message, finishedAt).run();
+
+    return json({ ok: false, error: { code: 'ADAPTER_ERROR', message: err.message }, job_id: jobId }, 502);
+  }
+}
+
+// ============================================================
 // Router
 // ============================================================
 
@@ -470,12 +838,40 @@ async function handleApi(req, env, url) {
   const commentDeleteMatch = path.match(/^\/api\/comments\/([^/]+)$/);
   if (commentDeleteMatch && req.method === 'DELETE') return deleteComment(env, commentDeleteMatch[1]);
 
+  // Agreement actions: POST /api/agreements/:id/generate-doc
+  const agrDocMatch = path.match(/^\/api\/agreements\/([^/]+)\/generate-doc$/);
+  if (agrDocMatch && req.method === 'POST') {
+    return agreementGenerateDoc(req, env, agrDocMatch[1]);
+  }
+
+  // Agreement actions: POST /api/agreements/:id/send-email
+  const agrEmailMatch = path.match(/^\/api\/agreements\/([^/]+)\/send-email$/);
+  if (agrEmailMatch && req.method === 'POST') {
+    return agreementSendEmail(req, env, agrEmailMatch[1]);
+  }
+
+  // Adapter invoke: POST /api/adapters/:type/invoke
+  const adapterMatch = path.match(/^\/api\/adapters\/([^/]+)\/invoke$/);
+  if (adapterMatch && req.method === 'POST') {
+    const authError = validateApiKey(req, env);
+    if (authError) return authError;
+    return adapterInvoke(req, env, adapterMatch[1]);
+  }
+
+  // Webhook receiver: POST /api/webhook/:type
+  const webhookMatch = path.match(/^\/api\/webhook\/([^/]+)$/);
+  if (webhookMatch && req.method === 'POST') {
+    const authError = validateApiKey(req, env);
+    if (authError) return authError;
+    return webhookReceive(req, env, webhookMatch[1]);
+  }
+
   // Bulk import: /api/{collection}/import
-  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus)\/import$/);
+  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs)\/import$/);
   if (importMatch && req.method === 'POST') return bulkImport(req, env, importMatch[1]);
 
   // CRUD routes: /api/{collection}[/{id}]
-  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus)(?:\/([^/]+))?$/);
+  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs)(?:\/([^/]+))?$/);
   if (!match) return json({ ok: false, error: { code: 'NOT_FOUND', message: 'Unknown endpoint' } }, 404);
 
   const collection = match[1];
@@ -513,7 +909,7 @@ export default {
         headers: {
           'access-control-allow-origin': '*',
           'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'access-control-allow-headers': 'Content-Type, Authorization, X-Agent-Id',
+          'access-control-allow-headers': 'Content-Type, Authorization, X-Agent-Id, X-Api-Key',
           'access-control-max-age': '86400'
         }
       });
