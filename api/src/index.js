@@ -142,6 +142,45 @@ const COLLECTIONS = {
     columns: ['id', 'job_id', 'step', 'status', 'message', 'created_at'],
     searchable: ['job_id', 'step'],
     orderBy: 'created_at'
+  },
+  revenue_transactions: {
+    table: 'revenue_transactions',
+    prefix: 'RTX',
+    required: ['transaction_id', 'invoice_date'],
+    columns: ['id', 'transaction_id', 'invoice_date', 'invoice_number', 'distributor_name',
+              'venue_name', 'account_id', 'sku_code', 'sku_name', 'quantity_cases',
+              'quantity_cans', 'invoice_value_idr', 'revenue_idr', 'market', 'city',
+              'channel', 'group_name', 'source', 'meta', 'created_at', 'updated_at'],
+    searchable: ['venue_name', 'distributor_name', 'sku_name', 'invoice_number'],
+    orderBy: 'invoice_date'
+  },
+  account_mapping: {
+    table: 'account_mapping',
+    prefix: 'AMP',
+    required: ['raw_value'],
+    columns: ['id', 'raw_value', 'internal_venue_name', 'account_id', 'group_name',
+              'market', 'city', 'channel', 'active_flag', 'meta', 'created_at', 'updated_at'],
+    searchable: ['raw_value', 'internal_venue_name', 'account_id', 'group_name'],
+    orderBy: 'raw_value'
+  },
+  account_status: {
+    table: 'account_status',
+    prefix: 'AST',
+    required: ['snapshot_date', 'venue_name'],
+    columns: ['id', 'snapshot_date', 'venue_name', 'account_id', 'first_order_date',
+              'latest_order_date', 'days_since_last', 'status', 'meta', 'created_at'],
+    searchable: ['venue_name', 'account_id', 'status'],
+    orderBy: 'snapshot_date'
+  },
+  deck_metrics: {
+    table: 'deck_metrics',
+    prefix: 'DKM',
+    required: ['month_key'],
+    columns: ['id', 'month_key', 'month_label', 'total_revenue_idr', 'gross_margin_pct',
+              'gross_margin_vs_prev', 'dq_flag', 'headline', 'sales_performance',
+              'channel_performance', 'meta', 'created_at', 'updated_at'],
+    searchable: ['month_key', 'month_label'],
+    orderBy: 'month_key'
   }
 };
 
@@ -867,11 +906,11 @@ async function handleApi(req, env, url) {
   }
 
   // Bulk import: /api/{collection}/import
-  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs)\/import$/);
+  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs|revenue_transactions|account_mapping|account_status|deck_metrics)\/import$/);
   if (importMatch && req.method === 'POST') return bulkImport(req, env, importMatch[1]);
 
   // CRUD routes: /api/{collection}[/{id}]
-  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs)(?:\/([^/]+))?$/);
+  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs|revenue_transactions|account_mapping|account_status|deck_metrics)(?:\/([^/]+))?$/);
   if (!match) return json({ ok: false, error: { code: 'NOT_FOUND', message: 'Unknown endpoint' } }, 404);
 
   const collection = match[1];
