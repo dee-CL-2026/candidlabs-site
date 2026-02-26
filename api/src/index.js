@@ -1521,9 +1521,9 @@ async function xeroSyncMonth(env, monthKey) {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(xero_contact_id) DO UPDATE SET name=excluded.name, email=excluded.email, phone=excluded.phone,
            is_customer=excluded.is_customer, is_supplier=excluded.is_supplier, contact_status=excluded.contact_status, synced_at=excluded.synced_at`
-      ).bind(cId, c.ContactID, c.Name || '', c.EmailAddress || null,
-             (c.Phones && c.Phones[0] ? c.Phones[0].PhoneNumber : null),
-             c.IsCustomer ? 1 : 0, c.IsSupplier ? 1 : 0, c.ContactStatus || null, now).run();
+      ).bind(cId, c.ContactID || '', c.Name || '', c.EmailAddress ?? null,
+             (c.Phones && c.Phones[0] && c.Phones[0].PhoneNumber) || null,
+             c.IsCustomer ? 1 : 0, c.IsSupplier ? 1 : 0, c.ContactStatus ?? null, now).run();
     }
 
     let recordsUpserted = 0;
@@ -1540,11 +1540,11 @@ async function xeroSyncMonth(env, monthKey) {
            contact_name=excluded.contact_name, sub_total=excluded.sub_total, total_tax=excluded.total_tax,
            total=excluded.total, amount_due=excluded.amount_due, amount_paid=excluded.amount_paid,
            reference=excluded.reference, updated_date_utc=excluded.updated_date_utc, synced_at=excluded.synced_at`
-      ).bind(invId, inv.InvoiceID, inv.InvoiceNumber || null, inv.Type, inv.Status,
-             inv.Contact ? inv.Contact.Name : null, inv.Contact ? inv.Contact.ContactID : null,
-             inv.DateString || null, inv.DueDateString || null, inv.CurrencyCode || 'IDR',
-             inv.SubTotal || 0, inv.TotalTax || 0, inv.Total || 0, inv.AmountDue || 0, inv.AmountPaid || 0,
-             inv.Reference || null, inv.UpdatedDateUTC || null, now).run();
+      ).bind(invId, inv.InvoiceID, inv.InvoiceNumber ?? null, inv.Type ?? '', inv.Status ?? '',
+             inv.Contact ? (inv.Contact.Name ?? null) : null, inv.Contact ? (inv.Contact.ContactID ?? null) : null,
+             inv.DateString ?? null, inv.DueDateString ?? null, inv.CurrencyCode ?? 'IDR',
+             inv.SubTotal ?? 0, inv.TotalTax ?? 0, inv.Total ?? 0, inv.AmountDue ?? 0, inv.AmountPaid ?? 0,
+             inv.Reference ?? null, inv.UpdatedDateUTC ?? null, now).run();
 
       // Replace line items for this invoice
       const lines = inv.LineItems || [];
@@ -1555,9 +1555,9 @@ async function xeroSyncMonth(env, monthKey) {
           `INSERT INTO xero_line_items (id, xero_invoice_id, item_code, description, quantity, unit_amount,
              tax_amount, line_amount, discount_rate, account_code, tax_type, tracking, synced_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        ).bind(liId, inv.InvoiceID, li.ItemCode || null, li.Description || null,
-               li.Quantity || 0, li.UnitAmount || 0, li.TaxAmount || 0, li.LineAmount || 0,
-               li.DiscountRate || 0, li.AccountCode || null, li.TaxType || null,
+        ).bind(liId, inv.InvoiceID, li.ItemCode ?? null, li.Description ?? null,
+               li.Quantity ?? 0, li.UnitAmount ?? 0, li.TaxAmount ?? 0, li.LineAmount ?? 0,
+               li.DiscountRate ?? 0, li.AccountCode ?? null, li.TaxType ?? null,
                JSON.stringify(li.Tracking || []), now).run();
       }
 
@@ -1572,10 +1572,10 @@ async function xeroSyncMonth(env, monthKey) {
            ON CONFLICT(transaction_id) DO UPDATE SET invoice_date=excluded.invoice_date,
              invoice_value_idr=excluded.invoice_value_idr, revenue_idr=excluded.revenue_idr,
              source=excluded.source, updated_at=excluded.updated_at`
-        ).bind(txId, transactionId, inv.DateString || monthKey + '-01', inv.InvoiceNumber || null,
-               null, inv.Contact ? inv.Contact.Name : null,
-               inv.Total || 0, inv.Total || 0, 'xero',
-               JSON.stringify({ xero_invoice_id: inv.InvoiceID, xero_status: inv.Status }),
+        ).bind(txId, transactionId, inv.DateString ?? (monthKey + '-01'), inv.InvoiceNumber ?? null,
+               null, inv.Contact ? (inv.Contact.Name ?? null) : null,
+               inv.Total ?? 0, inv.Total ?? 0, 'xero',
+               JSON.stringify({ xero_invoice_id: inv.InvoiceID, xero_status: inv.Status ?? '' }),
                now, now).run();
         recordsUpserted++;
       }

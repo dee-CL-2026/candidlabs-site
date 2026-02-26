@@ -13,7 +13,7 @@ GAS_EMAIL_URL  = "https://script.google.com/macros/s/AKfycbzO9evvX4I3VFaEIbrrWUq
 GAS_SLIDES_URL = "https://script.google.com/macros/s/AKfycbx9S5O93nF2pzv173Yqab8QSrswcsHb6d83DVWeFKSw8v3ajoljLjddhkt0oc-weUUs/exec"
 XERO_REDIRECT_URI = "https://candidlabs-api.dieterwerwath.workers.dev/api/auth/xero/callback"
 XERO_SCOPES = "offline_access accounting.transactions.read accounting.contacts.read accounting.settings.read"
-APP_BASE_URL = "https://candidlabs.pages.dev"
+APP_BASE_URL = "https://candidlabs-hub.pages.dev"
 
 # XERO_CLIENT_ID and XERO_CLIENT_SECRET set via: wrangler secret put
 
