@@ -107,6 +107,33 @@ const COLLECTIONS = {
     columns: ['id', 'sku_code', 'product_name', 'variant', 'pack_size', 'status',
               'rnd_project_id', 'notes', 'meta', 'created_at', 'updated_at'],
     searchable: ['sku_code', 'product_name']
+  },
+  agreements: {
+    table: 'agreements',
+    prefix: 'AGR',
+    required: ['account_name'],
+    columns: ['id', 'agreement_key', 'account_name', 'contact_name', 'company_id',
+              'agreement_date', 'start_date', 'end_date', 'agreement_type', 'status',
+              'terms', 'notes', 'meta', 'created_at', 'updated_at'],
+    searchable: ['account_name', 'contact_name', 'agreement_key'],
+    orderBy: 'created_at DESC'
+  },
+  jobs: {
+    table: 'jobs',
+    prefix: 'JOB',
+    required: ['job_type'],
+    columns: ['id', 'job_type', 'status', 'payload', 'result', 'error',
+              'created_by', 'started_at', 'finished_at', 'created_at', 'updated_at'],
+    searchable: ['job_type', 'status'],
+    orderBy: 'created_at DESC'
+  },
+  job_logs: {
+    table: 'job_logs',
+    prefix: 'JLG',
+    required: ['job_id', 'step'],
+    columns: ['id', 'job_id', 'step', 'status', 'message', 'created_at', 'updated_at'],
+    searchable: ['job_id', 'step'],
+    orderBy: 'created_at DESC'
   }
 };
 
@@ -471,11 +498,11 @@ async function handleApi(req, env, url) {
   if (commentDeleteMatch && req.method === 'DELETE') return deleteComment(env, commentDeleteMatch[1]);
 
   // Bulk import: /api/{collection}/import
-  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus)\/import$/);
+  const importMatch = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs)\/import$/);
   if (importMatch && req.method === 'POST') return bulkImport(req, env, importMatch[1]);
 
   // CRUD routes: /api/{collection}[/{id}]
-  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus)(?:\/([^/]+))?$/);
+  const match = path.match(/^\/api\/(contacts|companies|deals|projects|tasks|rnd_projects|rnd_documents|rnd_trial_entries|rnd_stage_history|rnd_approvals|skus|agreements|jobs|job_logs)(?:\/([^/]+))?$/);
   if (!match) return json({ ok: false, error: { code: 'NOT_FOUND', message: 'Unknown endpoint' } }, 404);
 
   const collection = match[1];
