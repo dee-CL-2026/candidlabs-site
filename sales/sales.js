@@ -14,7 +14,7 @@ var _slsDataReady = false;
 var SLS_API_BASE = 'https://candidlabs-api.dieterwerwath.workers.dev/api';
 
 // Sort state
-var _slsRevSortCol = 'invoice_date';
+var _slsRevSortCol = 'invoiceDate';
 var _slsRevSortDir = 'desc';
 
 // Account filter
@@ -100,7 +100,7 @@ function slsRenderOverview() {
 
   // Total revenue
   var totalRev = 0;
-  rev.forEach(function (r) { totalRev += (r.revenue_idr || 0); });
+  rev.forEach(function (r) { totalRev += (r.revenueIdr || 0); });
   document.getElementById('stat-sls-total-rev').textContent = slsFormatIDR(totalRev);
   document.getElementById('stat-sls-txn-count').textContent = rev.length;
 
@@ -116,14 +116,14 @@ function slsRenderOverview() {
   // Latest sync info
   var details = document.getElementById('sls-overview-details');
   if (syncRuns.length) {
-    var sorted = syncRuns.slice().sort(function (a, b) { return (b.started_at || '').localeCompare(a.started_at || ''); });
+    var sorted = syncRuns.slice().sort(function (a, b) { return (b.startedAt || '').localeCompare(a.startedAt || ''); });
     var latest = sorted[0];
     details.innerHTML =
-      '<h3 style="font-size:1rem;margin:20px 0 12px;color:var(--text-primary);">Latest Sync: ' + slsEscapeHtml(latest.sync_type) + ' (' + slsEscapeHtml(latest.month_key || '-') + ')</h3>' +
+      '<h3 style="font-size:1rem;margin:20px 0 12px;color:var(--text-primary);">Latest Sync: ' + slsEscapeHtml(latest.syncType) + ' (' + slsEscapeHtml(latest.monthKey || '-') + ')</h3>' +
       '<div class="pm-stats" style="margin-bottom:0;">' +
         '<div class="pm-stat-card"><div class="pm-stat-number"><span class="sls-status ' + slsEscapeHtml(latest.status || '') + '">' + slsEscapeHtml(latest.status || '-') + '</span></div><div class="pm-stat-label">Status</div></div>' +
-        '<div class="pm-stat-card"><div class="pm-stat-number">' + (latest.records_fetched || 0) + '</div><div class="pm-stat-label">Fetched</div></div>' +
-        '<div class="pm-stat-card"><div class="pm-stat-number">' + (latest.records_upserted || 0) + '</div><div class="pm-stat-label">Upserted</div></div>' +
+        '<div class="pm-stat-card"><div class="pm-stat-number">' + (latest.recordsFetched || 0) + '</div><div class="pm-stat-label">Fetched</div></div>' +
+        '<div class="pm-stat-card"><div class="pm-stat-number">' + (latest.recordsUpserted || 0) + '</div><div class="pm-stat-label">Upserted</div></div>' +
       '</div>';
   } else {
     details.innerHTML = '<div class="pm-empty"><div class="pm-empty-icon">&#128202;</div><p>No sync runs yet. Connect Xero and sync data.</p></div>';
@@ -159,11 +159,11 @@ function slsRenderRevenue() {
 
   if (search) {
     rev = rev.filter(function (r) {
-      return (r.venue_name || '').toLowerCase().indexOf(search) !== -1 ||
-             (r.sku_name || '').toLowerCase().indexOf(search) !== -1 ||
-             (r.sku_code || '').toLowerCase().indexOf(search) !== -1 ||
-             (r.distributor_name || '').toLowerCase().indexOf(search) !== -1 ||
-             (r.invoice_number || '').toLowerCase().indexOf(search) !== -1;
+      return (r.venueName || '').toLowerCase().indexOf(search) !== -1 ||
+             (r.skuName || '').toLowerCase().indexOf(search) !== -1 ||
+             (r.skuCode || '').toLowerCase().indexOf(search) !== -1 ||
+             (r.distributorName || '').toLowerCase().indexOf(search) !== -1 ||
+             (r.invoiceNumber || '').toLowerCase().indexOf(search) !== -1;
     });
   }
 
@@ -193,12 +193,12 @@ function slsRenderRevenue() {
   } else {
     tbody.innerHTML = page.map(function (r) {
       return '<tr>' +
-        '<td class="row-secondary">' + slsFormatDate(r.invoice_date) + '</td>' +
-        '<td class="row-secondary" style="font-family:monospace;font-size:0.8rem;">' + slsEscapeHtml(r.invoice_number || '-') + '</td>' +
-        '<td>' + slsEscapeHtml(r.venue_name || '-') + '</td>' +
-        '<td class="row-secondary">' + slsEscapeHtml(r.sku_name || r.sku_code || '-') + '</td>' +
-        '<td class="sls-rev-num">' + (r.quantity_cases != null ? r.quantity_cases : '-') + '</td>' +
-        '<td class="sls-rev-num">' + slsFormatIDR(r.revenue_idr) + '</td>' +
+        '<td class="row-secondary">' + slsFormatDate(r.invoiceDate) + '</td>' +
+        '<td class="row-secondary" style="font-family:monospace;font-size:0.8rem;">' + slsEscapeHtml(r.invoiceNumber || '-') + '</td>' +
+        '<td>' + slsEscapeHtml(r.venueName || '-') + '</td>' +
+        '<td class="row-secondary">' + slsEscapeHtml(r.skuName || r.skuCode || '-') + '</td>' +
+        '<td class="sls-rev-num">' + (r.quantityCases != null ? r.quantityCases : '-') + '</td>' +
+        '<td class="sls-rev-num">' + slsFormatIDR(r.revenueIdr) + '</td>' +
         '<td class="row-secondary">' + slsEscapeHtml(r.channel || '-') + '</td>' +
       '</tr>';
     }).join('');
@@ -238,13 +238,13 @@ function slsRenderAccounts() {
 
   if (search) {
     accts = accts.filter(function (a) {
-      return (a.venue_name || '').toLowerCase().indexOf(search) !== -1 ||
-             (a.account_id || '').toLowerCase().indexOf(search) !== -1;
+      return (a.venueName || '').toLowerCase().indexOf(search) !== -1 ||
+             (a.accountId || '').toLowerCase().indexOf(search) !== -1;
     });
   }
 
   accts.sort(function (a, b) {
-    return (a.venue_name || '').localeCompare(b.venue_name || '');
+    return (a.venueName || '').localeCompare(b.venueName || '');
   });
 
   var tbody = document.getElementById('sls-acct-tbody');
@@ -256,12 +256,12 @@ function slsRenderAccounts() {
   tbody.innerHTML = accts.map(function (a) {
     var statusClass = (a.status || '').replace(/\s+/g, '-');
     return '<tr>' +
-      '<td>' + slsEscapeHtml(a.venue_name || '-') + '</td>' +
-      '<td class="row-secondary" style="font-family:monospace;font-size:0.8rem;">' + slsEscapeHtml(a.account_id || '-') + '</td>' +
+      '<td>' + slsEscapeHtml(a.venueName || '-') + '</td>' +
+      '<td class="row-secondary" style="font-family:monospace;font-size:0.8rem;">' + slsEscapeHtml(a.accountId || '-') + '</td>' +
       '<td><span class="sls-status ' + statusClass + '">' + slsEscapeHtml(a.status || '-') + '</span></td>' +
-      '<td class="row-secondary">' + slsFormatDate(a.first_order_date) + '</td>' +
-      '<td class="row-secondary">' + slsFormatDate(a.latest_order_date) + '</td>' +
-      '<td class="sls-rev-num">' + (a.days_since_last != null ? a.days_since_last : '-') + '</td>' +
+      '<td class="row-secondary">' + slsFormatDate(a.firstOrderDate) + '</td>' +
+      '<td class="row-secondary">' + slsFormatDate(a.latestOrderDate) + '</td>' +
+      '<td class="sls-rev-num">' + (a.daysSinceLast != null ? a.daysSinceLast : '-') + '</td>' +
     '</tr>';
   }).join('');
 }
@@ -370,7 +370,7 @@ function slsXeroBackfill() {
 
 function slsRenderSyncHistory() {
   var runs = slsGetSyncRuns().slice();
-  runs.sort(function (a, b) { return (b.started_at || '').localeCompare(a.started_at || ''); });
+  runs.sort(function (a, b) { return (b.startedAt || '').localeCompare(a.startedAt || ''); });
 
   var tbody = document.getElementById('sls-sync-tbody');
   if (!runs.length) {
@@ -381,13 +381,13 @@ function slsRenderSyncHistory() {
   tbody.innerHTML = runs.map(function (r) {
     var statusClass = r.status === 'completed' ? 'Active' : r.status === 'failed' ? 'at-risk' : 'New';
     return '<tr>' +
-      '<td>' + slsEscapeHtml(r.sync_type || '-') + '</td>' +
-      '<td style="font-weight:500;">' + slsEscapeHtml(r.month_key || '-') + '</td>' +
+      '<td>' + slsEscapeHtml(r.syncType || '-') + '</td>' +
+      '<td style="font-weight:500;">' + slsEscapeHtml(r.monthKey || '-') + '</td>' +
       '<td><span class="sls-status ' + statusClass + '">' + slsEscapeHtml(r.status || '-') + '</span></td>' +
-      '<td class="sls-rev-num">' + (r.records_fetched || 0) + '</td>' +
-      '<td class="sls-rev-num">' + (r.records_upserted || 0) + '</td>' +
-      '<td class="row-secondary">' + slsFormatDate(r.started_at) + '</td>' +
-      '<td class="row-secondary">' + slsFormatDate(r.finished_at) + '</td>' +
+      '<td class="sls-rev-num">' + (r.recordsFetched || 0) + '</td>' +
+      '<td class="sls-rev-num">' + (r.recordsUpserted || 0) + '</td>' +
+      '<td class="row-secondary">' + slsFormatDate(r.startedAt) + '</td>' +
+      '<td class="row-secondary">' + slsFormatDate(r.finishedAt) + '</td>' +
     '</tr>';
   }).join('');
 }
