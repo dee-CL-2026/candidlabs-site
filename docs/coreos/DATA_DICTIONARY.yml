@@ -1,0 +1,373 @@
+# CoreOS Data Dictionary v1.0
+# Source of truth: docs/COREOS_MANIFEST.md → Data Spine
+# For each D1 table: purpose, key columns, owner module, retention.
+
+version: "1.0"
+generated: "2026-02-26"
+d1_database: candidlabs-db
+schema_location: api/db/schema.sql
+migrations_location: api/db/migrations/
+
+tables:
+
+  # ── Live (schema.sql + migrations 001–006) ──
+
+  - table: companies
+    status: live
+    module: CRM
+    purpose: Customer and supplier companies (distributors, venues, partners).
+    primary_key: id (TEXT, prefix CMP)
+    key_columns: [name, type, parent_id, market, channel, status, meta]
+    migration: schema.sql + 002
+    retention: Indefinite. Soft-delete via status field.
+
+  - table: contacts
+    status: live
+    module: CRM
+    purpose: Individual people linked to companies.
+    primary_key: id (TEXT, prefix CON)
+    key_columns: [first_name, last_name, name, email, phone, role, company_id, meta]
+    migration: schema.sql + 003
+    retention: Indefinite.
+
+  - table: deals
+    status: live
+    module: CRM
+    purpose: Sales opportunities through pipeline stages.
+    primary_key: id (TEXT, prefix DL)
+    key_columns: [title, company_id, contact_id, value, stage, channel_type, meta]
+    migration: schema.sql + 002
+    retention: Indefinite.
+
+  - table: comments
+    status: live
+    module: Shared
+    purpose: Polymorphic comments on contacts, companies, or deals.
+    primary_key: id (TEXT)
+    key_columns: [record_type, record_id, author_email, author_name, body]
+    migration: schema.sql
+    retention: Indefinite.
+
+  - table: projects
+    status: live
+    module: Projects
+    purpose: Internal projects and initiatives.
+    primary_key: id (TEXT, prefix PRJ)
+    key_columns: [name, owner, status, project_type, owner_team, visibility_mode, meta]
+    migration: schema.sql
+    retention: Indefinite.
+
+  - table: tasks
+    status: live
+    module: Projects
+    purpose: Tasks within projects.
+    primary_key: id (TEXT, prefix TSK)
+    key_columns: [project_id, title, assignee, status, priority, due_date, meta]
+    migration: schema.sql
+    retention: Indefinite. Cascade-deleted with parent project.
+
+  - table: rnd_projects
+    status: live
+    module: R&D
+    purpose: R&D product development pipeline items.
+    primary_key: id (TEXT, prefix RND)
+    key_columns: [name, stage, owner, product_category, priority, gate_outcome, confidence_level, current_score, gate_rationale, meta]
+    migration: 004 + 005 + 006
+    retention: Indefinite.
+
+  - table: rnd_documents
+    status: live
+    module: R&D
+    purpose: Structured documents (briefs, specs, reports) linked to R&D projects.
+    primary_key: id (TEXT, prefix DOC)
+    key_columns: [project_id, title, doc_type, status, content, meta]
+    migration: "004"
+    retention: Indefinite.
+
+  - table: rnd_trial_entries
+    status: live
+    module: R&D
+    purpose: Trial/experiment log entries for R&D projects.
+    primary_key: id (TEXT, prefix TRL)
+    key_columns: [project_id, trial_date, batch_id, tasting_score, tasting_notes, meta]
+    migration: "004"
+    retention: Indefinite.
+
+  - table: rnd_stage_history
+    status: live
+    module: R&D
+    purpose: Audit trail of R&D project stage transitions.
+    primary_key: id (TEXT, prefix STH)
+    key_columns: [project_id, from_stage, to_stage, changed_by, changed_at, meta]
+    migration: "005"
+    retention: Indefinite. Append-only audit log.
+
+  - table: rnd_approvals
+    status: live
+    module: R&D
+    purpose: Gate approval decisions for R&D projects.
+    primary_key: id (TEXT, prefix APR)
+    key_columns: [project_id, gate_stage, decision, decided_by, decided_at, meta]
+    migration: "005"
+    retention: Indefinite. Append-only.
+
+  - table: skus
+    status: live
+    module: R&D
+    purpose: SKU catalog (product codes, names, specs).
+    primary_key: id (TEXT, prefix SKU)
+    key_columns: [code, name, category, status, meta]
+    migration: "004"
+    retention: Indefinite.
+
+  # ── Planned: Xero Sync (Phase A, migration 007) ──
+
+  - table: xero_tokens
+    status: planned
+    module: Xero
+    purpose: OAuth 2.0 token storage (single row per org connection).
+    primary_key: id (TEXT, default 'default')
+    key_columns: [tenant_id, access_token, refresh_token, expires_at, scopes]
+    migration: "007"
+    wave: Phase A
+    retention: Overwritten on each token refresh. One active row.
+
+  - table: xero_invoices
+    status: planned
+    module: Xero
+    purpose: Raw invoice headers (both ACCREC sales and ACCPAY purchase).
+    primary_key: id (TEXT)
+    key_columns: [xero_invoice_id, invoice_number, type, status, contact_name, invoice_date, currency_code, total, amount_due]
+    migration: "007"
+    wave: Phase A
+    retention: Indefinite. Upserted on sync.
+
+  - table: xero_line_items
+    status: planned
+    module: Xero
+    purpose: Invoice line items (one per line per invoice).
+    primary_key: id (TEXT)
+    key_columns: [xero_invoice_id, item_code, description, quantity, unit_amount, line_amount]
+    migration: "007"
+    wave: Phase A
+    retention: Cascade with parent invoice.
+
+  - table: xero_contacts
+    status: planned
+    module: Xero
+    purpose: Xero customer and supplier contacts.
+    primary_key: id (TEXT)
+    key_columns: [xero_contact_id, name, contact_type, is_customer, is_supplier]
+    migration: "007"
+    wave: Phase A
+    retention: Indefinite. Upserted on sync.
+
+  - table: xero_items
+    status: planned
+    module: Xero
+    purpose: Xero product catalog with standard costs.
+    primary_key: id (TEXT)
+    key_columns: [xero_item_id, code, name, purchase_cost, sales_price]
+    migration: "007"
+    wave: Phase A
+    retention: Indefinite. Upserted on sync.
+
+  - table: xero_sync_log
+    status: planned
+    module: Xero
+    purpose: Audit trail for every sync operation.
+    primary_key: id (TEXT)
+    key_columns: [sync_type, started_at, finished_at, records_fetched, records_upserted, status, error]
+    migration: "007"
+    wave: Phase A
+    retention: 90 days recommended. Prunable.
+
+  # ── Planned: Wave 1 (KAA, migrations 008–009) ──
+
+  - table: agreements
+    status: planned
+    module: Agreements
+    purpose: Key account agreements (canonical rows from Google Form intake).
+    primary_key: id (TEXT)
+    key_columns: [agreement_key, account_name, agreement_date, status, meta]
+    migration: "008"
+    wave: 1
+    retention: Indefinite.
+
+  - table: jobs
+    status: planned
+    module: Infrastructure
+    purpose: Async job queue (adapter calls, pipeline runs).
+    primary_key: id (TEXT)
+    key_columns: [job_type, status, payload, result, created_at, finished_at]
+    migration: "009"
+    wave: 1
+    retention: 30 days recommended. Prunable.
+
+  - table: job_logs
+    status: planned
+    module: Infrastructure
+    purpose: Per-step log entries within a job.
+    primary_key: id (TEXT)
+    key_columns: [job_id, step, status, message, created_at]
+    migration: "009"
+    wave: 1
+    retention: 30 days recommended. Prunable.
+
+  # ── Planned: Wave 2 (Sales, migration 010) ──
+
+  - table: revenue_transactions
+    status: planned
+    module: Sales
+    purpose: Revenue fact table (from Xero receivables + account mapping).
+    primary_key: id (TEXT)
+    key_columns: [transaction_id, invoice_date, invoice_number, venue_name, account_id, sku_code, revenue_idr, market, channel]
+    migration: "010"
+    wave: 2
+    retention: Indefinite.
+
+  - table: account_mapping
+    status: planned
+    module: Sales
+    purpose: Venue hierarchy mapping (raw Xero name → internal venue, market, channel).
+    primary_key: id (TEXT)
+    key_columns: [raw_value, internal_venue_name, account_id, group_name, market, city, channel]
+    migration: "010"
+    wave: 2
+    retention: Indefinite.
+
+  - table: account_status
+    status: planned
+    module: Sales
+    purpose: Point-in-time account health snapshots (active/dormant/churned).
+    primary_key: id (TEXT)
+    key_columns: [snapshot_date, venue_name, account_id, days_since_last, status]
+    migration: "010"
+    wave: 2
+    retention: Indefinite. Append-only snapshots.
+
+  - table: deck_metrics
+    status: planned
+    module: Sales
+    purpose: Monthly aggregated metrics for partner deck generation.
+    primary_key: id (TEXT)
+    key_columns: [month_key, total_revenue_idr, gross_margin_pct, dq_flag, headline]
+    migration: "010"
+    wave: 2
+    retention: Indefinite.
+
+  # ── Planned: Wave 3 (Production, migration 011) ──
+
+  - table: production_runs
+    status: planned
+    module: Production
+    purpose: KMI production batch records.
+    primary_key: id (TEXT)
+    key_columns: [batch_id, production_date, sku_code, cases_produced, cans_produced]
+    migration: "011"
+    wave: 3
+    retention: Indefinite.
+
+  - table: bom_components
+    status: planned
+    module: Production
+    purpose: Bill of materials — component quantities per SKU.
+    primary_key: id (TEXT)
+    key_columns: [sku_code, component_code, quantity_per_can, uom]
+    migration: "011"
+    wave: 3
+    retention: Indefinite. Updated on BOM changes.
+
+  - table: component_costs
+    status: planned
+    module: Production
+    purpose: Historical component pricing by month.
+    primary_key: id (TEXT)
+    key_columns: [month_key, component_code, cumulative_avg_idr, source]
+    migration: "011"
+    wave: 3
+    retention: Indefinite.
+
+  - table: sku_costing
+    status: planned
+    module: Production
+    purpose: Per-SKU cost output from 3-tier costing waterfall.
+    primary_key: id (TEXT)
+    key_columns: [sku_code, raw_cogs_idr, cost_method, effective_date]
+    migration: "011"
+    wave: 3
+    retention: Indefinite.
+
+  - table: batch_cogs
+    status: planned
+    module: Production
+    purpose: COGS breakdown per production batch.
+    primary_key: id (TEXT)
+    key_columns: [batch_id, sku_code, cans_produced, total_cogs_per_can, can_cost, filling_cost]
+    migration: "011"
+    wave: 3
+    retention: Indefinite.
+
+  - table: payables
+    status: planned
+    module: Production
+    purpose: Cleaned purchase invoice line items (from Xero payables).
+    primary_key: id (TEXT)
+    key_columns: [invoice_date, supplier_name, item_code, quantity, gross_idr, cost_category]
+    migration: "011"
+    wave: 3
+    retention: Indefinite.
+
+  - table: arap_snapshots
+    status: planned
+    module: Production
+    purpose: Aged receivables/payables snapshots by contact.
+    primary_key: id (TEXT)
+    key_columns: [snapshot_date, metric_type, contact_name, bucket_current, bucket_1mo, total]
+    migration: "011"
+    wave: 3
+    retention: Indefinite. Append-only snapshots.
+
+  # ── Planned: Wave 4 (Loans, migration 012) ──
+
+  - table: lenders
+    status: planned
+    module: Loans
+    purpose: Lender profiles (agreement terms, novation details).
+    primary_key: id (TEXT)
+    key_columns: [name, agreement_date, original_loan_sgd, novated_principal_sgd, template_doc_id]
+    migration: "012"
+    wave: 4
+    retention: Indefinite.
+
+  - table: loan_transactions
+    status: planned
+    module: Loans
+    purpose: Raw loan transaction log (disbursements, repayments).
+    primary_key: id (TEXT)
+    key_columns: [lender_id, transaction_date, type, amount]
+    migration: "012"
+    wave: 4
+    retention: Indefinite. Append-only audit log.
+
+  - table: loan_ledger
+    status: planned
+    module: Loans
+    purpose: Computed ledger entries (opening/closing balance, interest accrued).
+    primary_key: id (TEXT)
+    key_columns: [lender_id, entry_date, opening_balance, principal_payment, interest_accrued, closing_balance]
+    migration: "012"
+    wave: 4
+    retention: Indefinite.
+
+  # ── Planned: Wave 5 (Sales Tool, migration 013) ──
+
+  - table: pricing
+    status: planned
+    module: Sales Tool
+    purpose: Pricing tiers by location, channel, and tier.
+    primary_key: id (TEXT)
+    key_columns: [location, channel, tier, soda, imperial, ginger]
+    migration: "013"
+    wave: 5
+    retention: Indefinite.

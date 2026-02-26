@@ -1,0 +1,226 @@
+# CoreOS Module Registry v1.0
+# Source of truth: docs/COREOS_MANIFEST.md → Active Modules
+# Update this file when adding or modifying modules.
+
+version: "1.0"
+generated: "2026-02-26"
+
+modules:
+
+  # ── Live ──
+
+  - name: CRM
+    path: /crm/
+    status: live
+    ui_type: dynamic
+    auth_role: null  # all authenticated users
+    d1_tables: [companies, contacts, deals, comments]
+    api_routes:
+      - GET/POST /api/contacts
+      - GET/PUT/DELETE /api/contacts/{id}
+      - POST /api/contacts/import
+      - GET/POST /api/companies
+      - GET/PUT/DELETE /api/companies/{id}
+      - POST /api/companies/import
+      - GET/POST /api/deals
+      - GET/PUT/DELETE /api/deals/{id}
+      - POST /api/deals/import
+      - GET/POST /api/comments
+      - DELETE /api/comments/{id}
+      - GET /api/overview/crm
+    owner: platform-team
+    notes: Contact, company, and deal pipeline management.
+
+  - name: Prospecting
+    path: /prospecting/
+    status: wip
+    ui_type: static
+    auth_role: null
+    d1_tables: []
+    api_routes: []
+    owner: platform-team
+    notes: Client-side filtering on static seed data. No D1 backend yet.
+
+  - name: Projects
+    path: /projects/
+    status: live
+    ui_type: dynamic
+    auth_role: partner
+    d1_tables: [projects, tasks]
+    api_routes:
+      - GET/POST /api/projects
+      - GET/PUT/DELETE /api/projects/{id}
+      - POST /api/projects/import
+      - GET/POST /api/tasks
+      - GET/PUT/DELETE /api/tasks/{id}
+      - POST /api/tasks/import
+      - GET /api/overview/projects
+    owner: platform-team
+    notes: null
+
+  - name: R&D
+    path: /rnd/
+    status: live
+    ui_type: dynamic
+    auth_role: partner
+    d1_tables: [rnd_projects, rnd_documents, rnd_trial_entries, rnd_stage_history, rnd_approvals, skus]
+    api_routes:
+      - GET/POST /api/rnd_projects
+      - GET/PUT/DELETE /api/rnd_projects/{id}
+      - POST /api/rnd_projects/import
+      - GET/POST /api/rnd_documents
+      - GET/PUT/DELETE /api/rnd_documents/{id}
+      - POST /api/rnd_documents/import
+      - GET/POST /api/rnd_trial_entries
+      - GET/PUT/DELETE /api/rnd_trial_entries/{id}
+      - POST /api/rnd_trial_entries/import
+      - GET/POST /api/rnd_stage_history
+      - POST /api/rnd_stage_history/import
+      - GET/POST /api/rnd_approvals
+      - POST /api/rnd_approvals/import
+      - GET/POST /api/skus
+      - GET/PUT/DELETE /api/skus/{id}
+      - POST /api/skus/import
+    owner: platform-team
+    notes: Product development pipeline, documents, trials, SKU catalog.
+
+  - name: Reports
+    path: /reports.html
+    status: live
+    ui_type: static
+    auth_role: null
+    d1_tables: []
+    api_routes: []
+    owner: platform-team
+    notes: Reports and analytics page.
+
+  - name: Budget
+    path: /budget.html
+    status: live
+    ui_type: static
+    auth_role: null
+    d1_tables: []
+    api_routes: []
+    owner: platform-team
+    notes: Client-only budget tool. No API, no D1.
+
+  - name: Dashboard
+    path: /dashboard.html
+    status: live
+    ui_type: static
+    auth_role: null
+    d1_tables: []
+    api_routes: []
+    owner: platform-team
+    notes: Management overview with embedded analytics.
+
+  - name: Admin
+    path: /admin/users.html
+    status: live
+    ui_type: static
+    auth_role: admin
+    d1_tables: []
+    api_routes: []
+    owner: platform-team
+    notes: User management. Role roster hardcoded in script.js.
+
+  - name: Tools
+    path: /tools.html
+    status: live
+    ui_type: static
+    auth_role: null
+    d1_tables: []
+    api_routes: []
+    owner: platform-team
+    notes: External links — KAA Form, Quote Generator, Submit Expenses.
+
+  # ── Planned ──
+
+  - name: Xero Sync
+    path: /admin/xero.html
+    status: planned
+    ui_type: dynamic
+    auth_role: admin
+    d1_tables: [xero_tokens, xero_invoices, xero_line_items, xero_contacts, xero_items, xero_sync_log]
+    api_routes:
+      - POST /api/xero/connect
+      - GET /api/xero/callback
+      - GET /api/xero/status
+      - POST /api/xero/sync/invoices
+      - POST /api/xero/sync/items
+      - POST /api/xero/sync/contacts
+      - POST /api/xero/sync/all
+      - POST /api/xero/webhook
+    owner: platform-team
+    wave: Phase A
+    notes: OAuth connect, incremental sync, webhook handler, daily cron.
+
+  - name: Agreements (KAA)
+    path: /agreements/
+    status: planned
+    ui_type: dynamic
+    auth_role: null  # TODO confirm role requirement
+    d1_tables: [agreements, jobs, job_logs]
+    api_routes: []  # TODO define during Wave 1 implementation
+    owner: platform-team
+    wave: 1
+    notes: Key Account Agreement management. Migrated from GAS.
+
+  - name: Sales Pipeline
+    path: /sales/
+    status: planned
+    ui_type: dynamic
+    auth_role: null  # TODO confirm role requirement
+    d1_tables: [revenue_transactions, account_mapping, account_status, deck_metrics]
+    api_routes:
+      - POST /api/sales/import-receivables
+      - POST /api/sales/refresh-margins
+      - POST /api/sales/refresh-deck-metrics
+      - POST /api/sales/rebuild-account-status
+      - POST /api/sales/sync-mapping
+    owner: platform-team
+    wave: 2
+    notes: Revenue pipeline, margin calculation, account health.
+
+  - name: Production
+    path: /production/
+    status: planned
+    ui_type: dynamic
+    auth_role: null  # TODO confirm role requirement
+    d1_tables: [production_runs, bom_components, component_costs, sku_costing, batch_cogs, payables, arap_snapshots]
+    api_routes:
+      - POST /api/production/import-payables
+      - POST /api/production/import-kmi-packaging
+      - POST /api/production/run-costing-engine
+      - POST /api/production/build-batch-cogs
+      - POST /api/production/snapshot-arap
+      - POST /api/production/run-all
+    owner: platform-team
+    wave: 3
+    notes: Production costing, BOM, COGS, payables, ARAP.
+
+  - name: Loans
+    path: /loans/
+    status: planned
+    ui_type: dynamic
+    auth_role: null  # TODO confirm role requirement
+    d1_tables: [lenders, loan_transactions, loan_ledger]
+    api_routes:
+      - POST /api/loans/transactions
+      - POST /api/loans/bulk-apply
+      - POST /api/loans/accrue-interest
+      - POST /api/loans/rebuild-ledger
+    owner: platform-team
+    wave: 4
+    notes: Loan ledger, interest accrual (cron), statement generation.
+
+  - name: Sales Tool
+    path: /sales-tool/
+    status: planned
+    ui_type: dynamic
+    auth_role: null
+    d1_tables: [pricing]
+    api_routes: []  # TODO define during Wave 5 implementation
+    owner: platform-team
+    wave: 5
+    notes: Pricing CRUD, PDF generation.

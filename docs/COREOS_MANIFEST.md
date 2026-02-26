@@ -580,6 +580,42 @@ governance:
   - rule: G8
     name: Proposed entities marked explicitly
     description: Any entity not yet in production D1 must have status "planned". Agents must not assume planned entities exist.
+  - rule: G9
+    name: Scope removal requires an ADR
+    description: Removing any planned module, table, or integration from the roadmap requires a Decision Record in docs/coreos/DECISIONS/ explaining context, decision, and consequences.
+```
+
+## Precedence & Change Control
+
+When sources disagree, precedence is:
+
+1. **Running code** (D1 schema + Worker routes) — the system of record.
+2. **This manifest** (`COREOS_MANIFEST.md`) — the authoritative design document.
+3. **Migration files** (`api/db/migrations/*.sql`) — immutable history of schema changes.
+4. **Doc pack files** (`docs/coreos/`) — elaborations that must not contradict the manifest.
+
+Change control:
+- Code changes that affect schema, modules, or integrations **must** update this manifest in the same commit (or the immediately following commit).
+- Doc pack files are updated to match the manifest; they never lead it.
+- Contradictions discovered between code and manifest are bugs — file and fix immediately.
+
+## Core Principles
+
+```yaml
+principles:
+  - id: P1
+    name: Reporting is a product
+    description: >
+      Xero data readability for non-finance users is the top platform priority.
+      Every sync, normalisation, and UI decision is evaluated against this goal.
+      Phase A exists to serve this principle.
+  - id: P2
+    name: Accounting hygiene acknowledgement
+    description: >
+      Current Xero data contains inconsistent contact names, missing item codes,
+      mixed currencies, and VOIDED/DRAFT invoices. The sync layer stores raw data
+      as-is. A normalisation layer (PA-4) is required before surfacing data to
+      non-finance users. Do not expose raw xero_* tables in UI without transformation.
 ```
 
 ---

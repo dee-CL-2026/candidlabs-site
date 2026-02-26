@@ -1,0 +1,166 @@
+# CoreOS Roadmap v1.0
+# Ordered milestones: quick wins first, then dependency-ordered waves.
+# Top priority: make Xero data readable for non-finance users.
+
+version: "1.0"
+generated: "2026-02-26"
+
+milestones:
+
+  # ── Quick Wins (no migration, no infra) ──
+
+  - id: QW-1
+    name: Prospecting → D1 backend
+    status: pending
+    priority: quick-win
+    description: Wire prospecting module to D1 (add COLLECTIONS entry, create migration). Currently client-side only.
+    dependencies: []
+    estimated_tables: 1
+
+  - id: QW-2
+    name: Admin role roster → D1
+    status: pending
+    priority: quick-win
+    description: Move hardcoded user/role roster from script.js into a D1 table with admin UI for management.
+    dependencies: []
+    estimated_tables: 1
+
+  # ── Phase A: Xero Sync (TOP PRIORITY) ──
+  # Goal: make Xero data readable for non-finance users.
+
+  - id: PA-1
+    name: Xero OAuth connect
+    status: pending
+    priority: high
+    description: |
+      Build OAuth 2.0 flow in Worker: /api/xero/connect, /api/xero/callback, /api/xero/status.
+      Store tokens in xero_tokens table. Admin UI at /admin/xero.html.
+    dependencies: []
+    migration: 007_xero.sql
+    notes: |
+      Accounting hygiene issue: current Xero data has inconsistent naming, missing item codes,
+      and mixed currencies. The sync layer stores raw data as-is; a normalisation layer will be
+      needed before data is surfaced to non-finance users. See PA-4.
+
+  - id: PA-2
+    name: Xero invoice + item sync
+    status: pending
+    priority: high
+    description: |
+      Pull invoices (ACCREC + ACCPAY), line items, items, contacts into xero_* tables.
+      Incremental sync using If-Modified-Since header.
+    dependencies: [PA-1]
+
+  - id: PA-3
+    name: Xero daily cron + webhooks
+    status: pending
+    priority: high
+    description: |
+      Daily cron trigger (06:00 WIB) for incremental sync.
+      Webhook endpoint for near-real-time invoice/contact updates.
+      HMAC-SHA256 verification.
+    dependencies: [PA-2]
+
+  - id: PA-4
+    name: Xero data normalisation layer
+    status: pending
+    priority: high
+    description: |
+      Transform raw xero_invoices + xero_line_items into human-readable views.
+      Handle: inconsistent contact names, missing item codes, IDR-only assumption,
+      VOIDED/DRAFT filtering, contact header row parsing.
+      Goal: non-finance users can browse revenue and payables in the platform UI.
+    dependencies: [PA-2]
+    notes: This is the critical enabler for "reporting is a product".
+
+  # ── Wave 1: KAA + Foundation ──
+
+  - id: W1-1
+    name: Agreements table + CRUD
+    status: pending
+    priority: medium
+    description: D1 migration 008, COLLECTIONS entry, /agreements/ UI module.
+    dependencies: []
+    migration: 008_agreements.sql
+
+  - id: W1-2
+    name: Jobs infrastructure
+    status: pending
+    priority: medium
+    description: D1 migration 009 (jobs + job_logs tables). Async job runner for adapter calls.
+    dependencies: []
+    migration: 009_jobs.sql
+
+  - id: W1-3
+    name: GAS adapter pattern (doc gen + email)
+    status: pending
+    priority: medium
+    description: |
+      Deploy KAA doc generator and email sender as GAS webapps.
+      API key auth. Worker → GAS doPost protocol.
+      Proves the adapter pattern for all subsequent waves.
+    dependencies: [W1-2]
+
+  # ── Wave 2: Sales Data Pipeline ──
+
+  - id: W2-1
+    name: Sales tables + import endpoints
+    status: pending
+    priority: medium
+    description: |
+      D1 migration 010 (revenue_transactions, account_mapping, account_status, deck_metrics).
+      Import endpoints for receivables, margins, deck metrics, account status, mapping sync.
+    dependencies: [PA-2]
+    migration: 010_sales.sql
+
+  - id: W2-2
+    name: Slides deck adapter
+    status: pending
+    priority: medium
+    description: GAS webapp for Slides template fill. 22 placeholders.
+    dependencies: [W2-1, W1-3]
+
+  # ── Wave 3: Production Costing ──
+
+  - id: W3-1
+    name: Production tables + pipeline endpoints
+    status: pending
+    priority: medium
+    description: |
+      D1 migration 011 (7 tables). Import endpoints for payables, KMI packaging,
+      costing engine, batch COGS, ARAP snapshots.
+    dependencies: [W2-1]
+    migration: 011_production.sql
+
+  # ── Wave 4: Loan Tracker ──
+
+  - id: W4-1
+    name: Loan tables + transaction endpoints
+    status: pending
+    priority: medium
+    description: |
+      D1 migration 012 (lenders, loan_transactions, loan_ledger).
+      Transaction form, interest accrual cron, statement gen adapter.
+    dependencies: []
+    migration: 012_loans.sql
+
+  # ── Wave 5: Sales Tool ──
+
+  - id: W5-1
+    name: Pricing table + PDF generation
+    status: pending
+    priority: low
+    description: D1 migration 013 (pricing). PDF gen via Worker or GAS adapter.
+    dependencies: []
+    migration: 013_pricing.sql
+
+  # ── Wave 6: Cleanup ──
+
+  - id: W6-1
+    name: Decommission GAS estate
+    status: pending
+    priority: low
+    description: |
+      Archive candid-labs repo. Decommission 26–30 GAS scriptIds.
+      Remove QUARANTINE mirrors. Only thin adapters remain.
+    dependencies: [W1-3, W2-2, W3-1, W4-1, W5-1]

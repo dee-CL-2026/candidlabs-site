@@ -1,0 +1,136 @@
+# CoreOS Integration Registry v1.0
+# Source of truth: docs/COREOS_MANIFEST.md → Integration Registry
+
+version: "1.0"
+generated: "2026-02-26"
+
+integrations:
+
+  - name: Cloudflare Access
+    type: auth
+    status: live
+    auth_method: OTP email (CF Access JWT)
+    scopes: N/A
+    retry: N/A (client-side)
+    backoff: N/A
+    logging: Client-side (script.js reads JWT claims)
+    secrets_location: Cloudflare dashboard → Access → Application
+    notes: |
+      Role roster hardcoded in script.js. Roles: admin, partner, team, viewer.
+      JWT header: Cf-Access-Jwt-Assertion.
+
+  - name: Cloudflare D1
+    type: database
+    status: live
+    auth_method: Worker binding (env.DB)
+    scopes: N/A
+    retry: N/A (local binding, no network)
+    backoff: N/A
+    logging: Worker console.error on API errors
+    secrets_location: wrangler.toml → d1_databases binding
+    notes: |
+      12 live tables. Single D1 database.
+      Schema: api/db/schema.sql. Migrations: api/db/migrations/.
+
+  - name: Cloudflare Pages
+    type: hosting
+    status: live
+    auth_method: Git push (GitHub → CF Pages)
+    scopes: N/A
+    retry: Automatic redeploy on push
+    backoff: N/A
+    logging: Cloudflare Pages dashboard → Deployments
+    secrets_location: Cloudflare dashboard → Pages → Settings
+    notes: |
+      Static site served from repo root. Worker served from api/.
+      Preview deploys on non-main branches.
+
+  - name: Xero Accounting
+    type: external_api
+    status: planned
+    wave: Phase A
+    auth_method: OAuth 2.0 Authorization Code flow
+    scopes:
+      - offline_access
+      - accounting.transactions.read
+      - accounting.contacts.read
+      - accounting.reports.read
+      - accounting.settings.read
+    retry: |
+      Token refresh: retry once with old refresh_token (30-min grace).
+      API calls: retry on 429 (rate limit) with exponential backoff.
+    backoff: |
+      Rate limit: 60 calls/min, 5000 calls/day per org.
+      On 429: wait Retry-After header seconds, then retry.
+      Max 3 retries per call.
+    logging: xero_sync_log D1 table (per-sync audit trail)
+    secrets_location: |
+      D1 table xero_tokens (access_token, refresh_token).
+      Worker env vars: XERO_CLIENT_ID, XERO_CLIENT_SECRET (Cloudflare dashboard → Workers → Settings → Variables).
+    notes: |
+      No SDK — raw fetch() client.
+      Webhook HMAC verification via Web Crypto API.
+      Daily cron: 0 23 * * * (06:00 WIB).
+      Granular scopes required for apps created after 2026-03-02.
+
+  # ── GAS Adapters (planned) ──
+
+  - name: KAA Doc Generator
+    type: gas_adapter
+    status: planned
+    wave: 1
+    auth_method: API key in X-Api-Key header
+    scopes: N/A (GAS runs as deploying user)
+    retry: Worker retries once on 5xx. Logs failure to jobs table.
+    backoff: 5s fixed delay before retry.
+    logging: jobs + job_logs D1 tables
+    secrets_location: Worker env var GAS_API_KEY + GAS webapp URL
+    google_apis: [DocumentApp, DriveApp]
+    notes: |
+      Protocol: Worker POST → GAS doPost (JSON payload with templateDocId, placeholders).
+      Response: { docId, docUrl }.
+
+  - name: KAA Email Sender
+    type: gas_adapter
+    status: planned
+    wave: 1
+    auth_method: API key in X-Api-Key header
+    scopes: N/A
+    retry: Worker retries once on 5xx.
+    backoff: 5s fixed delay.
+    logging: jobs + job_logs D1 tables
+    secrets_location: Worker env var GAS_API_KEY + GAS webapp URL
+    google_apis: [GmailApp]
+    notes: |
+      Protocol: Worker POST → GAS doPost (JSON with to, cc, subject, htmlBody).
+      Response: { sent, messageId }.
+
+  - name: Slides Deck Generator
+    type: gas_adapter
+    status: planned
+    wave: 2
+    auth_method: API key in X-Api-Key header
+    scopes: N/A
+    retry: Worker retries once on 5xx.
+    backoff: 5s fixed delay.
+    logging: jobs + job_logs D1 tables
+    secrets_location: Worker env var GAS_API_KEY + GAS webapp URL
+    google_apis: [SlidesApp, DriveApp]
+    notes: |
+      Protocol: Worker POST → GAS doPost (JSON with templatePresentationId, placeholders — 22 fields).
+      Response: { presentationId, presentationUrl }.
+
+  - name: Loan Statement Generator
+    type: gas_adapter
+    status: planned
+    wave: 4
+    auth_method: API key in X-Api-Key header
+    scopes: N/A
+    retry: Worker retries once on 5xx.
+    backoff: 5s fixed delay.
+    logging: jobs + job_logs D1 tables
+    secrets_location: Worker env var GAS_API_KEY + GAS webapp URL
+    google_apis: [DocumentApp, DriveApp, UrlFetchApp]
+    notes: |
+      Protocol: Worker POST → GAS doPost (JSON with templateDocId, placeholders, exportPdf flag).
+      Response: { docId, docUrl, pdfUrl }.
