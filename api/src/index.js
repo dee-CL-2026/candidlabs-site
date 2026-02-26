@@ -2363,6 +2363,96 @@ async function normaliseAll(env) {
   });
 }
 
+// ============================================================
+// Wave 6 — CoGS Engine v1
+// ============================================================
+
+// POST /api/cogs/compute — compute CoGS per SKU per period from normalised_line_items
+async function cogsCompute(env) {
+  const now = new Date().toISOString();
+
+  // W6-02: Filter normalised_line_items by cost bucket IN (RM, RP, Production) — expense side only
+  // W6-03: Aggregate costs per item_code per period
+  const { results: aggregated } = await env.DB.prepare(`
+    SELECT
+      item_code,
+      period,
+      SUM(CASE WHEN cost_bucket = 'RM' THEN line_total ELSE 0 END) as rm_cost,
+      SUM(CASE WHEN cost_bucket = 'RP' THEN line_total ELSE 0 END) as rp_cost,
+      SUM(CASE WHEN cost_bucket = 'Production' THEN line_total ELSE 0 END) as prod_cost,
+      SUM(CASE WHEN cost_bucket IN ('RM', 'RP', 'Production') THEN line_total ELSE 0 END) as total_cost
+    FROM normalised_line_items
+    WHERE entity_type = 'expense'
+      AND cost_bucket IN ('RM', 'RP', 'Production')
+      AND item_code IS NOT NULL
+      AND item_code != ''
+    GROUP BY item_code, period
+  `).all();
+
+  // W6-04: Get units from xero_items (quantity reference) or from revenue invoice line quantities
+  // Source assumption: units_produced derived from ACCREC line item quantities per SKU per period
+  const { results: unitsBySkuPeriod } = await env.DB.prepare(`
+    SELECT item_code, period, SUM(quantity) as total_units
+    FROM normalised_line_items
+    WHERE entity_type = 'revenue'
+      AND item_code IS NOT NULL
+      AND item_code != ''
+    GROUP BY item_code, period
+  `).all();
+
+  const unitsMap = {};
+  for (const u of unitsBySkuPeriod) {
+    unitsMap[`${u.item_code}|${u.period}`] = u.total_units;
+  }
+
+  // W6-05: Write to cogs_results
+  let upserted = 0;
+  for (const row of aggregated) {
+    const units = unitsMap[`${row.item_code}|${row.period}`] || 0;
+    // If a SKU has zero units, unit_cost should be NULL (not division by zero)
+    const unitCost = units > 0 ? row.total_cost / units : null;
+
+    // Get item name from xero_items
+    const item = await env.DB.prepare('SELECT name FROM xero_items WHERE code = ?').bind(row.item_code).first();
+    const itemName = item ? item.name : null;
+
+    const id = generateId('COG');
+    await env.DB.prepare(
+      `INSERT INTO cogs_results (id, item_code, item_name, period, rm_cost, rp_cost, prod_cost, total_cost, units, unit_cost, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(item_code, period) DO UPDATE SET item_name=excluded.item_name,
+         rm_cost=excluded.rm_cost, rp_cost=excluded.rp_cost, prod_cost=excluded.prod_cost,
+         total_cost=excluded.total_cost, units=excluded.units, unit_cost=excluded.unit_cost,
+         updated_at=excluded.updated_at`
+    ).bind(id, row.item_code, itemName, row.period, row.rm_cost, row.rp_cost, row.prod_cost,
+           row.total_cost, units, unitCost, now, now).run();
+    upserted++;
+  }
+
+  return { ok: true, cogs_rows: upserted, aggregated_from: aggregated.length };
+}
+
+// GET /api/cogs/query — read cogs_results by SKU, period, or all
+async function cogsQuery(env, url) {
+  const sku = url.searchParams.get('sku');
+  const period = url.searchParams.get('period');
+
+  let sql = 'SELECT * FROM cogs_results';
+  const wheres = [];
+  const binds = [];
+
+  if (sku) { wheres.push('item_code = ?'); binds.push(sku); }
+  if (period) { wheres.push('period = ?'); binds.push(period); }
+
+  if (wheres.length > 0) sql += ' WHERE ' + wheres.join(' AND ');
+  sql += ' ORDER BY period DESC, item_code ASC';
+
+  const stmt = binds.length > 0 ? env.DB.prepare(sql).bind(...binds) : env.DB.prepare(sql);
+  const { results } = await stmt.all();
+
+  return json({ ok: true, data: results, meta: { count: results.length } });
+}
+
 // POST /api/deck-metrics/:monthKey/generate-deck — slides adapter
 async function deckMetricsGenerateDeck(req, env, monthKey) {
   const metric = await env.DB.prepare('SELECT * FROM deck_metrics WHERE month_key = ?').bind(monthKey).first();
@@ -2546,6 +2636,13 @@ async function handleApi(req, env, url) {
     catch (err) { return json({ ok: false, error: { code: 'NORMALISE_ERROR', message: err.message } }, 500); }
   }
   if (path === '/api/normalise/all' && req.method === 'POST') return normaliseAll(env);
+
+  // Wave 6: CoGS routes (admin-gated)
+  if (path === '/api/cogs/compute' && req.method === 'POST') {
+    try { const r = await cogsCompute(env); return json(r); }
+    catch (err) { return json({ ok: false, error: { code: 'COGS_ERROR', message: err.message } }, 500); }
+  }
+  if (path === '/api/cogs/query' && req.method === 'GET') return cogsQuery(env, url);
 
   // Reports: deck generation (new canonical route)
   const reportsDeckMatch = path.match(/^\/api\/reports\/deck\/([^/]+)\/generate$/);

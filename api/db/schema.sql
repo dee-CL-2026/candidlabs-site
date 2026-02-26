@@ -200,3 +200,25 @@ CREATE TABLE IF NOT EXISTS cost_bucket_mappings (
   updated_at      TEXT DEFAULT (datetime('now')),
   UNIQUE(account_code)
 );
+
+-- ============================================================
+-- Wave 6: CoGS Results
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS cogs_results (
+  id              TEXT PRIMARY KEY,
+  item_code       TEXT NOT NULL,
+  item_name       TEXT,
+  period          TEXT NOT NULL,
+  rm_cost         REAL DEFAULT 0,
+  rp_cost         REAL DEFAULT 0,
+  prod_cost       REAL DEFAULT 0,
+  total_cost      REAL DEFAULT 0,
+  units           REAL DEFAULT 0,
+  unit_cost       REAL,
+  created_at      TEXT DEFAULT (datetime('now')),
+  updated_at      TEXT DEFAULT (datetime('now')),
+  UNIQUE(item_code, period)
+);
+CREATE INDEX IF NOT EXISTS idx_cogs_item ON cogs_results(item_code);
+CREATE INDEX IF NOT EXISTS idx_cogs_period ON cogs_results(period);
