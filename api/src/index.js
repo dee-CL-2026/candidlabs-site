@@ -124,24 +124,24 @@ const COLLECTIONS = {
               'agreement_date', 'start_date', 'end_date', 'agreement_type', 'status',
               'terms', 'notes', 'meta', 'created_at', 'updated_at'],
     searchable: ['account_name', 'contact_name', 'agreement_key'],
-    orderBy: 'created_at DESC'
+    orderBy: 'created_at'
   },
   jobs: {
     table: 'jobs',
     prefix: 'JOB',
     required: ['job_type'],
     columns: ['id', 'job_type', 'status', 'payload', 'result', 'error',
-              'created_by', 'started_at', 'finished_at', 'created_at', 'updated_at'],
+              'created_by', 'started_at', 'finished_at', 'created_at'],
     searchable: ['job_type', 'status'],
-    orderBy: 'created_at DESC'
+    orderBy: 'created_at'
   },
   job_logs: {
     table: 'job_logs',
     prefix: 'JLG',
     required: ['job_id', 'step'],
-    columns: ['id', 'job_id', 'step', 'status', 'message', 'created_at', 'updated_at'],
+    columns: ['id', 'job_id', 'step', 'status', 'message', 'created_at'],
     searchable: ['job_id', 'step'],
-    orderBy: 'created_at DESC'
+    orderBy: 'created_at'
   }
 };
 
@@ -555,16 +555,15 @@ async function adapterInvoke(req, env, adapterType) {
 
   // Create job record (status: running)
   await env.DB.prepare(
-    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(jobId, adapterType, 'running', JSON.stringify(body), body.created_by || null, now, now, now).run();
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(jobId, adapterType, 'running', JSON.stringify(body), body.created_by || null, now, now).run();
 
   try {
-    const gasResponse = await fetch(gasUrl, {
+    // GAS web apps cannot read HTTP headers — pass API key as query parameter
+    const gasUrlWithKey = gasUrl + (gasUrl.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(env.GAS_API_KEY);
+    const gasResponse = await fetch(gasUrlWithKey, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Api-Key': env.GAS_API_KEY
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
 
@@ -575,14 +574,14 @@ async function adapterInvoke(req, env, adapterType) {
 
     // Update job to completed
     await env.DB.prepare(
-      'UPDATE jobs SET status = ?, result = ?, finished_at = ?, updated_at = ? WHERE id = ?'
-    ).bind('completed', JSON.stringify(result), finishedAt, finishedAt, jobId).run();
+      'UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?'
+    ).bind('completed', JSON.stringify(result), finishedAt, jobId).run();
 
     // Create job_log entry
     const logId = generateId('JLG');
     await env.DB.prepare(
-      'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(logId, jobId, 'invoke', 'completed', JSON.stringify(result), finishedAt, finishedAt).run();
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'invoke', 'completed', JSON.stringify(result), finishedAt).run();
 
     return json({ ok: true, job_id: jobId, result });
   } catch (err) {
@@ -590,14 +589,14 @@ async function adapterInvoke(req, env, adapterType) {
 
     // Update job to failed
     await env.DB.prepare(
-      'UPDATE jobs SET status = ?, error = ?, finished_at = ?, updated_at = ? WHERE id = ?'
-    ).bind('failed', err.message, finishedAt, finishedAt, jobId).run();
+      'UPDATE jobs SET status = ?, error = ?, finished_at = ? WHERE id = ?'
+    ).bind('failed', err.message, finishedAt, jobId).run();
 
     // Create error job_log
     const logId = generateId('JLG');
     await env.DB.prepare(
-      'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(logId, jobId, 'invoke', 'failed', err.message, finishedAt, finishedAt).run();
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'invoke', 'failed', err.message, finishedAt).run();
 
     return json({ ok: false, error: { code: 'ADAPTER_ERROR', message: err.message }, job_id: jobId }, 502);
   }
@@ -624,14 +623,14 @@ async function webhookReceive(req, env, webhookType) {
 
   // Update the job record
   await env.DB.prepare(
-    'UPDATE jobs SET status = ?, result = ?, finished_at = ?, updated_at = ? WHERE id = ?'
-  ).bind(status || 'completed', result ? JSON.stringify(result) : null, now, now, job_id).run();
+    'UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?'
+  ).bind(status || 'completed', result ? JSON.stringify(result) : null, now, job_id).run();
 
   // Create a job_log entry recording the callback
   const logId = generateId('JLG');
   await env.DB.prepare(
-    'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).bind(logId, job_id, `webhook_${webhookType}`, status || 'completed', result ? JSON.stringify(result) : null, now, now).run();
+    'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(logId, job_id, `webhook_${webhookType}`, status || 'completed', result ? JSON.stringify(result) : null, now).run();
 
   return json({ ok: true });
 }
@@ -682,13 +681,15 @@ async function agreementGenerateDoc(req, env, agreementId) {
 
   // Create job record
   await env.DB.prepare(
-    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(jobId, 'docgen', 'running', JSON.stringify(payload), payload.created_by, now, now, now).run();
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(jobId, 'docgen', 'running', JSON.stringify(payload), payload.created_by, now, now).run();
 
   try {
-    const gasResponse = await fetch(gasUrl, {
+    // GAS web apps cannot read HTTP headers — pass API key as query parameter
+    const gasUrlWithKey = gasUrl + (gasUrl.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(env.GAS_API_KEY);
+    const gasResponse = await fetch(gasUrlWithKey, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Api-Key': env.GAS_API_KEY },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
@@ -698,25 +699,25 @@ async function agreementGenerateDoc(req, env, agreementId) {
     const finishedAt = new Date().toISOString();
 
     await env.DB.prepare(
-      'UPDATE jobs SET status = ?, result = ?, finished_at = ?, updated_at = ? WHERE id = ?'
-    ).bind('completed', JSON.stringify(result), finishedAt, finishedAt, jobId).run();
+      'UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?'
+    ).bind('completed', JSON.stringify(result), finishedAt, jobId).run();
 
     const logId = generateId('JLG');
     await env.DB.prepare(
-      'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(logId, jobId, 'generate_doc', 'completed', JSON.stringify(result), finishedAt, finishedAt).run();
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'generate_doc', 'completed', JSON.stringify(result), finishedAt).run();
 
     return json({ ok: true, job_id: jobId, result });
   } catch (err) {
     const finishedAt = new Date().toISOString();
     await env.DB.prepare(
-      'UPDATE jobs SET status = ?, error = ?, finished_at = ?, updated_at = ? WHERE id = ?'
-    ).bind('failed', err.message, finishedAt, finishedAt, jobId).run();
+      'UPDATE jobs SET status = ?, error = ?, finished_at = ? WHERE id = ?'
+    ).bind('failed', err.message, finishedAt, jobId).run();
 
     const logId = generateId('JLG');
     await env.DB.prepare(
-      'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(logId, jobId, 'generate_doc', 'failed', err.message, finishedAt, finishedAt).run();
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'generate_doc', 'failed', err.message, finishedAt).run();
 
     return json({ ok: false, error: { code: 'ADAPTER_ERROR', message: err.message }, job_id: jobId }, 502);
   }
@@ -773,13 +774,15 @@ async function agreementSendEmail(req, env, agreementId) {
   const jobId = generateId('JOB');
 
   await env.DB.prepare(
-    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(jobId, 'email', 'running', JSON.stringify(payload), payload.created_by, now, now, now).run();
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(jobId, 'email', 'running', JSON.stringify(payload), payload.created_by, now, now).run();
 
   try {
-    const gasResponse = await fetch(gasUrl, {
+    // GAS web apps cannot read HTTP headers — pass API key as query parameter
+    const gasUrlWithKey = gasUrl + (gasUrl.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(env.GAS_API_KEY);
+    const gasResponse = await fetch(gasUrlWithKey, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Api-Key': env.GAS_API_KEY },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
@@ -789,25 +792,25 @@ async function agreementSendEmail(req, env, agreementId) {
     const finishedAt = new Date().toISOString();
 
     await env.DB.prepare(
-      'UPDATE jobs SET status = ?, result = ?, finished_at = ?, updated_at = ? WHERE id = ?'
-    ).bind('completed', JSON.stringify(result), finishedAt, finishedAt, jobId).run();
+      'UPDATE jobs SET status = ?, result = ?, finished_at = ? WHERE id = ?'
+    ).bind('completed', JSON.stringify(result), finishedAt, jobId).run();
 
     const logId = generateId('JLG');
     await env.DB.prepare(
-      'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(logId, jobId, 'send_email', 'completed', JSON.stringify(result), finishedAt, finishedAt).run();
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'send_email', 'completed', JSON.stringify(result), finishedAt).run();
 
     return json({ ok: true, job_id: jobId, result });
   } catch (err) {
     const finishedAt = new Date().toISOString();
     await env.DB.prepare(
-      'UPDATE jobs SET status = ?, error = ?, finished_at = ?, updated_at = ? WHERE id = ?'
-    ).bind('failed', err.message, finishedAt, finishedAt, jobId).run();
+      'UPDATE jobs SET status = ?, error = ?, finished_at = ? WHERE id = ?'
+    ).bind('failed', err.message, finishedAt, jobId).run();
 
     const logId = generateId('JLG');
     await env.DB.prepare(
-      'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(logId, jobId, 'send_email', 'failed', err.message, finishedAt, finishedAt).run();
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'send_email', 'failed', err.message, finishedAt).run();
 
     return json({ ok: false, error: { code: 'ADAPTER_ERROR', message: err.message }, job_id: jobId }, 502);
   }
