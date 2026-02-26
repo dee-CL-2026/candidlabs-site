@@ -66,7 +66,7 @@ const COLLECTIONS = {
     required: ['name'],
     columns: ['id', 'name', 'stage', 'owner', 'target_market', 'product_category',
               'priority', 'start_date', 'target_launch', 'gate_outcome', 'confidence_level',
-              'current_score', 'notes', 'meta', 'created_at', 'updated_at'],
+              'current_score', 'gate_rationale', 'notes', 'meta', 'created_at', 'updated_at'],
     searchable: ['name', 'owner', 'target_market']
   },
   rnd_stage_history: {
@@ -177,7 +177,9 @@ async function createOne(req, env, collection) {
   }
 
   // Build insert from known columns only
-  const record = { id, created_at: now, updated_at: now };
+  const record = { id };
+  if (cfg.columns.includes('created_at')) record.created_at = now;
+  if (cfg.columns.includes('updated_at')) record.updated_at = now;
   for (const col of cfg.columns) {
     if (col === 'id' || col === 'created_at' || col === 'updated_at') continue;
     if (body[col] !== undefined) {

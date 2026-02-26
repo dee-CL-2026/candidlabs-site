@@ -417,7 +417,88 @@ PASS / FAIL
 Notes:
 
 ============================================================
-SECTION O — GENERAL UI CHECKS
+SECTION O — PROSPECTING
+
+1) Open /prospecting/ → page loads with stats bar, filter bar, card queue.
+   → 3 test prospects visible (The Shady Pig, Lara Djonggrang, Potato Head Beach Club).
+
+2) Stats bar:
+   → Discovered, Pending Review, Approved, Rejected, Contacted, WA Verified, Conversion.
+   → Numbers update as you approve/reject prospects.
+
+3) Filter bar:
+   → Search by name/market/IG handle → cards filter in real time.
+   → Source filter (AI Discovery / Manual) → filters correctly.
+   → Review filter (Pending / Approved / Rejected) → works.
+   → Priority + Outreach filters → work.
+
+4) Prospect cards:
+   → Show venue name, market, channel, type, AI/Manual badge, fit score badge.
+   → Priority left-border colour: red (high), amber (medium), grey (low).
+   → Contact channels row: WA/IG/Tel/Email — available channels highlighted, missing greyed out.
+   → WA verification icon: ? (unchecked), checkmark (verified), X (invalid).
+   → Inline edit: WA and IG fields editable directly on card — saves on change.
+   → Draft message: click toggle to expand, click "Copy" to copy to clipboard.
+
+5) Click prospect name → Detail Drawer opens:
+   → All fields: market, channel, type, priority, outreach status, contact score.
+   → WA/IG/landline/email with links.
+   → IG followers, fit reason, IG bio, draft message.
+   → WA verification status shown next to WhatsApp number.
+   → Comments section: post and delete comments.
+   → × and overlay click close drawer.
+
+6) Approve a pending prospect:
+   → Click Approve → review status changes to "approved".
+   → Card footer now shows: Copy Message, Migrate to CRM buttons.
+   → If fit_score >= 7: "Distributor Intro" button also appears.
+
+7) Reject a prospect:
+   → Click Reject → modal asks for reason → confirm → status changes to "rejected".
+   → Rejection reason shown in card footer.
+
+8) Outreach status:
+   → Click the outreach badge on a card → modal to update status.
+   → Change to "Contacted" → badge updates, last_contacted timestamp set.
+
+9) WA Verification:
+   → Click "Verify" next to a WA number → modal opens.
+   → Manual check: "Open wa.me link" opens in new tab.
+   → Click "Valid — On WhatsApp" or "Invalid — Not on WA" → saves to meta.
+   → Card updates: verified numbers get green border + checkmark.
+   → Invalid numbers get strikethrough + red X.
+   → "Re-check" button appears on already-verified numbers.
+   → Automated check: "Check via API" → shows "not configured" message with setup link.
+   → API setup modal: enter token + phone ID → saves to localStorage.
+
+10) Distributor Intro:
+    → On an approved prospect with fit >= 7, click "Distributor Intro".
+    → Modal: select Fannie / Nares / Other, pre-drafted intro message.
+    → "Copy Message" copies to clipboard.
+    → "Mark Intro Requested" → saves intro_channel, intro_requested_from, intro_status.
+    → Card shows "Intro via [Name] — pending".
+
+11) + Add Manually:
+    → Click button → slide drawer opens.
+    → Fill: name (required), market, channel, type, priority, IG, WA, landline, email, notes.
+    → Save → new prospect appears in queue with source "Manual", review "approved".
+    → Cancel / × closes drawer without saving.
+
+12) Migrate to CRM:
+    → On an approved prospect, click "Migrate to CRM".
+    → Confirm dialog → company status changes from "prospect" to "lead".
+    → Contact created in CRM with WA/phone details.
+    → Prospect disappears from queue, appears in CRM companies tab.
+
+13) Nav link:
+    → "Prospecting" link visible in desktop nav and mobile menu on all pages.
+
+Record:
+PASS / FAIL
+Notes:
+
+============================================================
+SECTION P — GENERAL UI CHECKS
 
 1) No console errors on any page during normal use.
 
@@ -452,7 +533,7 @@ PASS / FAIL
 Notes:
 
 ============================================================
-[FUTURE] SECTION P — MULTI-USER (post-backend)
+[FUTURE] SECTION Q — MULTI-USER (post-backend)
 
 Not applicable until D1-backed sessions are implemented.
 
@@ -466,7 +547,7 @@ N/A — post D1 backend
 Notes:
 
 ============================================================
-[FUTURE] SECTION Q — AGENT API (OpenClaw / post-backend)
+[FUTURE] SECTION R — AGENT API (OpenClaw / post-backend)
 
 Not applicable until agent auth is implemented.
 
