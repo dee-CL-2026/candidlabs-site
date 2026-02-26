@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
-<body data-auth-require="true">
+<body data-auth-require="true" data-auth-role="admin">
   <!-- Navigation -->
   <nav class="navbar" role="navigation" aria-label="Main navigation">
     <div class="container navbar-container">
@@ -94,8 +94,8 @@
     <!-- Page Header -->
     <header class="page-header">
       <div class="container">
-        <h1 class="page-title">Sales Data</h1>
-        <p class="page-description">Revenue pipeline, margins, account health, and monthly deck metrics</p>
+        <h1 class="page-title">Sales Ops</h1>
+        <p class="page-description">Revenue pipeline, account health, Xero sync, and ops admin</p>
       </div>
     </header>
 
@@ -107,11 +107,11 @@
           <!-- Sidebar -->
           <aside class="tool-sidebar" aria-label="Sales navigation">
             <div class="sidebar-section">
-              <div class="sidebar-label">Sales Modules</div>
+              <div class="sidebar-label">Sales Ops</div>
               <button class="tool-btn active" data-tool="overview" onclick="slsSwitchTool('overview')">Overview</button>
               <button class="tool-btn" data-tool="revenue" onclick="slsSwitchTool('revenue')">Revenue</button>
               <button class="tool-btn" data-tool="accounts" onclick="slsSwitchTool('accounts')">Accounts</button>
-              <button class="tool-btn" data-tool="deck" onclick="slsSwitchTool('deck')">Deck Metrics</button>
+              <button class="tool-btn" data-tool="xero" onclick="slsSwitchTool('xero')">Xero Sync</button>
             </div>
             <div class="sidebar-section">
               <div class="sidebar-label">Actions</div>
@@ -144,7 +144,7 @@
                 </div>
                 <div class="pm-stat-card">
                   <div class="pm-stat-number" id="stat-sls-deck-months">0</div>
-                  <div class="pm-stat-label">Deck Months</div>
+                  <div class="pm-stat-label">Syncs Completed</div>
                 </div>
               </div>
 
@@ -222,32 +222,53 @@
               </div>
             </div>
 
-            <!-- DECK METRICS PANEL -->
-            <div class="tool-panel" id="tool-deck">
+            <!-- XERO SYNC PANEL -->
+            <div class="tool-panel" id="tool-xero">
               <div class="tool-panel-header">
-                <h2>Deck Metrics</h2>
-                <p>Monthly KPI snapshots for board decks</p>
+                <h2>Xero Sync</h2>
+                <p>Connect and sync financial data from Xero</p>
+              </div>
+
+              <div class="sls-xero-status" id="sls-xero-status">
+                <span class="sls-xero-indicator" id="sls-xero-indicator"></span>
+                <span id="sls-xero-status-text">Checking connection...</span>
               </div>
 
               <div class="pm-action-bar">
-                <input type="text" class="pm-search" id="sls-deck-search" placeholder="Search month..." aria-label="Search deck" oninput="slsRenderDeck()">
-                <button class="btn-add" onclick="slsRefreshDeckMetrics()">Refresh Metrics</button>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <button class="btn-add" id="sls-xero-connect-btn" onclick="slsXeroConnect()" style="display:none;">Connect Xero</button>
+                  <button class="btn-add" id="sls-xero-sync-btn" onclick="slsXeroSync()" style="display:none;">Sync Current Month</button>
+                  <button class="btn-add" id="sls-xero-disconnect-btn" onclick="slsXeroDisconnect()" style="display:none;background:var(--color-error);">Disconnect</button>
+                </div>
               </div>
 
+              <div class="pm-action-bar" id="sls-xero-backfill-bar" style="display:none;">
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <label>From: <input type="month" id="sls-xero-from"></label>
+                  <label>To: <input type="month" id="sls-xero-to"></label>
+                  <button class="btn-add" onclick="slsXeroBackfill()">Backfill</button>
+                </div>
+              </div>
+
+              <div class="sls-pipeline-banner" id="sls-xero-banner"></div>
+
+              <div class="tool-panel-header" style="margin-top:16px;">
+                <h3>Sync History</h3>
+              </div>
               <div class="pm-table-container">
                 <table class="pm-table">
                   <thead>
                     <tr>
+                      <th>Sync Type</th>
                       <th>Month</th>
-                      <th>Revenue (IDR)</th>
-                      <th>Gross Margin</th>
-                      <th>vs Prev</th>
-                      <th>DQ</th>
-                      <th>Headline</th>
-                      <th>Actions</th>
+                      <th>Status</th>
+                      <th>Fetched</th>
+                      <th>Upserted</th>
+                      <th>Started</th>
+                      <th>Finished</th>
                     </tr>
                   </thead>
-                  <tbody id="sls-deck-tbody"></tbody>
+                  <tbody id="sls-sync-tbody"></tbody>
                 </table>
               </div>
             </div>
