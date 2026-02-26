@@ -722,6 +722,97 @@ async function agreementGenerateDoc(req, env, agreementId) {
   }
 }
 
+async function agreementSendEmail(req, env, agreementId) {
+  // Read the agreement record
+  const agr = await env.DB.prepare('SELECT * FROM agreements WHERE id = ?').bind(agreementId).first();
+  if (!agr) return json({ ok: false, error: { code: 'NOT_FOUND', message: `Agreement ${agreementId} not found` } }, 404);
+
+  // Look up contact email from linked contact (via contact_name or company contacts)
+  let contactEmail = '';
+  let contactName = agr.contact_name || '';
+  if (agr.company_id) {
+    const contact = await env.DB.prepare(
+      'SELECT email, name FROM contacts WHERE company_id = ? LIMIT 1'
+    ).bind(agr.company_id).first();
+    if (contact) {
+      contactEmail = contact.email || '';
+      if (!contactName) contactName = contact.name || '';
+    }
+  }
+
+  // Allow override from request body
+  const body = await req.json().catch(() => ({}));
+  if (body.to) contactEmail = body.to;
+  if (body.contactName) contactName = body.contactName;
+
+  if (!contactEmail) {
+    return json({ ok: false, error: { code: 'VALIDATION', message: 'No contact email found. Link a company with contacts or provide "to" in request body.' } }, 400);
+  }
+
+  const payload = {
+    action: 'send',
+    to: contactEmail,
+    subject: 'Your Agreement - ' + (agr.account_name || 'Agreement'),
+    htmlBody: '<h2>Agreement Summary</h2>' +
+      '<p><strong>Account:</strong> ' + (agr.account_name || '-') + '</p>' +
+      '<p><strong>Type:</strong> ' + (agr.agreement_type || '-') + '</p>' +
+      '<p><strong>Date:</strong> ' + (agr.agreement_date || '-') + '</p>' +
+      '<p><strong>Start:</strong> ' + (agr.start_date || '-') + '</p>' +
+      '<p><strong>End:</strong> ' + (agr.end_date || '-') + '</p>' +
+      (agr.terms ? '<p><strong>Terms:</strong> ' + agr.terms + '</p>' : ''),
+    agreement_id: agreementId,
+    created_by: req.headers.get('X-Agent-Id') || 'platform'
+  };
+
+  const gasUrl = env.GAS_EMAIL_URL;
+  if (!gasUrl) {
+    return json({ ok: false, error: { code: 'CONFIG_ERROR', message: 'Email adapter URL not configured' } }, 500);
+  }
+
+  const now = new Date().toISOString();
+  const jobId = generateId('JOB');
+
+  await env.DB.prepare(
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(jobId, 'email', 'running', JSON.stringify(payload), payload.created_by, now, now, now).run();
+
+  try {
+    const gasResponse = await fetch(gasUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Api-Key': env.GAS_API_KEY },
+      body: JSON.stringify(payload)
+    });
+
+    const resultText = await gasResponse.text();
+    let result;
+    try { result = JSON.parse(resultText); } catch { result = { raw: resultText }; }
+    const finishedAt = new Date().toISOString();
+
+    await env.DB.prepare(
+      'UPDATE jobs SET status = ?, result = ?, finished_at = ?, updated_at = ? WHERE id = ?'
+    ).bind('completed', JSON.stringify(result), finishedAt, finishedAt, jobId).run();
+
+    const logId = generateId('JLG');
+    await env.DB.prepare(
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'send_email', 'completed', JSON.stringify(result), finishedAt, finishedAt).run();
+
+    return json({ ok: true, job_id: jobId, result });
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE jobs SET status = ?, error = ?, finished_at = ?, updated_at = ? WHERE id = ?'
+    ).bind('failed', err.message, finishedAt, finishedAt, jobId).run();
+
+    const logId = generateId('JLG');
+    await env.DB.prepare(
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'send_email', 'failed', err.message, finishedAt, finishedAt).run();
+
+    return json({ ok: false, error: { code: 'ADAPTER_ERROR', message: err.message }, job_id: jobId }, 502);
+  }
+}
+
 // ============================================================
 // Router
 // ============================================================
@@ -748,6 +839,12 @@ async function handleApi(req, env, url) {
   const agrDocMatch = path.match(/^\/api\/agreements\/([^/]+)\/generate-doc$/);
   if (agrDocMatch && req.method === 'POST') {
     return agreementGenerateDoc(req, env, agrDocMatch[1]);
+  }
+
+  // Agreement actions: POST /api/agreements/:id/send-email
+  const agrEmailMatch = path.match(/^\/api\/agreements\/([^/]+)\/send-email$/);
+  if (agrEmailMatch && req.method === 'POST') {
+    return agreementSendEmail(req, env, agrEmailMatch[1]);
   }
 
   // Adapter invoke: POST /api/adapters/:type/invoke

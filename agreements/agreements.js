@@ -401,6 +401,11 @@ function agrRenderDetailActions(agr) {
   // Generate Document button — always available
   html += '<button class="btn-modal primary" onclick="agrGenerateDoc(\'' + agr.id + '\')">Generate Document</button>';
 
+  // Send Email button — available for draft and active agreements
+  if (status === 'draft' || status === 'active') {
+    html += '<button class="btn-modal primary" onclick="agrSendEmail(\'' + agr.id + '\')">Send Email</button>';
+  }
+
   if (status === 'draft') {
     html += '<button class="btn-modal primary" onclick="agrTransition(\'' + agr.id + '\', \'active\')">Activate</button>';
     html += '<button class="btn-modal secondary" onclick="agrTransition(\'' + agr.id + '\', \'terminated\')">Terminate</button>';
@@ -462,6 +467,33 @@ function agrGenerateDoc(id) {
       }
     }).catch(function (err) {
       if (btn) { btn.disabled = false; btn.textContent = 'Generate Document'; }
+      alert('Error: ' + (err.message || err));
+    });
+}
+
+// ============================================================
+// EMAIL SENDING
+// ============================================================
+
+function agrSendEmail(id) {
+  if (!confirm('Send agreement summary email to the linked contact?')) return;
+
+  var btn = event && event.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+  fetch(AGR_API_BASE + '/agreements/' + id + '/send-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  }).then(function (res) { return res.json(); })
+    .then(function (body) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Send Email'; }
+      if (body.ok) {
+        alert('Email sent successfully.\nJob ID: ' + body.job_id);
+      } else {
+        alert('Email failed: ' + (body.error ? body.error.message : 'Unknown error'));
+      }
+    }).catch(function (err) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Send Email'; }
       alert('Error: ' + (err.message || err));
     });
 }
