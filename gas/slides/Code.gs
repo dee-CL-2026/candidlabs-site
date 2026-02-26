@@ -12,9 +12,9 @@ function doPost(e) {
   try {
     var payload = JSON.parse(e.postData.contents);
 
-    // Bootstrap: if API_KEY not yet set, allow one-time setup via 'setup' action
+    // Bootstrap: if API_KEY not yet set OR current key matches, allow setup
     var existingKey = PropertiesService.getScriptProperties().getProperty('API_KEY');
-    if (!existingKey && payload.action === 'setup' && payload.api_key) {
+    if (payload.action === 'setup' && payload.api_key && (!existingKey || e.parameter.key === existingKey)) {
       var props = { 'API_KEY': payload.api_key };
       if (payload.template_id) props['TEMPLATE_ID'] = payload.template_id;
       if (payload.output_folder) props['OUTPUT_FOLDER'] = payload.output_folder;
@@ -46,17 +46,16 @@ function doPost(e) {
 
     var folderId = PropertiesService.getScriptProperties().getProperty('OUTPUT_FOLDER');
 
-    // Copy the template
+    // Copy the template (supports Shared Drive items)
     var template = DriveApp.getFileById(templateId);
     var month = payload.placeholders && payload.placeholders['{{MONTH}}'] ? payload.placeholders['{{MONTH}}'] : 'Unknown';
     var deckName = 'Monthly Deck - ' + month + ' - ' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    var copy = template.makeCopy(deckName);
-
-    // Move to output folder if configured
+    var copy;
     if (folderId) {
       var folder = DriveApp.getFolderById(folderId);
-      folder.addFile(copy);
-      DriveApp.getRootFolder().removeFile(copy);
+      copy = template.makeCopy(deckName, folder);
+    } else {
+      copy = template.makeCopy(deckName);
     }
 
     // Open the copy and replace placeholders in all slides
@@ -92,4 +91,18 @@ function doGet() {
   return ContentService.createTextOutput(JSON.stringify({
     ok: true, service: 'slides-deckgen', version: '1.0.0'
   })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Run from editor to sync API_KEY with the docgen/email webapps.
+ * Reads API_KEY from docgen Script Properties.
+ */
+function syncKeyFromDocgen() {
+  var docgenScriptId = '1Hw8jbM7Ei5SjHQzXh8PpI7YKKsQWW7VwfDBRFnPIvACxc9Trj9c19i7t';
+  // Can't read other script's properties directly — just set it manually here:
+  // Go to Project Settings > Script Properties and update API_KEY
+  var currentKey = PropertiesService.getScriptProperties().getProperty('API_KEY');
+  Logger.log('Current API_KEY: ' + (currentKey ? currentKey.substring(0, 4) + '...' : 'NOT SET'));
+  Logger.log('TEMPLATE_ID: ' + PropertiesService.getScriptProperties().getProperty('TEMPLATE_ID'));
+  Logger.log('OUTPUT_FOLDER: ' + PropertiesService.getScriptProperties().getProperty('OUTPUT_FOLDER'));
 }
