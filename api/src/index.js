@@ -2165,6 +2165,204 @@ async function xeroSyncStatus(env) {
   return json({ ok: true, data: { runs, entity_counts: counts } });
 }
 
+// ============================================================
+// Wave 5 — Financial Normalisation
+// ============================================================
+
+// POST /api/normalise/seed-buckets — seed cost bucket mappings from xero_accounts
+async function seedCostBuckets(env) {
+  // Table-driven: map account codes/types to cost buckets
+  // These are heuristic defaults — should be refined with real account data
+  const rules = [
+    // Raw Materials patterns (by account type or code pattern)
+    { pattern_type: 'COGS', bucket: 'RM', note: 'COGS accounts default to RM' },
+    { pattern_type: 'DIRECTCOSTS', bucket: 'Production', note: 'Direct costs → Production' },
+    { pattern_type: 'EXPENSE', bucket: 'Other', note: 'General expense → Other' },
+    { pattern_type: 'OVERHEADS', bucket: 'Other', note: 'Overheads → Other' },
+  ];
+
+  // Fetch all xero_accounts and apply rules
+  const { results: accounts } = await env.DB.prepare('SELECT xero_account_id, code, name, type, class FROM xero_accounts').all();
+
+  let seeded = 0;
+  for (const acct of accounts) {
+    if (!acct.code) continue;
+
+    let bucket = 'Other';
+    const nameLower = (acct.name || '').toLowerCase();
+    const typeLower = (acct.type || '').toUpperCase();
+
+    // Heuristic classification based on account name patterns
+    if (nameLower.includes('raw material') || nameLower.includes('bahan baku') || nameLower.includes('ingredient')) {
+      bucket = 'RM';
+    } else if (nameLower.includes('packaging') || nameLower.includes('kemasan') || nameLower.includes('label') || nameLower.includes('can') || nameLower.includes('carton')) {
+      bucket = 'RP';
+    } else if (nameLower.includes('production') || nameLower.includes('manufacturing') || nameLower.includes('produksi') || nameLower.includes('tolling') || nameLower.includes('co-pack')) {
+      bucket = 'Production';
+    } else if (nameLower.includes('freight') || nameLower.includes('shipping') || nameLower.includes('delivery') || nameLower.includes('pengiriman') || nameLower.includes('logistic')) {
+      bucket = 'Freight';
+    } else if (nameLower.includes('marketing') || nameLower.includes('advertising') || nameLower.includes('promo') || nameLower.includes('pemasaran')) {
+      bucket = 'Marketing';
+    } else if (typeLower === 'DIRECTCOSTS') {
+      bucket = 'Production';
+    }
+
+    const id = generateId('CBM');
+    await env.DB.prepare(
+      `INSERT INTO cost_bucket_mappings (id, account_code, account_name, cost_bucket, notes, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(account_code) DO UPDATE SET account_name=excluded.account_name, cost_bucket=excluded.cost_bucket,
+         notes=excluded.notes, updated_at=excluded.updated_at`
+    ).bind(id, acct.code, acct.name, bucket, `Auto-classified from type=${acct.type}`, new Date().toISOString(), new Date().toISOString()).run();
+    seeded++;
+  }
+
+  return { ok: true, seeded, total_accounts: accounts.length };
+}
+
+// POST /api/normalise/revenue — normalise ACCREC invoices into normalised_documents + normalised_line_items
+async function normaliseRevenue(env) {
+  const { results: invoices } = await env.DB.prepare(
+    "SELECT * FROM xero_invoices WHERE type = 'ACCREC' AND status != 'VOIDED' AND status != 'DELETED'"
+  ).all();
+
+  // Load cost bucket mappings
+  const { results: mappings } = await env.DB.prepare('SELECT account_code, cost_bucket FROM cost_bucket_mappings').all();
+  const bucketMap = {};
+  for (const m of mappings) { bucketMap[m.account_code] = m.cost_bucket; }
+
+  let docsUpserted = 0;
+  let linesUpserted = 0;
+  const now = new Date().toISOString();
+
+  for (const inv of invoices) {
+    const period = inv.invoice_date ? inv.invoice_date.slice(0, 7) : null;
+    const docId = generateId('ND');
+
+    await env.DB.prepare(
+      `INSERT INTO normalised_documents (id, entity_type, xero_invoice_id, invoice_number, contact_name,
+         xero_contact_id, invoice_date, due_date, currency_code, sub_total, total_tax, total, status, period, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(xero_invoice_id) DO UPDATE SET invoice_number=excluded.invoice_number,
+         contact_name=excluded.contact_name, xero_contact_id=excluded.xero_contact_id,
+         sub_total=excluded.sub_total, total_tax=excluded.total_tax, total=excluded.total,
+         status=excluded.status, period=excluded.period, updated_at=excluded.updated_at`
+    ).bind(docId, 'revenue', inv.xero_invoice_id, inv.invoice_number, inv.contact_name,
+           inv.xero_contact_id, inv.invoice_date, inv.due_date, inv.currency_code,
+           inv.sub_total, inv.total_tax, inv.total, inv.status, period, now, now).run();
+
+    // Get the actual document ID (might be existing)
+    const doc = await env.DB.prepare('SELECT id FROM normalised_documents WHERE xero_invoice_id = ?').bind(inv.xero_invoice_id).first();
+    const actualDocId = doc ? doc.id : docId;
+
+    // Normalise line items
+    const { results: lines } = await env.DB.prepare(
+      'SELECT * FROM xero_line_items WHERE xero_invoice_id = ?'
+    ).bind(inv.xero_invoice_id).all();
+
+    for (const li of lines) {
+      const lineId = li.id;
+      const nliId = generateId('NLI');
+      const costBucket = bucketMap[li.account_code] || null;
+
+      await env.DB.prepare(
+        `INSERT INTO normalised_line_items (id, entity_type, document_id, xero_invoice_id, line_id,
+           item_code, description, quantity, unit_amount, line_total, account_code, tax_type, cost_bucket, period, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(xero_invoice_id, line_id) DO UPDATE SET entity_type=excluded.entity_type,
+           document_id=excluded.document_id, item_code=excluded.item_code, description=excluded.description,
+           quantity=excluded.quantity, unit_amount=excluded.unit_amount, line_total=excluded.line_total,
+           account_code=excluded.account_code, tax_type=excluded.tax_type, cost_bucket=excluded.cost_bucket, period=excluded.period`
+      ).bind(nliId, 'revenue', actualDocId, inv.xero_invoice_id, lineId,
+             li.item_code, li.description, li.quantity, li.unit_amount, li.line_amount,
+             li.account_code, li.tax_type, costBucket, period, now).run();
+      linesUpserted++;
+    }
+    docsUpserted++;
+  }
+
+  return { ok: true, entity_type: 'revenue', documents: docsUpserted, line_items: linesUpserted };
+}
+
+// POST /api/normalise/expenses — normalise ACCPAY invoices into normalised_documents + normalised_line_items
+async function normaliseExpenses(env) {
+  const { results: invoices } = await env.DB.prepare(
+    "SELECT * FROM xero_invoices WHERE type = 'ACCPAY' AND status != 'VOIDED' AND status != 'DELETED'"
+  ).all();
+
+  // Load cost bucket mappings
+  const { results: mappings } = await env.DB.prepare('SELECT account_code, cost_bucket FROM cost_bucket_mappings').all();
+  const bucketMap = {};
+  for (const m of mappings) { bucketMap[m.account_code] = m.cost_bucket; }
+
+  let docsUpserted = 0;
+  let linesUpserted = 0;
+  const now = new Date().toISOString();
+
+  for (const inv of invoices) {
+    const period = inv.invoice_date ? inv.invoice_date.slice(0, 7) : null;
+    const docId = generateId('ND');
+
+    await env.DB.prepare(
+      `INSERT INTO normalised_documents (id, entity_type, xero_invoice_id, invoice_number, contact_name,
+         xero_contact_id, invoice_date, due_date, currency_code, sub_total, total_tax, total, status, period, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(xero_invoice_id) DO UPDATE SET invoice_number=excluded.invoice_number,
+         contact_name=excluded.contact_name, xero_contact_id=excluded.xero_contact_id,
+         sub_total=excluded.sub_total, total_tax=excluded.total_tax, total=excluded.total,
+         status=excluded.status, period=excluded.period, updated_at=excluded.updated_at`
+    ).bind(docId, 'expense', inv.xero_invoice_id, inv.invoice_number, inv.contact_name,
+           inv.xero_contact_id, inv.invoice_date, inv.due_date, inv.currency_code,
+           inv.sub_total, inv.total_tax, inv.total, inv.status, period, now, now).run();
+
+    const doc = await env.DB.prepare('SELECT id FROM normalised_documents WHERE xero_invoice_id = ?').bind(inv.xero_invoice_id).first();
+    const actualDocId = doc ? doc.id : docId;
+
+    const { results: lines } = await env.DB.prepare(
+      'SELECT * FROM xero_line_items WHERE xero_invoice_id = ?'
+    ).bind(inv.xero_invoice_id).all();
+
+    for (const li of lines) {
+      const lineId = li.id;
+      const nliId = generateId('NLI');
+      // For expenses, cost bucket is critical
+      const costBucket = bucketMap[li.account_code] || 'Other';
+
+      await env.DB.prepare(
+        `INSERT INTO normalised_line_items (id, entity_type, document_id, xero_invoice_id, line_id,
+           item_code, description, quantity, unit_amount, line_total, account_code, tax_type, cost_bucket, period, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(xero_invoice_id, line_id) DO UPDATE SET entity_type=excluded.entity_type,
+           document_id=excluded.document_id, item_code=excluded.item_code, description=excluded.description,
+           quantity=excluded.quantity, unit_amount=excluded.unit_amount, line_total=excluded.line_total,
+           account_code=excluded.account_code, tax_type=excluded.tax_type, cost_bucket=excluded.cost_bucket, period=excluded.period`
+      ).bind(nliId, 'expense', actualDocId, inv.xero_invoice_id, lineId,
+             li.item_code, li.description, li.quantity, li.unit_amount, li.line_amount,
+             li.account_code, li.tax_type, costBucket, period, now).run();
+      linesUpserted++;
+    }
+    docsUpserted++;
+  }
+
+  return { ok: true, entity_type: 'expense', documents: docsUpserted, line_items: linesUpserted };
+}
+
+// POST /api/normalise/all — run full normalisation pipeline (seed + revenue + expense)
+async function normaliseAll(env) {
+  const seedResult = await seedCostBuckets(env);
+  const revenueResult = await normaliseRevenue(env);
+  const expenseResult = await normaliseExpenses(env);
+
+  return json({
+    ok: true,
+    results: {
+      seed_buckets: seedResult,
+      revenue: revenueResult,
+      expenses: expenseResult
+    }
+  });
+}
+
 // POST /api/deck-metrics/:monthKey/generate-deck — slides adapter
 async function deckMetricsGenerateDeck(req, env, monthKey) {
   const metric = await env.DB.prepare('SELECT * FROM deck_metrics WHERE month_key = ?').bind(monthKey).first();
@@ -2333,6 +2531,21 @@ async function handleApi(req, env, url) {
   if (path === '/api/xero/backfill' && req.method === 'POST') return xeroFullBackfill(req, env, url);
   if (path === '/api/xero/sync-incremental' && req.method === 'POST') return xeroSyncIncremental(req, env);
   if (path === '/api/xero/sync-status' && req.method === 'GET') return xeroSyncStatus(env);
+
+  // Wave 5: Normalisation routes (admin-gated)
+  if (path === '/api/normalise/seed-buckets' && req.method === 'POST') {
+    try { const r = await seedCostBuckets(env); return json(r); }
+    catch (err) { return json({ ok: false, error: { code: 'NORMALISE_ERROR', message: err.message } }, 500); }
+  }
+  if (path === '/api/normalise/revenue' && req.method === 'POST') {
+    try { const r = await normaliseRevenue(env); return json(r); }
+    catch (err) { return json({ ok: false, error: { code: 'NORMALISE_ERROR', message: err.message } }, 500); }
+  }
+  if (path === '/api/normalise/expenses' && req.method === 'POST') {
+    try { const r = await normaliseExpenses(env); return json(r); }
+    catch (err) { return json({ ok: false, error: { code: 'NORMALISE_ERROR', message: err.message } }, 500); }
+  }
+  if (path === '/api/normalise/all' && req.method === 'POST') return normaliseAll(env);
 
   // Reports: deck generation (new canonical route)
   const reportsDeckMatch = path.match(/^\/api\/reports\/deck\/([^/]+)\/generate$/);

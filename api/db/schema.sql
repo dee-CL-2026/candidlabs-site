@@ -141,3 +141,62 @@ CREATE TABLE IF NOT EXISTS xero_payments (
 );
 CREATE INDEX IF NOT EXISTS idx_xero_pay_invoice ON xero_payments(xero_invoice_id);
 CREATE INDEX IF NOT EXISTS idx_xero_pay_date ON xero_payments(date);
+
+-- ============================================================
+-- Wave 5: Normalised Financial Model
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS normalised_documents (
+  id              TEXT PRIMARY KEY,
+  entity_type     TEXT NOT NULL,
+  xero_invoice_id TEXT NOT NULL,
+  invoice_number  TEXT,
+  contact_name    TEXT,
+  xero_contact_id TEXT,
+  invoice_date    TEXT,
+  due_date        TEXT,
+  currency_code   TEXT DEFAULT 'IDR',
+  sub_total       REAL,
+  total_tax       REAL,
+  total           REAL,
+  status          TEXT,
+  period          TEXT,
+  created_at      TEXT DEFAULT (datetime('now')),
+  updated_at      TEXT DEFAULT (datetime('now')),
+  UNIQUE(xero_invoice_id)
+);
+CREATE INDEX IF NOT EXISTS idx_nd_entity_type ON normalised_documents(entity_type);
+CREATE INDEX IF NOT EXISTS idx_nd_period ON normalised_documents(period);
+
+CREATE TABLE IF NOT EXISTS normalised_line_items (
+  id              TEXT PRIMARY KEY,
+  entity_type     TEXT NOT NULL,
+  document_id     TEXT NOT NULL,
+  xero_invoice_id TEXT NOT NULL,
+  line_id         TEXT,
+  item_code       TEXT,
+  description     TEXT,
+  quantity        REAL,
+  unit_amount     REAL,
+  line_total      REAL,
+  account_code    TEXT,
+  tax_type        TEXT,
+  cost_bucket     TEXT,
+  period          TEXT,
+  created_at      TEXT DEFAULT (datetime('now')),
+  UNIQUE(xero_invoice_id, line_id)
+);
+CREATE INDEX IF NOT EXISTS idx_nli_entity ON normalised_line_items(entity_type);
+CREATE INDEX IF NOT EXISTS idx_nli_cost_bucket ON normalised_line_items(cost_bucket);
+CREATE INDEX IF NOT EXISTS idx_nli_period ON normalised_line_items(period);
+
+CREATE TABLE IF NOT EXISTS cost_bucket_mappings (
+  id              TEXT PRIMARY KEY,
+  account_code    TEXT NOT NULL,
+  account_name    TEXT,
+  cost_bucket     TEXT NOT NULL,
+  notes           TEXT,
+  created_at      TEXT DEFAULT (datetime('now')),
+  updated_at      TEXT DEFAULT (datetime('now')),
+  UNIQUE(account_code)
+);
