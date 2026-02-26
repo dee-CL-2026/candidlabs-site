@@ -637,6 +637,92 @@ async function webhookReceive(req, env, webhookType) {
 }
 
 // ============================================================
+// Agreement actions — generate-doc, send-email
+// ============================================================
+
+async function agreementGenerateDoc(req, env, agreementId) {
+  // Read the agreement record
+  const agr = await env.DB.prepare('SELECT * FROM agreements WHERE id = ?').bind(agreementId).first();
+  if (!agr) return json({ ok: false, error: { code: 'NOT_FOUND', message: `Agreement ${agreementId} not found` } }, 404);
+
+  // Look up company name if linked
+  let companyName = '';
+  if (agr.company_id) {
+    const company = await env.DB.prepare('SELECT name FROM companies WHERE id = ?').bind(agr.company_id).first();
+    if (company) companyName = company.name;
+  }
+
+  // Build placeholder map for doc generation
+  const payload = {
+    action: 'generate',
+    template: 'kaa_agreement',
+    placeholders: {
+      '<<ACCOUNT_NAME>>': agr.account_name || '',
+      '<<CONTACT_NAME>>': agr.contact_name || '',
+      '<<COMPANY_NAME>>': companyName,
+      '<<AGREEMENT_DATE>>': agr.agreement_date || '',
+      '<<START_DATE>>': agr.start_date || '',
+      '<<END_DATE>>': agr.end_date || '',
+      '<<AGREEMENT_TYPE>>': agr.agreement_type || '',
+      '<<TERMS>>': agr.terms || '',
+      '<<AGREEMENT_KEY>>': agr.agreement_key || ''
+    },
+    agreement_id: agreementId,
+    created_by: req.headers.get('X-Agent-Id') || 'platform'
+  };
+
+  // Call the docgen adapter via internal invoke
+  const gasUrl = env.GAS_DOCGEN_URL;
+  if (!gasUrl) {
+    return json({ ok: false, error: { code: 'CONFIG_ERROR', message: 'Doc generator URL not configured' } }, 500);
+  }
+
+  const now = new Date().toISOString();
+  const jobId = generateId('JOB');
+
+  // Create job record
+  await env.DB.prepare(
+    'INSERT INTO jobs (id, job_type, status, payload, created_by, started_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(jobId, 'docgen', 'running', JSON.stringify(payload), payload.created_by, now, now, now).run();
+
+  try {
+    const gasResponse = await fetch(gasUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Api-Key': env.GAS_API_KEY },
+      body: JSON.stringify(payload)
+    });
+
+    const resultText = await gasResponse.text();
+    let result;
+    try { result = JSON.parse(resultText); } catch { result = { raw: resultText }; }
+    const finishedAt = new Date().toISOString();
+
+    await env.DB.prepare(
+      'UPDATE jobs SET status = ?, result = ?, finished_at = ?, updated_at = ? WHERE id = ?'
+    ).bind('completed', JSON.stringify(result), finishedAt, finishedAt, jobId).run();
+
+    const logId = generateId('JLG');
+    await env.DB.prepare(
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'generate_doc', 'completed', JSON.stringify(result), finishedAt, finishedAt).run();
+
+    return json({ ok: true, job_id: jobId, result });
+  } catch (err) {
+    const finishedAt = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE jobs SET status = ?, error = ?, finished_at = ?, updated_at = ? WHERE id = ?'
+    ).bind('failed', err.message, finishedAt, finishedAt, jobId).run();
+
+    const logId = generateId('JLG');
+    await env.DB.prepare(
+      'INSERT INTO job_logs (id, job_id, step, status, message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(logId, jobId, 'generate_doc', 'failed', err.message, finishedAt, finishedAt).run();
+
+    return json({ ok: false, error: { code: 'ADAPTER_ERROR', message: err.message }, job_id: jobId }, 502);
+  }
+}
+
+// ============================================================
 // Router
 // ============================================================
 
@@ -657,6 +743,12 @@ async function handleApi(req, env, url) {
   if (path === '/api/comments' && req.method === 'POST') return createComment(req, env);
   const commentDeleteMatch = path.match(/^\/api\/comments\/([^/]+)$/);
   if (commentDeleteMatch && req.method === 'DELETE') return deleteComment(env, commentDeleteMatch[1]);
+
+  // Agreement actions: POST /api/agreements/:id/generate-doc
+  const agrDocMatch = path.match(/^\/api\/agreements\/([^/]+)\/generate-doc$/);
+  if (agrDocMatch && req.method === 'POST') {
+    return agreementGenerateDoc(req, env, agrDocMatch[1]);
+  }
 
   // Adapter invoke: POST /api/adapters/:type/invoke
   const adapterMatch = path.match(/^\/api\/adapters\/([^/]+)\/invoke$/);

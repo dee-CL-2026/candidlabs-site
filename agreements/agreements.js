@@ -398,6 +398,9 @@ function agrRenderDetailActions(agr) {
   var status = agr.status || 'draft';
   var html = '';
 
+  // Generate Document button — always available
+  html += '<button class="btn-modal primary" onclick="agrGenerateDoc(\'' + agr.id + '\')">Generate Document</button>';
+
   if (status === 'draft') {
     html += '<button class="btn-modal primary" onclick="agrTransition(\'' + agr.id + '\', \'active\')">Activate</button>';
     html += '<button class="btn-modal secondary" onclick="agrTransition(\'' + agr.id + '\', \'terminated\')">Terminate</button>';
@@ -406,7 +409,7 @@ function agrRenderDetailActions(agr) {
     html += '<button class="btn-modal secondary" onclick="agrTransition(\'' + agr.id + '\', \'terminated\')">Terminate</button>';
   }
 
-  actions.innerHTML = html || '<span style="font-size:0.85rem;color:var(--text-muted);">No actions available for this status.</span>';
+  actions.innerHTML = html;
 }
 
 function agrTransition(id, newStatus) {
@@ -426,6 +429,41 @@ function agrTransition(id, newStatus) {
   }).catch(function (err) {
     alert('Error: ' + (err.message || err));
   });
+}
+
+// ============================================================
+// DOCUMENT GENERATION
+// ============================================================
+
+var AGR_API_BASE = 'https://candidlabs-api.dieterwerwath.workers.dev/api';
+
+function agrGenerateDoc(id) {
+  if (!confirm('Generate document for this agreement?')) return;
+
+  var btn = event && event.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating...'; }
+
+  fetch(AGR_API_BASE + '/agreements/' + id + '/generate-doc', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  }).then(function (res) { return res.json(); })
+    .then(function (body) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Generate Document'; }
+      if (body.ok) {
+        var docUrl = body.result && body.result.docUrl;
+        if (docUrl) {
+          alert('Document generated successfully.\nJob ID: ' + body.job_id);
+          window.open(docUrl, '_blank');
+        } else {
+          alert('Document generation job created.\nJob ID: ' + body.job_id + '\nCheck Jobs for result.');
+        }
+      } else {
+        alert('Document generation failed: ' + (body.error ? body.error.message : 'Unknown error'));
+      }
+    }).catch(function (err) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Generate Document'; }
+      alert('Error: ' + (err.message || err));
+    });
 }
 
 // ============================================================
