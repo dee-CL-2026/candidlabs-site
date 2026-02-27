@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overnight Run Audit — Waves 4–8</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e1e4e8; line-height: 1.6; padding: 24px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.8rem; margin-bottom: 4px; color: #fff; }
+  .subtitle { color: #8b949e; margin-bottom: 24px; font-size: 0.95rem; }
+  .api-base { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; }
+  .api-base label { font-weight: 600; white-space: nowrap; }
+  .api-base input { flex: 1; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 8px 12px; color: #e1e4e8; font-family: monospace; font-size: 0.9rem; }
+  .api-base button { background: #238636; color: #fff; border: none; border-radius: 6px; padding: 8px 20px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+  .api-base button:hover { background: #2ea043; }
+
+  .wave { background: #161b22; border: 1px solid #30363d; border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
+  .wave-header { padding: 16px 20px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
+  .wave-header h2 { font-size: 1.1rem; color: #fff; }
+  .wave-badge { font-size: 0.75rem; padding: 3px 10px; border-radius: 12px; font-weight: 600; }
+  .badge-pending { background: #30363d; color: #8b949e; }
+  .badge-testing { background: #1f2d3d; color: #58a6ff; }
+  .badge-pass { background: #12261e; color: #3fb950; }
+  .badge-fail { background: #2d1215; color: #f85149; }
+  .badge-partial { background: #2d2208; color: #d29922; }
+
+  .endpoints { padding: 0; }
+  .endpoint { padding: 12px 20px; border-bottom: 1px solid #21262d; display: grid; grid-template-columns: 70px 1fr 100px; align-items: center; gap: 12px; }
+  .endpoint:last-child { border-bottom: none; }
+  .method { font-family: monospace; font-weight: 700; font-size: 0.8rem; padding: 3px 8px; border-radius: 4px; text-align: center; }
+  .method-get { background: #12261e; color: #3fb950; }
+  .method-post { background: #1f2d3d; color: #58a6ff; }
+  .ep-path { font-family: monospace; font-size: 0.85rem; color: #c9d1d9; }
+  .ep-status { text-align: right; font-size: 0.8rem; font-weight: 600; }
+  .st-ok { color: #3fb950; }
+  .st-err { color: #f85149; }
+  .st-wait { color: #8b949e; }
+  .st-empty { color: #d29922; }
+
+  .result-panel { background: #0d1117; border-top: 1px solid #21262d; padding: 16px 20px; display: none; max-height: 300px; overflow-y: auto; }
+  .result-panel pre { font-size: 0.8rem; white-space: pre-wrap; word-break: break-all; color: #8b949e; }
+  .result-panel .error-msg { color: #f85149; }
+  .result-panel .success-msg { color: #3fb950; }
+
+  .summary { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .summary h2 { font-size: 1.1rem; margin-bottom: 12px; color: #fff; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  .stat { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; padding: 16px; text-align: center; }
+  .stat-val { font-size: 1.8rem; font-weight: 700; }
+  .stat-label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-top: 4px; }
+  .val-green { color: #3fb950; }
+  .val-blue { color: #58a6ff; }
+  .val-amber { color: #d29922; }
+  .val-red { color: #f85149; }
+
+  .instructions { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .instructions h2 { font-size: 1.1rem; margin-bottom: 8px; color: #fff; }
+  .instructions p { color: #8b949e; font-size: 0.9rem; margin-bottom: 8px; }
+  .instructions code { background: #0d1117; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; color: #58a6ff; }
+  .instructions pre { background: #0d1117; padding: 12px; border-radius: 6px; margin-top: 8px; font-size: 0.85rem; color: #c9d1d9; overflow-x: auto; }
+
+  .toggle-btn { background: none; border: 1px solid #30363d; color: #8b949e; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 0.75rem; margin-left: 8px; }
+  .toggle-btn:hover { color: #c9d1d9; border-color: #8b949e; }
+
+  .wave-desc { padding: 8px 20px 0; color: #8b949e; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Overnight Run Audit — Waves 4–8</h1>
+  <p class="subtitle">Ran Feb 27 2026 · 17m 14s · 6 commits · overnight/wave-4-8 branch</p>
+
+  <div class="instructions">
+    <h2>How to use this</h2>
+    <p>This page tests every API endpoint the overnight run created. Make sure wrangler dev is running first:</p>
+    <pre>cd ~/1.Vault/01_PROJECTS/Candid/Repos/candidlabs-site-overnight/api && npx wrangler dev --local</pre>
+    <p>Then click <strong>"Run All Tests"</strong> below. Green = working, red = error (with details), amber = empty data (tables exist but no data yet — expected if you haven't run the Xero sync).</p>
+  </div>
+
+  <div class="api-base">
+    <label>API Base:</label>
+    <input type="text" id="apiBase" value="http://localhost:8787">
+    <button onclick="runAllTests()">Run All Tests</button>
+  </div>
+
+  <div class="summary">
+    <h2>Test Results</h2>
+    <div class="stats">
+      <div class="stat"><div class="stat-val val-blue" id="s-total">0</div><div class="stat-label">Total Endpoints</div></div>
+      <div class="stat"><div class="stat-val val-green" id="s-pass">0</div><div class="stat-label">Passing</div></div>
+      <div class="stat"><div class="stat-val val-amber" id="s-empty">0</div><div class="stat-label">Empty Data</div></div>
+      <div class="stat"><div class="stat-val val-red" id="s-fail">0</div><div class="stat-label">Failing</div></div>
+    </div>
+  </div>
+
+  <!-- Wave 4 -->
+  <div class="wave" id="wave4">
+    <div class="wave-header">
+      <h2>Wave 4 — Canonical Financial Ingestion</h2>
+      <span class="wave-badge badge-pending" id="w4-badge">Pending</span>
+    </div>
+    <p class="wave-desc">D1 tables for xero_accounts & xero_payments, sync handlers, backfill, incremental sync, admin sync status</p>
+    <div class="endpoints" id="w4-endpoints"></div>
+    <div class="result-panel" id="w4-results"><pre></pre></div>
+  </div>
+
+  <!-- Wave 5 -->
+  <div class="wave" id="wave5">
+    <div class="wave-header">
+      <h2>Wave 5 — Financial Normalisation</h2>
+      <span class="wave-badge badge-pending" id="w5-badge">Pending</span>
+    </div>
+    <p class="wave-desc">normalised_documents, normalised_line_items, cost_bucket_mappings, revenue/expense normalisation</p>
+    <div class="endpoints" id="w5-endpoints"></div>
+    <div class="result-panel" id="w5-results"><pre></pre></div>
+  </div>
+
+  <!-- Wave 6 -->
+  <div class="wave" id="wave6">
+    <div class="wave-header">
+      <h2>Wave 6 — CoGS Engine v1</h2>
+      <span class="wave-badge badge-pending" id="w6-badge">Pending</span>
+    </div>
+    <p class="wave-desc">cogs_results table, cost classification per SKU per period, unit cost computation</p>
+    <div class="endpoints" id="w6-endpoints"></div>
+    <div class="result-panel" id="w6-results"><pre></pre></div>
+  </div>
+
+  <!-- Wave 7 -->
+  <div class="wave" id="wave7">
+    <div class="wave-header">
+      <h2>Wave 7 — Pricing Engine v1</h2>
+      <span class="wave-badge badge-pending" id="w7-badge">Pending</span>
+    </div>
+    <p class="wave-desc">pricing_inputs, margin_results, price extraction from ACCREC, margin computation, channel analysis</p>
+    <div class="endpoints" id="w7-endpoints"></div>
+    <div class="result-panel" id="w7-results"><pre></pre></div>
+  </div>
+
+  <!-- Wave 8 -->
+  <div class="wave" id="wave8">
+    <div class="wave-header">
+      <h2>Wave 8 — Reporting Wiring</h2>
+      <span class="wave-badge badge-pending" id="w8-badge">Pending</span>
+    </div>
+    <p class="wave-desc">4 report endpoints with role gating, reports.html tabbed UI, admin nav dropdown, sync-status panel</p>
+    <div class="endpoints" id="w8-endpoints"></div>
+    <div class="result-panel" id="w8-results"><pre></pre></div>
+  </div>
+
+  <div class="instructions">
+    <h2>What "Empty Data" means</h2>
+    <p>If endpoints return <code>{"ok": true, "data": []}</code>, the tables exist but have no rows. This is <strong>expected</strong> before running the data pipeline. To populate data, run in order:</p>
+    <pre>
+# 1. Sync from Xero (requires OAuth tokens)
+POST /api/xero/backfill?from=2024-01&amp;to=2026-02
+
+# 2. Normalise the raw data
+POST /api/normalise/all
+
+# 3. Compute CoGS
+POST /api/cogs/compute
+
+# 4. Extract prices &amp; compute margins
+POST /api/pricing/extract
+POST /api/pricing/compute-margins
+
+# Then check reports:
+GET /api/reports/financials
+GET /api/reports/cogs
+GET /api/reports/margin</pre>
+  </div>
+</div>
+
+<script>
+const ENDPOINTS = {
+  wave4: [
+    { method: 'GET',  path: '/api/xero/sync-status',       desc: 'Entity counts + recent sync runs' },
+    { method: 'POST', path: '/api/xero/sync-accounts',     desc: 'Sync Xero chart of accounts', skipAuto: true },
+    { method: 'POST', path: '/api/xero/sync-payments',     desc: 'Sync Xero payments', skipAuto: true },
+    { method: 'POST', path: '/api/xero/sync-incremental',  desc: 'Delta sync using If-Modified-Since', skipAuto: true },
+    { method: 'POST', path: '/api/xero/backfill',          desc: 'Full historical pull (needs ?from=&to=)', skipAuto: true },
+  ],
+  wave5: [
+    { method: 'POST', path: '/api/normalise/seed-buckets', desc: 'Seed cost bucket mappings from accounts' },
+    { method: 'POST', path: '/api/normalise/revenue',      desc: 'Normalise ACCREC invoices' },
+    { method: 'POST', path: '/api/normalise/expenses',     desc: 'Normalise ACCPAY invoices' },
+    { method: 'POST', path: '/api/normalise/all',          desc: 'Full normalisation pipeline', skipAuto: true },
+  ],
+  wave6: [
+    { method: 'POST', path: '/api/cogs/compute',   desc: 'Run CoGS computation pipeline' },
+    { method: 'GET',  path: '/api/cogs/query',      desc: 'Query CoGS results' },
+  ],
+  wave7: [
+    { method: 'POST', path: '/api/pricing/extract',          desc: 'Extract selling prices from invoices' },
+    { method: 'POST', path: '/api/pricing/compute-margins',  desc: 'Compute margins (join pricing + CoGS)' },
+    { method: 'GET',  path: '/api/pricing/margin-by-channel', desc: 'Margin aggregated by channel' },
+    { method: 'GET',  path: '/api/pricing/margin-query',      desc: 'Query margin results' },
+  ],
+  wave8: [
+    { method: 'GET', path: '/api/reports/ingestion',  desc: 'Ingestion summary (admin)' },
+    { method: 'GET', path: '/api/reports/financials',  desc: 'Revenue vs expense by period (admin)' },
+    { method: 'GET', path: '/api/reports/cogs',        desc: 'CoGS by SKU (admin)' },
+    { method: 'GET', path: '/api/reports/margin',      desc: 'Margin results + channel summary' },
+  ]
+};
+
+// Render endpoint rows
+Object.keys(ENDPOINTS).forEach(wave => {
+  const container = document.getElementById(wave.replace('wave', 'w') + '-endpoints');
+  ENDPOINTS[wave].forEach((ep, i) => {
+    const id = wave + '-' + i;
+    container.innerHTML += `
+      <div class="endpoint" id="ep-${id}">
+        <span class="method method-${ep.method.toLowerCase()}">${ep.method}</span>
+        <span class="ep-path">${ep.path} <span style="color:#484f58;font-size:0.75rem;font-family:sans-serif;">${ep.desc}</span></span>
+        <span class="ep-status st-wait" id="st-${id}">—</span>
+      </div>`;
+  });
+});
+
+let results = { pass: 0, fail: 0, empty: 0, total: 0 };
+
+async function testEndpoint(wave, idx) {
+  const ep = ENDPOINTS[wave][idx];
+  const id = wave + '-' + idx;
+  const stEl = document.getElementById('st-' + id);
+  const base = document.getElementById('apiBase').value.replace(/\/$/, '');
+
+  stEl.textContent = 'Testing...';
+  stEl.className = 'ep-status st-wait';
+
+  try {
+    const opts = { method: ep.method, headers: { 'X-User-Role': 'admin' } };
+    const res = await fetch(base + ep.path, opts);
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = null; }
+
+    if (res.ok && data && data.ok !== false) {
+      // Check if data is empty
+      const hasData = data.data && (
+        (Array.isArray(data.data) && data.data.length > 0) ||
+        (!Array.isArray(data.data) && typeof data.data === 'object' && Object.keys(data.data).length > 0)
+      );
+      const hasResults = data.results && data.results.length > 0;
+      const dataField = data.data;
+      const isEmpty = !hasData && !hasResults &&
+        !(dataField && typeof dataField === 'object' && !Array.isArray(dataField) &&
+          Object.values(dataField).some(v => v && ((Array.isArray(v) && v.length > 0) || (typeof v === 'object' && Object.keys(v).length > 0) || (typeof v === 'number' && v > 0) || (typeof v === 'string' && v.length > 0))));
+
+      if (isEmpty) {
+        stEl.textContent = 'Empty';
+        stEl.className = 'ep-status st-empty';
+        results.empty++;
+      } else {
+        stEl.textContent = res.status + ' OK';
+        stEl.className = 'ep-status st-ok';
+        results.pass++;
+      }
+      logResult(wave, ep.path, 'success-msg', JSON.stringify(data, null, 2).substring(0, 500));
+    } else {
+      stEl.textContent = res.status + ' ERR';
+      stEl.className = 'ep-status st-err';
+      results.fail++;
+      logResult(wave, ep.path, 'error-msg', res.status + ': ' + text.substring(0, 300));
+    }
+  } catch (err) {
+    stEl.textContent = 'FAIL';
+    stEl.className = 'ep-status st-err';
+    results.fail++;
+    logResult(wave, ep.path, 'error-msg', err.message);
+  }
+  results.total++;
+  updateSummary();
+}
+
+function logResult(wave, path, cls, msg) {
+  const panel = document.getElementById(wave.replace('wave', 'w') + '-results');
+  panel.style.display = 'block';
+  panel.querySelector('pre').innerHTML += `<span class="${cls}">${path}</span>\n${msg}\n\n`;
+}
+
+function updateSummary() {
+  document.getElementById('s-total').textContent = results.total;
+  document.getElementById('s-pass').textContent = results.pass;
+  document.getElementById('s-empty').textContent = results.empty;
+  document.getElementById('s-fail').textContent = results.fail;
+
+  // Update wave badges
+  ['wave4','wave5','wave6','wave7','wave8'].forEach(wave => {
+    let wPass = 0, wFail = 0, wEmpty = 0, wTotal = 0;
+    ENDPOINTS[wave].forEach((ep, i) => {
+      const st = document.getElementById('st-' + wave + '-' + i);
+      if (st.classList.contains('st-ok')) { wPass++; wTotal++; }
+      else if (st.classList.contains('st-err')) { wFail++; wTotal++; }
+      else if (st.classList.contains('st-empty')) { wEmpty++; wTotal++; }
+    });
+    const badge = document.getElementById(wave.replace('wave', 'w') + '-badge');
+    if (wTotal === 0) { badge.textContent = 'Pending'; badge.className = 'wave-badge badge-pending'; }
+    else if (wFail > 0) { badge.textContent = wFail + ' Failed'; badge.className = 'wave-badge badge-fail'; }
+    else if (wEmpty > 0 && wPass > 0) { badge.textContent = 'Partial'; badge.className = 'wave-badge badge-partial'; }
+    else if (wEmpty === wTotal) { badge.textContent = 'Empty Data'; badge.className = 'wave-badge badge-partial'; }
+    else { badge.textContent = 'All Pass'; badge.className = 'wave-badge badge-pass'; }
+  });
+}
+
+async function runAllTests() {
+  // Reset
+  results = { pass: 0, fail: 0, empty: 0, total: 0 };
+  document.querySelectorAll('.result-panel').forEach(p => { p.style.display = 'none'; p.querySelector('pre').innerHTML = ''; });
+  document.querySelectorAll('.ep-status').forEach(s => { s.textContent = '—'; s.className = 'ep-status st-wait'; });
+  updateSummary();
+
+  for (const wave of ['wave4','wave5','wave6','wave7','wave8']) {
+    for (let i = 0; i < ENDPOINTS[wave].length; i++) {
+      if (!ENDPOINTS[wave][i].skipAuto) {
+        await testEndpoint(wave, i);
+      } else {
+        // Mark skipped POST endpoints
+        const id = wave + '-' + i;
+        document.getElementById('st-' + id).textContent = 'Skipped';
+        document.getElementById('st-' + id).className = 'ep-status st-wait';
+      }
+    }
+  }
+}
+</script>
+</body>
+</html>

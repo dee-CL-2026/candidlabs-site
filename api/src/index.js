@@ -8,7 +8,7 @@ function json(data, status = 200) {
       'content-type': 'application/json; charset=utf-8',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'access-control-allow-headers': 'Content-Type, Authorization, X-Agent-Id, X-Api-Key'
+      'access-control-allow-headers': 'Content-Type, Authorization, X-Agent-Id, X-Api-Key, X-User-Role, X-User-Email'
     }
   });
 }
@@ -2148,18 +2148,13 @@ async function xeroSyncStatus(env) {
     'SELECT id, sync_type, entity_type, month_key, started_at, finished_at, records_fetched, records_upserted, status, error FROM sync_runs ORDER BY started_at DESC LIMIT 50'
   ).all();
 
-  const { results: entityCounts } = await env.DB.prepare(`
-    SELECT 'invoices' as entity, COUNT(*) as count FROM xero_invoices
-    UNION ALL SELECT 'line_items', COUNT(*) FROM xero_line_items
-    UNION ALL SELECT 'contacts', COUNT(*) FROM xero_contacts
-    UNION ALL SELECT 'items', COUNT(*) FROM xero_items
-    UNION ALL SELECT 'accounts', COUNT(*) FROM xero_accounts
-    UNION ALL SELECT 'payments', COUNT(*) FROM xero_payments
-  `).all();
-
+  // D1 has a compound SELECT limit, so query each table individually
+  const tables = ['xero_invoices', 'xero_line_items', 'xero_contacts', 'xero_items', 'xero_accounts', 'xero_payments'];
+  const names = ['invoices', 'line_items', 'contacts', 'items', 'accounts', 'payments'];
   const counts = {};
-  for (const row of entityCounts) {
-    counts[row.entity] = row.count;
+  for (let i = 0; i < tables.length; i++) {
+    const row = await env.DB.prepare(`SELECT COUNT(*) as count FROM ${tables[i]}`).first();
+    counts[names[i]] = row ? row.count : 0;
   }
 
   return json({ ok: true, data: { runs, entity_counts: counts } });
@@ -2585,19 +2580,16 @@ async function marginQuery(env, url) {
 
 // GET /api/reports/ingestion — ingestion summary (sync status, entity counts, last sync timestamps)
 async function reportIngestion(env) {
-  const { results: entityCounts } = await env.DB.prepare(`
-    SELECT 'invoices' as entity, COUNT(*) as count FROM xero_invoices
-    UNION ALL SELECT 'line_items', COUNT(*) FROM xero_line_items
-    UNION ALL SELECT 'contacts', COUNT(*) FROM xero_contacts
-    UNION ALL SELECT 'items', COUNT(*) FROM xero_items
-    UNION ALL SELECT 'accounts', COUNT(*) FROM xero_accounts
-    UNION ALL SELECT 'payments', COUNT(*) FROM xero_payments
-  `).all();
-
+  // D1 has a compound SELECT limit, so query each table individually
+  const tables = ['xero_invoices', 'xero_line_items', 'xero_contacts', 'xero_items', 'xero_accounts', 'xero_payments'];
+  const names = ['invoices', 'line_items', 'contacts', 'items', 'accounts', 'payments'];
   const counts = {};
-  for (const row of entityCounts) { counts[row.entity] = row.count; }
+  for (let i = 0; i < tables.length; i++) {
+    const row = await env.DB.prepare(`SELECT COUNT(*) as count FROM ${tables[i]}`).first();
+    counts[names[i]] = row ? row.count : 0;
+  }
 
-  const lastSync = await env.DB.prepare(
+  const { results: recentSyncs } = await env.DB.prepare(
     "SELECT sync_type, entity_type, finished_at, status, records_fetched, records_upserted FROM sync_runs WHERE status = 'completed' ORDER BY finished_at DESC LIMIT 10"
   ).all();
 
@@ -2607,7 +2599,7 @@ async function reportIngestion(env) {
     ok: true,
     data: {
       entity_counts: counts,
-      recent_syncs: lastSync.results || [],
+      recent_syncs: recentSyncs || [],
       xero_connection: tokenStatus ? {
         connected: true,
         token_expired: new Date(tokenStatus.expires_at).getTime() < Date.now(),
@@ -2881,7 +2873,10 @@ async function handleApi(req, env, url) {
   }
   if (path === '/api/xero/backfill' && req.method === 'POST') return xeroFullBackfill(req, env, url);
   if (path === '/api/xero/sync-incremental' && req.method === 'POST') return xeroSyncIncremental(req, env);
-  if (path === '/api/xero/sync-status' && req.method === 'GET') return xeroSyncStatus(env);
+  if (path === '/api/xero/sync-status' && req.method === 'GET') {
+    try { return await xeroSyncStatus(env); }
+    catch (err) { return json({ ok: false, error: { code: 'SYNC_STATUS_ERROR', message: err.message } }, 500); }
+  }
 
   // Wave 5: Normalisation routes (admin-gated)
   if (path === '/api/normalise/seed-buckets' && req.method === 'POST') {
@@ -2921,25 +2916,26 @@ async function handleApi(req, env, url) {
   if (path === '/api/reports/ingestion' && req.method === 'GET') {
     const auth = checkReportRole(req, 'admin');
     if (!auth.allowed) return json({ ok: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } }, 403);
-    return reportIngestion(env);
+    try { return await reportIngestion(env); }
+    catch (err) { return json({ ok: false, error: { code: 'REPORT_ERROR', message: err.message } }, 500); }
   }
   if (path === '/api/reports/financials' && req.method === 'GET') {
     const auth = checkReportRole(req, 'admin');
     if (!auth.allowed) return json({ ok: false, error: { code: 'FORBIDDEN', message: 'Admin access required for full financials' } }, 403);
-    return reportFinancials(env, url);
+    try { return await reportFinancials(env, url); }
+    catch (err) { return json({ ok: false, error: { code: 'REPORT_ERROR', message: err.message } }, 500); }
   }
   if (path === '/api/reports/cogs' && req.method === 'GET') {
     const auth = checkReportRole(req, 'admin');
     if (!auth.allowed) return json({ ok: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } }, 403);
-    return reportCogs(env, url);
+    try { return await reportCogs(env, url); }
+    catch (err) { return json({ ok: false, error: { code: 'REPORT_ERROR', message: err.message } }, 500); }
   }
   if (path === '/api/reports/margin' && req.method === 'GET') {
-    // Partner can see margin data but filtered to their channel
     const auth = checkReportRole(req, 'partner');
-    if (auth.role === 'partner' && !url.searchParams.get('channel')) {
-      // For partners, could auto-filter by their channel — for now allow all
-    }
-    return reportMargin(env, url);
+    if (!auth.allowed) return json({ ok: false, error: { code: 'FORBIDDEN', message: 'Access denied' } }, 403);
+    try { return await reportMargin(env, url); }
+    catch (err) { return json({ ok: false, error: { code: 'REPORT_ERROR', message: err.message } }, 500); }
   }
 
   // Reports: deck generation (new canonical route)
@@ -2993,7 +2989,7 @@ export default {
         headers: {
           'access-control-allow-origin': '*',
           'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'access-control-allow-headers': 'Content-Type, Authorization, X-Agent-Id, X-Api-Key',
+          'access-control-allow-headers': 'Content-Type, Authorization, X-Agent-Id, X-Api-Key, X-User-Role, X-User-Email',
           'access-control-max-age': '86400'
         }
       });
